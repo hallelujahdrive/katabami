@@ -1,0 +1,38 @@
+{
+  "name": "katabami",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Katabami is a JSON decoding library",
+  "main": "index.js",
+  "scripts": {
+    "format": "npx @biomejs/biome format --write ./src && eslint --fix",
+    "lint": "npx @biomejs/biome lint --write ./src && eslint",
+    "check": "npx @biomejs/biome check --write ./src && eslint --fix",
+    "prepare": "husky",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
+  },
+  "author": "hallelujahdrive",
+  "license": "WTFPL",
+  "bugs": {
+    "url": "https://github.com/hallelujahdrive/katabami/issues"
+  },
+  "homepage": "https://github.com/hallelujahdrive/katabami#readme",
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@eslint/js": "^9.18.0",
+    "cspell": "^8.17.2",
+    "eslint": "^9.18.0",
+    "eslint-plugin-sort": "^4.0.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.0",
+    "madge": "^8.0.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^3.0.0"
+  }
+}
