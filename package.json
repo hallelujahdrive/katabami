@@ -9,7 +9,8 @@
     "lint": "npx @biomejs/biome lint --write ./src && eslint",
     "check": "npx @biomejs/biome check --write ./src && eslint --fix",
     "prepare": "husky",
-    "test": "vitest"
+    "test": "vitest",
+    "test:typecheck": "vitest --typecheck"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
     "@eslint/js": "^9.18.0",
     "cspell": "^8.17.2",
     "eslint": "^9.18.0",
+    "eslint-plugin-perfectionist": "^4.6.0",
     "eslint-plugin-sort": "^4.0.0",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
