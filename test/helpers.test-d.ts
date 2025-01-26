@@ -2,57 +2,57 @@ import { describe, expectTypeOf, test } from "vitest";
 import type { IsUnion, TypeOf } from "../src/index.js";
 
 describe("helpers", () => {
-  describe("isUnion", () => {
-    test("boolean", () => {
+	describe("isUnion", () => {
+		test("boolean", () => {
       type T = IsUnion<boolean>;
 
       expectTypeOf<T>().toEqualTypeOf<true>();
-    });
+		});
 
-    test("union", () => {
+		test("union", () => {
       type T = IsUnion<boolean | number>;
 
       expectTypeOf<T>().toEqualTypeOf<true>();
-    });
-  });
+		});
+	});
 
-  describe("typeOf", () => {
-    test("array", () => {
+	describe("typeOf", () => {
+		test("array", () => {
       type T = TypeOf<number[]>;
 
       expectTypeOf<T>().toEqualTypeOf<"array">();
-    });
+		});
 
-    test("boolean", () => {
+		test("boolean", () => {
       type T = TypeOf<boolean>;
 
       expectTypeOf<T>().toEqualTypeOf<"boolean">();
-    });
+		});
 
-    describe("constant", () => {
-      test("number", () => {
+		describe("constant", () => {
+			test("number", () => {
         type T = TypeOf<0>;
 
         expectTypeOf<T>().toEqualTypeOf<"constant">();
-      });
+			});
 
-      test("true", () => {
+			test("true", () => {
         type T = TypeOf<true>;
 
         expectTypeOf<T>().toEqualTypeOf<"constant">();
-      });
-    });
+			});
+		});
 
-    test("object", () => {
+		test("object", () => {
       type T = TypeOf<{ foo: number }>;
 
       expectTypeOf<T>().toEqualTypeOf<"object">();
-    });
+		});
 
-    test("union", () => {
+		test("union", () => {
       type T = TypeOf<boolean | number>;
 
       expectTypeOf<T>().toEqualTypeOf<"union">();
-    });
-  });
+		});
+	});
 });

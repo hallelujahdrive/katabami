@@ -35,6 +35,7 @@ export default [
           varsIgnorePattern: "^_",
         },
       ],
+      indent: "off",
       "perfectionist/sort-intersection-types": "error",
       "perfectionist/sort-union-types": "error",
       "sort/object-properties": [

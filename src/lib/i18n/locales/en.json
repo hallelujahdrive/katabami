@@ -1,0 +1,19 @@
+{
+	"issue": {
+		"aExpectedIsExpectedButTheValueIsAReceived": "A {{expected}} is expected, but the value is a {{received}}."
+	},
+	"type": {
+		"array": "array",
+		"object": "object",
+		"null": "null",
+		"boolean": "boolean",
+		"number": "number",
+		"string": "string",
+		"undefined": "undefined",
+		"integer": "integer",
+		"bigint": "bigint",
+		"function": "function",
+		"symbol": "symbol",
+		"decimal": "decimal"
+	}
+}
