@@ -1,5 +1,5 @@
 import type { i18n, TOptions } from "i18next";
-import type { Issues } from "./error.js";
+import type { IssueMessage, Issues } from "./error.js";
 import type { TypeOf, UnionToTuple } from "./helpers.js";
 import type { Result } from "./result.js";
 

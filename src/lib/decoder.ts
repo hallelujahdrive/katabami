@@ -19,6 +19,7 @@ import type {
 	UnionDecodeResponse,
 	UnionDecoders,
 } from "../types/index.js";
+import { isIssueMessage } from "../utils/issue.js";
 import { DecodeError } from "./error.js";
 import { resourceLanguageTemplates } from "./i18n/index.js";
 
@@ -26,7 +27,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	implements Decoder<T, I>
 {
 	private readonly _i18n?: i18n;
-	private readonly tOptions?: TOptions<{ 	katabamiNS?: string }>;
+	private readonly tOptions?: TOptions<{ katabamiNS?: string }>;
 	public static defaultNS?: string;
 
 	constructor(
@@ -117,8 +118,10 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		);
 	}
 
-	public decodeString(value: string): Result<T, I> {
-		return this._decode(JSON.parse(value));
+	public decodeString(
+		value: string,
+	): Result<T, I> {
+			return this._decode(JSON.parse(value));
 	}
 
 	/**
@@ -131,7 +134,10 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 
 	public i18n(options: { i18n?: i18n; tOptions?: TOptions }): Decoder<T, I> {
 		return new _Decoder(
-			{ i18n: options.i18n ?? this._i18n, tOptions: options.tOptions ?? this.tOptions },
+			{
+				i18n: options.i18n ?? this._i18n,
+				tOptions: options.tOptions ?? this.tOptions,
+			},
 			this.decodeFunc,
 			this.cacheFunc,
 		);
@@ -261,10 +267,26 @@ const decodeConstantFunc =
 		};
 	};
 
-const decodeFiledFunc = <T extends Issues>(
-	message: string,
+const decodeFailedFunc = <T extends Issues = Issues>(
+	message?: string,
 	issues?: T,
-): DecodeFunction<never, T> => {};
+): DecodeFunction<never, T> => {
+	return (_value, i18nOptions) => {
+		return {
+			error: new DecodeError(
+				message ?? "Failed to decode",
+				isIssueMessage(issues)
+					? buildMessage(i18nOptions, issues)
+					: (issues ??
+							(buildMessage(i18nOptions, {
+								template: resourceLanguageTemplates.issue.failedToDecode,
+								type: "failed",
+							}) as T)),
+			),
+			ok: false,
+		};
+	};
+};
 
 const decodeIntegerFunc: DecodeFunction<number> = (value) => {
 	if (typeof value === "number") return { ok: true, value };
@@ -334,9 +356,9 @@ const decodeValueFunc: DecodeFunction<unknown> = <T>(value: unknown) => {
  *
  * @returns {Decoder<boolean, Issues<TypeOf<boolean>>>}
  */
-export const boolean = (): Decoder<boolean, Issues<TypeOf<boolean>>> => {
+export function boolean(): Decoder<boolean, Issues<TypeOf<boolean>>> {
 	return new _Decoder(undefined, decodeBooleanFunc);
-};
+}
 
 /**
  * A decoder that always returns the same value.
@@ -345,18 +367,28 @@ export const boolean = (): Decoder<boolean, Issues<TypeOf<boolean>>> => {
  * @param {T} expected The value to return.
  * @returns {Decoder<T>} A decoder that always returns the given value.
  */
-export const constant = <T extends boolean | number | string>(
+export function constant<T extends boolean | number | string>(
 	expected: T,
-): Decoder<T, Issues<"constant">> =>
-	new _Decoder(undefined, decodeConstantFunc(expected));
+): Decoder<T, Issues<"constant">> {
+	return new _Decoder(undefined, decodeConstantFunc(expected));
+}
 
-export const map = <
+export function map<
 	T,
 	U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>,
 >(
 	mapFunc: MapDecodeFunction<T, U>,
 	...decoders: U
-): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> => {};
+	): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {
+	}
+
+/**
+ * Create a decoder that always fails with the given message and issues.
+ *
+ * @param {string} message The failure message.
+ * @returns {Decoder<never, IssueMessage>} A decoder that always fails with the given message and issues.
+ */
+export function failed(message?: string): Decoder<never, IssueMessage>;
 
 /**
  * Create a decoder that always fails with the given message and issues.
@@ -366,27 +398,43 @@ export const map = <
  * @param {T} [issues] Optional issues related to the failure.
  * @returns {Decoder<never, T>} A decoder that always fails with the given message and issues.
  */
-export const failed = <T extends Issues>(
-	message: string,
+export function failed<T extends Issues>(
+	message?: string,
 	issues?: T,
-): Decoder<never, T> =>
-	new _Decoder<never, T>(undefined, decodeFiledFunc(message, issues));
+): Decoder<never, T>;
+
+/**
+ * Create a decoder that always fails with the given message and issues.
+ *
+ * @template {Issues} T The type of the issues.
+ * @param {string} message The failure message.
+ * @param {T} [issues] Optional issues related to the failure.
+ * @returns {Decoder<never, T>} A decoder that always fails with the given message and issues.
+ */
+export function failed<T extends Issues>(
+	message?: string,
+	issues?: T,
+): Decoder<never, T> {
+	return new _Decoder<never, T>(undefined, decodeFailedFunc(message, issues));
+}
 
 /**
  * A decoder for integers.
  *
  * @returns {Decoder<number, Issues<TypeOf<number>>>} A decoder for integers.
  */
-export const integer = (): Decoder<number, Issues<TypeOf<number>>> =>
-	new _Decoder(undefined, decodeIntegerFunc);
+export function integer(): Decoder<number, Issues<TypeOf<number>>> {
+	return new _Decoder(undefined, decodeIntegerFunc);
+}
 
 /**
  * A decoder for numbers.
  *
  * @returns {Decoder<number, Issues<TypeOf<number>>>} A decoder for numbers.
  */
-export const number = (): Decoder<number, Issues<TypeOf<number>>> =>
-	new _Decoder(undefined, decodeNumberFunc);
+export function number(): Decoder<number, Issues<TypeOf<number>>> {
+	return new _Decoder(undefined, decodeNumberFunc);
+}
 
 /**
  * Create a decoder for an object.
@@ -396,14 +444,14 @@ export const number = (): Decoder<number, Issues<TypeOf<number>>> =>
  * @param {U} decoders The decoders for the object properties.
  * @returns {Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>>} A decoder for the object.
  */
-export const object = <
+export function object<
 	T extends Record<string, unknown>,
 	U extends
 		| ObjectDecoders<T>
 		| Record<string, Decoder<unknown>> = ObjectDecoders<T>,
 >(
 	decoders: U,
-): Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>> => {};
+): Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>>  {};
 
 /**
  * Create a decoder that makes a decoder optional.
@@ -413,17 +461,24 @@ export const object = <
  * @param {Decoder<T, I>} decoder The decoder to make optional.
  * @returns {Decoder<T | undefined, I>} A decoder that accepts either the original value or undefined.
  */
-export const optional = <T, I extends Issues = Issues>(
+export function optional<T, I extends Issues = Issues>(
 	decoder: Decoder<T, I>,
-): Decoder<T | undefined, I> => new _Decoder(undefined, (value) => {});
+): Decoder<T | undefined, I> {
+	return new _Decoder(undefined, (value, i18nOptions) => {
+		if (value == null) return { ok: true, value: undefined as T | undefined };
+
+		return decoder.i18n(i18nOptions).decodeValue(value);
+	});
+}
 
 /**
  * A decoder for strings.
  *
  * @returns {Decoder<string, Issues<TypeOf<string>>>} A decoder for strings.
  */
-export const string = (): Decoder<string, Issues<TypeOf<string>>> =>
-	new _Decoder(undefined, decodeStringFunc);
+export function string(): Decoder<string, Issues<TypeOf<string>>> {
+	return new _Decoder(undefined, decodeStringFunc);
+}
 
 /**
  * Create a decoder that always succeeds with the given value.
@@ -432,8 +487,9 @@ export const string = (): Decoder<string, Issues<TypeOf<string>>> =>
  * @param {T} value The value to always return.
  * @returns {Decoder<T>} A decoder that always returns the given value.
  */
-export const succeed = <T>(value: T): Decoder<T, never> =>
-	new _Decoder<T, never>(undefined, decodeSucceedFunc(value));
+export function succeed<T>(value: T): Decoder<T, never> {
+	return new _Decoder<T, never>(undefined, decodeSucceedFunc(value));
+}
 
 /**
  * Create a decoder for a tuple.
@@ -443,14 +499,12 @@ export const succeed = <T>(value: T): Decoder<T, never> =>
  * @param {...U} decoders The decoders for each tuple element.
  * @returns {Decoder<TupleDecodeResponse<U>>} A decoder for the tuple.
  */
-export const tuple = <
+export function tuple<
 	T extends unknown[],
 	U extends Array<Decoder<unknown>> | TupleDecoders<T> = TupleDecoders<T>,
 >(
 	...decoders: U
-): Decoder<TupleDecodeResponse<U>> => {
-	// Implementation logic goes here
-};
+): Decoder<TupleDecodeResponse<U>> {}
 
 /**
  * Create a decoder that accepts any of the given decoders.
@@ -460,12 +514,13 @@ export const tuple = <
  * @param {U} decoders The decoders to use.
  * @returns {Decoder<UnionDecodeResponse<U>>} A decoder that accepts any of the given decoders.
  */
-export const union = <
+export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
 >(
 	...decoders: U
-): Decoder<UnionDecodeResponse<U>> => {};
+): Decoder<UnionDecodeResponse<U>> {};
 
-export const value = <T = unknown>(): Decoder<T> =>
-	new _Decoder<T>(undefined, decodeValueFunc as DecodeFunction<T>);
+export function value<T = unknown>(): Decoder<T> {
+	return new _Decoder<T>(undefined, decodeValueFunc as DecodeFunction<T>);
+}

@@ -12,7 +12,7 @@ import {
 	union,
 } from "../src/index.js";
 
-describe("decoder", () => {
+describe("Decoder", () => {
 	describe("map", () => {
 		test("fixed", () => {
 			const _decoder = map<
@@ -107,7 +107,7 @@ describe("decoder", () => {
 
 	describe("union", () => {
 		test("fixed", () => {
-			const _decoder = union<"bar" | "foo">(constant("bar"), constant("foo"));
+			const _decoder = union(constant("bar"), constant("foo"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});

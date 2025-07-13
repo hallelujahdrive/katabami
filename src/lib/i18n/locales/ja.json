@@ -1,6 +1,7 @@
 {
 	"issue": {
-		"aExpectedIsExpectedButTheValueIsAReceived": "{{expected}}が期待されていますが、値は{{received}}です。"
+		"aExpectedIsExpectedButTheValueIsAReceived": "{{expected}}が期待されていますが、値は{{received}}です。",
+		"failedToDecode": "デコードに失敗しました。"
 	},
 	"type": {
 		"array": "配列",
