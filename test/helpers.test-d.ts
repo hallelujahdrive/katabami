@@ -5,55 +5,55 @@ import type { IsUnion, TypeOf } from "../src/index.js";
 describe("helpers", () => {
 	describe("isUnion", () => {
 		test("boolean", () => {
-      type T = IsUnion<boolean>;
+			type T = IsUnion<boolean>;
 
-      expectTypeOf<T>().toEqualTypeOf<true>();
+			expectTypeOf<T>().toEqualTypeOf<true>();
 		});
 
 		test("union", () => {
-      type T = IsUnion<boolean | number>;
+			type T = IsUnion<boolean | number>;
 
-      expectTypeOf<T>().toEqualTypeOf<true>();
+			expectTypeOf<T>().toEqualTypeOf<true>();
 		});
 	});
 
 	describe("typeOf", () => {
 		test("array", () => {
-      type T = TypeOf<number[]>;
+			type T = TypeOf<number[]>;
 
-      expectTypeOf<T>().toEqualTypeOf<"array">();
+			expectTypeOf<T>().toEqualTypeOf<"array">();
 		});
 
 		test("boolean", () => {
-      type T = TypeOf<boolean>;
+			type T = TypeOf<boolean>;
 
-      expectTypeOf<T>().toEqualTypeOf<"boolean">();
+			expectTypeOf<T>().toEqualTypeOf<"boolean">();
 		});
 
 		describe("constant", () => {
 			test("number", () => {
-        type T = TypeOf<0>;
+				type T = TypeOf<0>;
 
-        expectTypeOf<T>().toEqualTypeOf<"constant">();
+				expectTypeOf<T>().toEqualTypeOf<"constant">();
 			});
 
 			test("true", () => {
-        type T = TypeOf<true>;
+				type T = TypeOf<true>;
 
-        expectTypeOf<T>().toEqualTypeOf<"constant">();
+				expectTypeOf<T>().toEqualTypeOf<"constant">();
 			});
 		});
 
 		test("object", () => {
-      type T = TypeOf<{ foo: number }>;
+			type T = TypeOf<{ foo: number }>;
 
-      expectTypeOf<T>().toEqualTypeOf<"object">();
+			expectTypeOf<T>().toEqualTypeOf<"object">();
 		});
 
 		test("union", () => {
-      type T = TypeOf<boolean | number>;
+			type T = TypeOf<boolean | number>;
 
-      expectTypeOf<T>().toEqualTypeOf<"union">();
+			expectTypeOf<T>().toEqualTypeOf<"union">();
 		});
 	});
 });

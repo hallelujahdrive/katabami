@@ -1,5 +1,4 @@
 // @ts-check
-
 import tsEslintParser from "@typescript-eslint/parser";
 import perfectionist from "eslint-plugin-perfectionist";
 

@@ -26,9 +26,9 @@
 		"url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
 	},
 	"scripts": {
-		"check": "npx @biomejs/biome check --write ./src && eslint --fix",
-		"format": "npx @biomejs/biome format --write ./src && eslint --fix",
-		"lint": "npx @biomejs/biome lint --write ./src && eslint",
+		"check": "biome check --write . && eslint . --fix",
+		"format": "biome format --write . && eslint . --fix",
+		"lint": "biome lint . && eslint .",
 		"prepare": "husky",
 		"test": "vitest",
 		"test:typecheck": "vitest --typecheck"
