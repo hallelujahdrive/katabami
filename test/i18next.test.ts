@@ -1,5 +1,6 @@
 import i18next from "i18next";
 import { beforeAll, describe, expect, test } from "vitest";
+
 import {
 	boolean,
 	constant,

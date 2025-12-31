@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, test } from "vitest";
+
 import {
 	constant,
 	type Infer,
@@ -7,8 +8,8 @@ import {
 	object,
 	optional,
 	string,
-	tuple,
 	type TupleDecoders,
+	tuple,
 	union,
 } from "../src/index.js";
 
@@ -16,34 +17,34 @@ describe("Decoder", () => {
 	describe("map", () => {
 		test("fixed", () => {
 			const _decoder = map<
-        { bar: number; foo: number },
-        TupleDecoders<[{ bar: number }, { foo: number }]>
-      >(
-      	(foo, bar) => Object.assign(foo, bar),
-      	object({ bar: number() }),
-      	object({ foo: number() })
-      );
+				{ bar: number; foo: number },
+				TupleDecoders<[{ bar: number }, { foo: number }]>
+			>(
+				(foo, bar) => Object.assign(foo, bar),
+				object({ bar: number() }),
+				object({ foo: number() }),
+			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
-        bar: number;
-        foo: number;
-      }>();
+				bar: number;
+				foo: number;
+			}>();
 		});
 
 		test("complement", () => {
 			const _decoder = map(
 				(foo, bar) => Object.assign(foo, bar),
 				object({ foo: number() }),
-				object({ bar: number() })
+				object({ bar: number() }),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-        {
-          bar: number;
-        } & {
-          foo: number;
-        }
-      >();
+				{
+					bar: number;
+				} & {
+					foo: number;
+				}
+			>();
 		});
 	});
 
@@ -55,9 +56,9 @@ describe("Decoder", () => {
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
-        num: number;
-        optionalStr: string | undefined;
-      }>();
+				num: number;
+				optionalStr: string | undefined;
+			}>();
 		});
 
 		test("complement", () => {
@@ -67,9 +68,9 @@ describe("Decoder", () => {
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
-        num: number;
-        optionalStr: string | undefined;
-      }>();
+				num: number;
+				optionalStr: string | undefined;
+			}>();
 		});
 	});
 
@@ -78,16 +79,16 @@ describe("Decoder", () => {
 			const _decoder = optional<number>(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-        number | undefined
-      >();
+				number | undefined
+			>();
 		});
 
 		test("complement", () => {
 			const _decoder = optional(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-        number | undefined
-      >();
+				number | undefined
+			>();
 		});
 	});
 

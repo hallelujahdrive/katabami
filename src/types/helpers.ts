@@ -32,7 +32,7 @@ export type TypeOf<T, U = T> = IsUnion<T> extends true
 				? "symbol"
 				: T extends undefined
 					? "undefined"
-					: T extends Function
+					: T extends (...args: never) => unknown
 						? "function"
 						: T extends unknown[]
 							? "array"
@@ -50,11 +50,12 @@ type UnionToIntersection<U> = (
 	? I
 	: never;
 
-type LastInUnion<U> = UnionToIntersection<
-	U extends unknown ? (x: U) => void : never
-> extends (x: infer L) => void
-	? L
-	: never;
+type LastInUnion<U> =
+	UnionToIntersection<U extends unknown ? (x: U) => void : never> extends (
+		x: infer L,
+	) => void
+		? L
+		: never;
 
 /**
  * Convert a union to a tuple.

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import { boolean, constant, DecodeError, string } from "../src/index.js";
 
 describe("decoder", () => {

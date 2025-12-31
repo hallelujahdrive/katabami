@@ -1,41 +1,38 @@
 {
-  "name": "katabami",
-  "version": "0.0.0",
-  "type": "module",
-  "description": "Katabami is a JSON decoding library",
-  "main": "index.js",
-  "scripts": {
-    "format": "npx @biomejs/biome format --write ./src && eslint --fix",
-    "lint": "npx @biomejs/biome lint --write ./src && eslint",
-    "check": "npx @biomejs/biome check --write ./src && eslint --fix",
-    "prepare": "husky",
-    "test": "vitest",
-    "test:typecheck": "vitest --typecheck"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
-  },
-  "author": "hallelujahdrive",
-  "license": "WTFPL",
-  "bugs": {
-    "url": "https://github.com/hallelujahdrive/katabami/issues"
-  },
-  "homepage": "https://github.com/hallelujahdrive/katabami#readme",
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@eslint/js": "^9.18.0",
-    "cspell": "^8.17.2",
-    "eslint": "^9.18.0",
-    "eslint-plugin-perfectionist": "^4.6.0",
-    "eslint-plugin-sort": "^4.0.0",
-    "globals": "^15.14.0",
-    "husky": "^9.1.7",
-    "i18next": "^24.2.2",
-    "lint-staged": "^15.4.0",
-    "madge": "^8.0.0",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.36.0",
-    "vitest": "^3.2.4"
-  }
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"description": "Katabami is a JSON decoding library",
+	"devDependencies": {
+		"@biomejs/biome": "2.3.10",
+		"@typescript-eslint/parser": "^8.51.0",
+		"cspell": "^8.17.2",
+		"eslint": "^9.39.2",
+		"eslint-plugin-perfectionist": "^4.6.0",
+		"husky": "^9.1.7",
+		"i18next": "^25.7.3",
+		"lint-staged": "^15.4.0",
+		"madge": "^8.0.0",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	},
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"main": "index.js",
+	"name": "katabami",
+	"repository": {
+		"type": "git",
+		"url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
+	},
+	"scripts": {
+		"check": "npx @biomejs/biome check --write ./src && eslint --fix",
+		"format": "npx @biomejs/biome format --write ./src && eslint --fix",
+		"lint": "npx @biomejs/biome lint --write ./src && eslint",
+		"prepare": "husky",
+		"test": "vitest",
+		"test:typecheck": "vitest --typecheck"
+	},
+	"type": "module",
+	"version": "0.0.0"
 }

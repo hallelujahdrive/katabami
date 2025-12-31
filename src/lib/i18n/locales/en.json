@@ -5,16 +5,16 @@
 	},
 	"type": {
 		"array": "array",
-		"object": "object",
-		"null": "null",
-		"boolean": "boolean",
-		"number": "number",
-		"string": "string",
-		"undefined": "undefined",
-		"integer": "integer",
 		"bigint": "bigint",
+		"boolean": "boolean",
+		"decimal": "decimal",
 		"function": "function",
+		"integer": "integer",
+		"null": "null",
+		"number": "number",
+		"object": "object",
+		"string": "string",
 		"symbol": "symbol",
-		"decimal": "decimal"
+		"undefined": "undefined"
 	}
 }

@@ -1,4 +1,5 @@
 import type { i18n, TOptions } from "i18next";
+
 import type {
 	CatchFunction,
 	DecodeFunction,
@@ -19,6 +20,7 @@ import type {
 	UnionDecodeResponse,
 	UnionDecoders,
 } from "../types/index.js";
+
 import { isIssueMessage } from "../utils/issue.js";
 import { DecodeError } from "./error.js";
 import { resourceLanguageTemplates } from "./i18n/index.js";
@@ -26,9 +28,9 @@ import { resourceLanguageTemplates } from "./i18n/index.js";
 class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	implements Decoder<T, I>
 {
+	public static defaultNS?: string;
 	private readonly _i18n?: i18n;
 	private readonly tOptions?: TOptions<{ katabamiNS?: string }>;
-	public static defaultNS?: string;
 
 	constructor(
 		i18nOptions: I18nOptions | undefined,
@@ -48,27 +50,6 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	) {
 		this._i18n = i18nOptions?.i18n;
 		this.tOptions = i18nOptions?.tOptions;
-	}
-
-	/**
-	 * Internal decode function.
-	 *
-	 * @param {unknown} value The value to decode.
-	 * @returns {Result<T, I>} The decoded value or an error with issues.
-	 * @private
-	 */
-	private _decode(value: unknown): Result<T, I> {
-		// Decode the value.
-		const result = this.decodeFunc(value, {
-			i18n: this._i18n,
-			tOptions: this.tOptions,
-		});
-
-		// If the result is ok or no cacheFunc is set, return the result as is.
-		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
-
-		// If the result is not ok, call the cacheFunc with the issues and return the result.
-		return this.cacheFunc(result.error.issues);
 	}
 
 	/**
@@ -118,10 +99,8 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		);
 	}
 
-	public decodeString(
-		value: string,
-	): Result<T, I> {
-			return this._decode(JSON.parse(value));
+	public decodeString(value: string): Result<T, I> {
+		return this._decode(JSON.parse(value));
 	}
 
 	/**
@@ -141,6 +120,27 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 			this.decodeFunc,
 			this.cacheFunc,
 		);
+	}
+
+	/**
+	 * Internal decode function.
+	 *
+	 * @param {unknown} value The value to decode.
+	 * @returns {Result<T, I>} The decoded value or an error with issues.
+	 * @private
+	 */
+	private _decode(value: unknown): Result<T, I> {
+		// Decode the value.
+		const result = this.decodeFunc(value, {
+			i18n: this._i18n,
+			tOptions: this.tOptions,
+		});
+
+		// If the result is ok or no cacheFunc is set, return the result as is.
+		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
+
+		// If the result is not ok, call the cacheFunc with the issues and return the result.
+		return this.cacheFunc(result.error.issues);
 	}
 }
 
@@ -379,8 +379,7 @@ export function map<
 >(
 	mapFunc: MapDecodeFunction<T, U>,
 	...decoders: U
-	): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {
-	}
+): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {}
 
 /**
  * Create a decoder that always fails with the given message and issues.
@@ -449,9 +448,7 @@ export function object<
 	U extends
 		| ObjectDecoders<T>
 		| Record<string, Decoder<unknown>> = ObjectDecoders<T>,
->(
-	decoders: U,
-): Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>>  {};
+>(decoders: U): Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>> {}
 
 /**
  * Create a decoder that makes a decoder optional.
@@ -502,9 +499,7 @@ export function succeed<T>(value: T): Decoder<T, never> {
 export function tuple<
 	T extends unknown[],
 	U extends Array<Decoder<unknown>> | TupleDecoders<T> = TupleDecoders<T>,
->(
-	...decoders: U
-): Decoder<TupleDecodeResponse<U>> {}
+>(...decoders: U): Decoder<TupleDecodeResponse<U>> {}
 
 /**
  * Create a decoder that accepts any of the given decoders.
@@ -517,9 +512,7 @@ export function tuple<
 export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
->(
-	...decoders: U
-): Decoder<UnionDecodeResponse<U>> {};
+>(...decoders: U): Decoder<UnionDecodeResponse<U>> {}
 
 export function value<T = unknown>(): Decoder<T> {
 	return new _Decoder<T>(undefined, decodeValueFunc as DecodeFunction<T>);

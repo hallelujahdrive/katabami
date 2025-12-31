@@ -1,4 +1,5 @@
 import type { i18n, TOptions } from "i18next";
+
 import type { IssueMessage, Issues } from "./error.js";
 import type { TypeOf, UnionToTuple } from "./helpers.js";
 import type { Result } from "./result.js";
@@ -6,9 +7,8 @@ import type { Result } from "./result.js";
 /**
  * The inferred type of a decoder.
  */
-export type Infer<T extends Decoder<unknown>> = T extends Decoder<infer A>
-	? A
-	: "";
+export type Infer<T extends Decoder<unknown>> =
+	T extends Decoder<infer A> ? A : "";
 
 /**
  * The decode function for a decoder.

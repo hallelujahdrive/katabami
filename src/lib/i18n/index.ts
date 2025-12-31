@@ -1,4 +1,5 @@
 import type { InitOptions, Namespace } from "i18next";
+
 import en from "./locales/en.json" with { type: "json" };
 import ja from "./locales/ja.json" with { type: "json" };
 

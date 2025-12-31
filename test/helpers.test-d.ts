@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, test } from "vitest";
+
 import type { IsUnion, TypeOf } from "../src/index.js";
 
 describe("helpers", () => {
