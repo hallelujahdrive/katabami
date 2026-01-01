@@ -1,11 +1,15 @@
-import i18next from "i18next";
+import i18next, { t } from "i18next";
 import { beforeAll, describe, expect, test } from "vitest";
 
 import {
 	boolean,
 	constant,
 	DecodeError,
+	integer,
+	isIssueMessage,
+	object,
 	setupI18nInitOptions,
+	string,
 } from "../src/index.js";
 
 describe("i18next", () => {
@@ -16,7 +20,7 @@ describe("i18next", () => {
 	});
 
 	describe("boolean", () => {
-		const decoder = boolean().i18n({ i18n: i18next });
+		const decoder = boolean();
 
 		describe("decode value", () => {
 			test("en", () => {
@@ -25,20 +29,18 @@ describe("i18next", () => {
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 
 				expect(result).toStrictEqual(expectedResult);
-				expect(result.error?.issues).toBe(
+				expect(result.error?.issues.toString(t)).toBe(
 					"A boolean is expected, but the value is a string.",
 				);
 			});
 
 			test("ja", () => {
-				const result = decoder
-					.i18n({ tOptions: { lng: "ja" } })
-					.decodeValue("foo");
+				const result = decoder.decodeValue("foo");
 
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 
 				expect(result).toStrictEqual(expectedResult);
-				expect(result.error?.issues).toBe(
+				expect(result.error?.issues.toString(t, { lng: "ja" })).toBe(
 					"真偽値が期待されていますが、値は文字列です。",
 				);
 			});
@@ -51,20 +53,18 @@ describe("i18next", () => {
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 
 				expect(result).toStrictEqual(expectedResult);
-				expect(result.error?.issues).toBe(
+				expect(result.error?.issues.toString(t)).toBe(
 					"A boolean is expected, but the value is a string.",
 				);
 			});
 
 			test("ja", () => {
-				const result = decoder
-					.i18n({ tOptions: { lng: "ja" } })
-					.decodeValue("foo");
+				const result = decoder.decodeValue("foo");
 
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 
 				expect(result).toStrictEqual(expectedResult);
-				expect(result.error?.issues).toBe(
+				expect(result.error?.issues.toString(t, { lng: "ja" })).toBe(
 					"真偽値が期待されていますが、値は文字列です。",
 				);
 			});
@@ -107,6 +107,66 @@ describe("i18next", () => {
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 
 				expect(result).toStrictEqual(expectedResult);
+			});
+		});
+	});
+
+	describe("object", () => {
+		const decoder = object({
+			bar: integer(),
+			foo: string(),
+		});
+
+		describe("decode value", () => {
+			test("en", () => {
+				const result = decoder.decodeValue({
+					bar: "1",
+					foo: "foo",
+				});
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+				if (!isIssueMessage(result.error?.issues)) {
+					expect(result.error?.issues.bar?.toString(t)).toBe(
+						"A number is expected, but the value is a string.",
+					);
+				}
+			});
+
+			test("ja", () => {
+				const result = decoder.decodeValue("foo");
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+				expect(result.error?.issues.toString(t, { lng: "ja" })).toBe(
+					"真偽値が期待されていますが、値は文字列です。",
+				);
+			});
+		});
+
+		describe("decode string", () => {
+			test("en", () => {
+				const result = decoder.decodeValue("foo");
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+				expect(result.error?.issues.toString(t)).toBe(
+					"A boolean is expected, but the value is a string.",
+				);
+			});
+
+			test("ja", () => {
+				const result = decoder.decodeValue("foo");
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+				expect(result.error?.issues.toString(t, { lng: "ja" })).toBe(
+					"真偽値が期待されていますが、値は文字列です。",
+				);
 			});
 		});
 	});

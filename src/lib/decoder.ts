@@ -1,18 +1,18 @@
-import type { i18n, TOptions } from "i18next";
-
+import type { ParseKeys, TFunction, TOptions } from "i18next";
 import type {
 	CatchFunction,
 	DecodeFunction,
 	Decoder,
-	I18nOptions,
 	IssueMessage,
 	Issues,
+	IssueType,
 	MapDecodeFunction,
 	MapDecodeResponse,
 	MapFunction,
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
 	ObjectDecoders,
+	Primitive,
 	Result,
 	TupleDecodeResponse,
 	TupleDecoders,
@@ -20,37 +20,35 @@ import type {
 	UnionDecodeResponse,
 	UnionDecoders,
 } from "../types/index.js";
-
-import { isIssueMessage } from "../utils/issue.js";
+import { isRecord } from "../utils/index.js";
 import { DecodeError } from "./error.js";
-import { resourceLanguageTemplates } from "./i18n/index.js";
 
+/**
+ * Checks if the value is an issue message.
+ * @param {Issues} value - The value to check.
+ * @returns {boolean} True if the value is an issue message, false otherwise.
+ */
+export const isIssueMessage = (value?: Issues): value is IssueMessage => {
+	return value instanceof _IssueMessage;
+};
+
+/**
+ * Implementation of the Decoder interface.
+ */
 class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	implements Decoder<T, I>
 {
-	public static defaultNS?: string;
-	private readonly _i18n?: i18n;
-	private readonly tOptions?: TOptions<{ katabamiNS?: string }>;
+	constructor(decodeFunc: DecodeFunction<T, I>);
 
 	constructor(
-		i18nOptions: I18nOptions | undefined,
-		decodeFunc: DecodeFunction<T, I>,
-	);
-
-	constructor(
-		i18nOptions: I18nOptions | undefined,
 		decodeFunc: DecodeFunction<T, Issues>,
 		cacheFunc?: CatchFunction<T, Issues, I>,
 	);
 
 	constructor(
-		i18nOptions: I18nOptions | undefined,
 		private readonly decodeFunc: DecodeFunction<T, Issues>,
 		private readonly cacheFunc?: CatchFunction<T, Issues, I>,
-	) {
-		this._i18n = i18nOptions?.i18n;
-		this.tOptions = i18nOptions?.tOptions;
-	}
+	) {}
 
 	/**
 	 * @template U
@@ -58,18 +56,16 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @returns {Decoder<U, I>}
 	 */
 	public andMap<U>(mapFunc: MapFunction<T, U>): Decoder<U, I> {
-		return new _Decoder(
-			{ i18n: this._i18n, tOptions: this.tOptions },
-			(value) => {
-				const result = this._decode(value);
-				if (!result.ok) return result;
+		return new _Decoder((value) => {
+			const result = this._decode(value);
+			if (!result.ok) return result;
 
-				return { ok: true, value: mapFunc(result.value) };
-			},
-		);
+			return { ok: true, value: mapFunc(result.value) };
+		});
 	}
 
 	/**
+	 * Applies another decoder to the decoded value.
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
 	 * @param {Decoder<U, I | J>} decoder
@@ -78,32 +74,40 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
 		decoder: Decoder<U, J>,
 	): Decoder<U, I | J> {
-		return new _Decoder(
-			{ i18n: this._i18n, tOptions: this.tOptions },
-			(value) => {
-				const result = this._decode(value);
-				if (!result.ok) return result as Result<U, I | J>;
+		return new _Decoder((value) => {
+			const result = this._decode(value);
+			if (!result.ok) return result as Result<U, I | J>;
 
-				return decoder.decodeValue(result.value);
-			},
-		);
+			return decoder.decodeValue(result.value);
+		});
 	}
 
+	/**
+	 * Catches and transforms issues during decoding.
+	 * @template K
+	 * @param {CatchFunction<T, I, K>} catchFunc
+	 * @returns {Decoder<T, K>}
+	 */
 	public catch<K extends Issues>(
 		catchFunc: CatchFunction<T, I, K>,
 	): Decoder<T, K> {
 		return new _Decoder(
-			{ i18n: this._i18n, tOptions: this.tOptions },
 			this.decodeFunc,
 			catchFunc as CatchFunction<T, Issues, K>,
 		);
 	}
 
+	/**
+	 * Decodes a string as T.
+	 * @param {string} value The string to decode as T.
+	 * @returns {Result<T, I>} The decoded value or an error with issues.
+	 */
 	public decodeString(value: string): Result<T, I> {
 		return this._decode(JSON.parse(value));
 	}
 
 	/**
+	 * Decodes an unknown value as T.
 	 * @param {unknown} value
 	 * @returns {Result<T>}
 	 */
@@ -111,30 +115,15 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		return this._decode(value);
 	}
 
-	public i18n(options: { i18n?: i18n; tOptions?: TOptions }): Decoder<T, I> {
-		return new _Decoder(
-			{
-				i18n: options.i18n ?? this._i18n,
-				tOptions: options.tOptions ?? this.tOptions,
-			},
-			this.decodeFunc,
-			this.cacheFunc,
-		);
-	}
-
 	/**
 	 * Internal decode function.
-	 *
 	 * @param {unknown} value The value to decode.
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 * @private
 	 */
 	private _decode(value: unknown): Result<T, I> {
 		// Decode the value.
-		const result = this.decodeFunc(value, {
-			i18n: this._i18n,
-			tOptions: this.tOptions,
-		});
+		const result = this.decodeFunc(value);
 
 		// If the result is ok or no cacheFunc is set, return the result as is.
 		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
@@ -145,42 +134,50 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 }
 
 /**
- * Builds a message using the provided issue and i18n options.
- *
- * If the i18n instance is not provided, the issue is returned as is.
- *
- * @template I
- * @param {I18nOptions} options - The i18n instance and/or options.
- * @param {I} issue - The issue to build a message from.
- * @returns {I | string} - The built message.
+ * Implementation of the IssueMessage interface.
  */
-const buildMessage = <I extends IssueMessage>(
-	options: I18nOptions,
-	issue: I,
-): I | string => {
-	// If the i18n instance is not provided, return the issue as is.
-	if (!options.i18n) return issue;
+class _IssueMessage<
+	T extends IssueType,
+	Vars extends
+		| Array<ParseKeys | Primitive>
+		| Record<string, ParseKeys | Primitive> = never,
+> implements IssueMessage<T, Vars>
+{
+	constructor(
+		public readonly type: T,
+		private readonly key: ParseKeys,
+		private readonly vars?: Vars,
+	) {}
 
-	const t = options.i18n.t;
+	/**
+	 * Gets the variables of the issue.
+	 * @returns {Vars} The variables of the issue.
+	 */
+	getVars(): Vars {
+		return this.vars as Vars;
+	}
 
-	// Get the tOptions from the i18n options.
-	const tOptions = options.tOptions ?? {};
+	/**
+	 * The string representation of the issue.
+	 * @param {TFunction} t - The i18n function.
+	 * @param {TOptions} tOptions - The i18n options.
+	 * @returns {string} The string representation of the issue.
+	 */
+	toString(t?: TFunction, tOptions?: TOptions): string {
+		if (!t) return this.key;
 
-	// Get the vars from the issue.
-	const vars = Object.fromEntries(
-		Object.entries(issue.vars ?? {}).map(([key, value]) => [
-			key,
-			t(value.toString(), { ...tOptions, ns: tOptions.katabamiNS }),
-		]),
-	);
+		const _tOptions = tOptions ?? {};
 
-	// Build the message using the i18n instance and the provided options.
-	return t(issue.template, {
-		...vars,
-		...tOptions,
-		ns: tOptions.katabamiNS,
-	});
-};
+		const _vars = Object.fromEntries(
+			Object.entries(this.vars ?? {}).map(([key, value]) => [
+				key,
+				t(value.toString() as ParseKeys, _tOptions),
+			]),
+		);
+
+		return t(this.key, { ..._vars, ..._tOptions });
+	}
+}
 
 /**
  * Determines the type of a given value.
@@ -188,21 +185,18 @@ const buildMessage = <I extends IssueMessage>(
  * @param {unknown} value - The value to check the type of.
  * @returns {string} - A string representing the type of the value.
  */
-const typeOf = (value: unknown): string => {
-	if (value === null) return resourceLanguageTemplates.type.null;
+const typeOf = (value: unknown): ParseKeys => {
+	if (value === null) return "type.null";
 
 	if (typeof value === "object") {
-		return Array.isArray(value)
-			? resourceLanguageTemplates.type.array
-			: resourceLanguageTemplates.type.object;
+		return Array.isArray(value) ? "type.array" : "type.object";
 	}
 
-	return resourceLanguageTemplates.type[typeof value];
+	return `type.${typeof value}`;
 };
 
 /**
  * Quotes a value if it is a string.
- *
  * @param {boolean | number | string} value - The value to quote.
  * @returns {boolean | number | string} - The quoted value.
  */
@@ -218,146 +212,284 @@ const quoteValue = (
 	return value;
 };
 
-const decodeBooleanFunc: DecodeFunction<boolean> = (value, i18nOptions) => {
+/**
+ * A decoder for booleans.
+ */
+const booleanDecoder = new _Decoder<
+	boolean,
+	IssueMessage<"boolean", { expected: "type.boolean"; received: string }>
+>((value) => {
 	if (typeof value === "boolean") return { ok: true, value };
 
 	return {
 		error: new DecodeError(
-			"Expected boolean",
-			buildMessage(i18nOptions, {
-				template:
-					resourceLanguageTemplates.issue
-						.aExpectedIsExpectedButTheValueIsAReceived,
-				type: "boolean",
-				vars: {
-					expected: resourceLanguageTemplates.type.boolean,
+			"Boolean expected",
+			new _IssueMessage(
+				"boolean",
+				"issue.aExpectedIsExpectedButTheValueIsAReceived",
+				{
+					expected: "type.boolean",
 					received: typeOf(value),
 				},
-			}),
+			),
 		),
 		ok: false,
 	};
-};
+});
 
+/**
+ * A decoder for integers.
+ */
+const integerDecoder = new _Decoder<
+	number,
+	IssueMessage<
+		"integer",
+		{ expected: "type.integer" | "type.number"; received: string }
+	>
+>((value) => {
+	// If the value is not a number, return an error.
+	if (typeof value !== "number")
+		return {
+			error: new DecodeError(
+				"Integer expected",
+				new _IssueMessage(
+					"integer",
+					"issue.aExpectedIsExpectedButTheValueIsAReceived",
+					{
+						expected: "type.number",
+						received: typeOf(value),
+					},
+				),
+			),
+			ok: false,
+		};
+
+	// If the value is not an integer, return an error.
+	if (!Number.isInteger(value))
+		return {
+			error: new DecodeError(
+				"Integer expected",
+				new _IssueMessage(
+					"integer",
+					"issue.aExpectedIsExpectedButTheValueIsAReceived",
+					{
+						expected: "type.integer",
+						received: "type.float",
+					},
+				),
+			),
+			ok: false,
+		};
+
+	// If the value is an integer, return the value.
+	return { ok: true, value };
+});
+
+/**
+ * A decoder for floats.
+ */
+const floatDecoder = new _Decoder<
+	number,
+	IssueMessage<"float", { expected: "type.float"; received: string }>
+>((value) => {
+	if (typeof value === "number") return { ok: true, value };
+
+	return {
+		error: new DecodeError(
+			"Float expected",
+			new _IssueMessage(
+				"float",
+				"issue.aExpectedIsExpectedButTheValueIsAReceived",
+				{
+					expected: "type.float",
+					received: typeOf(value),
+				},
+			),
+		),
+		ok: false,
+	};
+});
+
+/**
+ * A decoder for strings.
+ */
+const stringDecoder = new _Decoder<
+	string,
+	IssueMessage<"string", { expected: "type.string"; received: string }>
+>((value) => {
+	if (typeof value === "string") return { ok: true, value };
+
+	return {
+		error: new DecodeError(
+			"Expected string",
+			new _IssueMessage(
+				"string",
+				"issue.aExpectedIsExpectedButTheValueIsAReceived",
+				{
+					expected: "type.string",
+					received: typeOf(value),
+				},
+			),
+		),
+		ok: false,
+	};
+});
+
+/**
+ * Creates a decoder that always returns the same value.
+ * @param {T} expected - The value to return.
+ * @returns {DecodeFunction<T, IssueMessage<"constant", { expected: Primitive; received: Primitive }>>} A decoder that always returns the given value.
+ */
 const decodeConstantFunc =
-	<T extends boolean | number | string>(
+	<T extends Primitive>(
 		expected: T,
-	): DecodeFunction<T, Issues<"constant">> =>
-	(value, i18nOptions) => {
+	): DecodeFunction<
+		T,
+		IssueMessage<"constant", { expected: Primitive; received: Primitive }>
+	> =>
+	(value) => {
 		if (value === expected) return { ok: true, value: value as T };
 
 		return {
 			error: new DecodeError(
-				"Expected constant",
-				buildMessage(i18nOptions, {
-					template:
-						resourceLanguageTemplates.issue
-							.aExpectedIsExpectedButTheValueIsAReceived,
-					type: "constant",
-					vars:
-						typeof value === typeof expected
-							? {
-									expected: quoteValue(expected),
-									received: quoteValue(value as boolean | number | string),
-								}
-							: { expected: quoteValue(expected), received: typeOf(value) },
-				}),
+				"Constant expected",
+				new _IssueMessage(
+					"constant",
+					"issue.aExpectedIsExpectedButTheValueIsAReceived",
+					typeof value === typeof expected
+						? {
+								expected: expected,
+								received: quoteValue(value as Primitive),
+							}
+						: { expected: quoteValue(expected), received: typeOf(value) },
+				),
 			),
 			ok: false,
 		};
 	};
 
+/**
+ * Creates a decoder that always fails with the given message and issues.
+ * @param {string} message - The message to display when the decoder fails.
+ * @param {T} issues - The issues to display when the decoder fails.
+ * @returns {DecodeFunction<never, IssueMessage | T>} A decoder that always fails with the given message and issues.
+ */
 const decodeFailedFunc = <T extends Issues = Issues>(
 	message?: string,
 	issues?: T,
-): DecodeFunction<never, T> => {
-	return (_value, i18nOptions) => {
+): DecodeFunction<never, IssueMessage | T> => {
+	return () => {
 		return {
 			error: new DecodeError(
 				message ?? "Failed to decode",
-				isIssueMessage(issues)
-					? buildMessage(i18nOptions, issues)
-					: (issues ??
-							(buildMessage(i18nOptions, {
-								template: resourceLanguageTemplates.issue.failedToDecode,
-								type: "failed",
-							}) as T)),
+				issues ?? new _IssueMessage<"failed">("failed", "issue.failedToDecode"),
 			),
 			ok: false,
 		};
 	};
 };
 
-const decodeIntegerFunc: DecodeFunction<number> = (value) => {
-	if (typeof value === "number") return { ok: true, value };
+/**
+ * Creates a decoder that decodes an object.
+ * @template T - The type of the object.
+ * @template {ObjectDecoders<T>} U - The type of the decoders.
+ * @param {U} decoders - The decoders for the object properties.
+ * @returns {DecodeFunction<ObjectDecodeResponse<U>, IssueMessage<"object", { expected: string; received: string }> | ObjectDecodeIssues<U>>} A decoder that decodes an object.
+ */
+const decodeObjectFunc =
+	<T extends Record<string, unknown>, U extends ObjectDecoders<T>>(
+		decoders: U,
+	): DecodeFunction<
+		ObjectDecodeResponse<U>,
+		| IssueMessage<"object", { expected: "type.object"; received: string }>
+		| ObjectDecodeIssues<U>
+	> =>
+	(value) => {
+		if (!isRecord(value))
+			return {
+				error: new DecodeError(
+					"Object expected",
+					new _IssueMessage(
+						"object",
+						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						{
+							expected: "type.object",
+							received: typeOf(value),
+						},
+					),
+				),
+				ok: false,
+			};
 
-	return {
-		error: new DecodeError("Expected number", {
-			template:
-				resourceLanguageTemplates.issue
-					.aExpectedIsExpectedButTheValueIsAReceived,
-			type: "number",
-			vars: {
-				expected: resourceLanguageTemplates.type.number,
-				received: typeOf(value),
+		const results = Object.entries(decoders).reduce<
+			| { entries: Array<[string, Issues]>; ok: false }
+			| { entries: Array<[string, unknown]>; ok: true }
+		>(
+			(accumulator, [key, decoder]: [string, Decoder<U[keyof U]>]) => {
+				const result = decoder.decodeValue(value[key]);
+
+				if (accumulator.ok) {
+					if (result.ok) {
+						accumulator.entries.push([key, result.value]);
+					} else {
+						return { entries: [[key, result.error.issues]], ok: false };
+					}
+				} else {
+					if (!result.ok) {
+						accumulator.entries.push([key, result.error.issues]);
+					}
+				}
+
+				return accumulator;
 			},
-		}),
-		ok: false,
+			{ entries: [], ok: true },
+		);
+
+		if (results.ok) {
+			return {
+				ok: true,
+				value: Object.fromEntries(results.entries) as ObjectDecodeResponse<U>,
+			};
+		} else {
+			return {
+				error: new DecodeError(
+					"Object expected",
+					Object.fromEntries(results.entries) as ObjectDecodeIssues<U>,
+				),
+				ok: false,
+			};
+		}
 	};
-};
 
-const decodeNumberFunc: DecodeFunction<number> = (value) => {
-	if (typeof value === "number") return { ok: true, value };
-
-	return {
-		error: new DecodeError("Expected number", {
-			template:
-				resourceLanguageTemplates.issue
-					.aExpectedIsExpectedButTheValueIsAReceived,
-			type: "number",
-			vars: {
-				expected: resourceLanguageTemplates.type.number,
-				received: typeOf(value),
-			},
-		}),
-		ok: false,
-	};
-};
-
-const decodeStringFunc: DecodeFunction<string> = (value) => {
-	if (typeof value === "string") return { ok: true, value };
-
-	return {
-		error: new DecodeError("Expected string", {
-			template:
-				resourceLanguageTemplates.issue
-					.aExpectedIsExpectedButTheValueIsAReceived,
-			type: "string",
-			vars: {
-				expected: resourceLanguageTemplates.type.string,
-				received: typeOf(value),
-			},
-		}),
-		ok: false,
-	};
-};
+/**
+ * Creates a decoder that always succeeds with the given value.
+ * @param {T} value - The value to return.
+ * @returns {DecodeFunction<T>} A decoder that always returns the given value.
+ */
 const decodeSucceedFunc =
 	<T>(value: T): DecodeFunction<T> =>
 	() => {
 		return { ok: true, value };
 	};
 
-const decodeValueFunc: DecodeFunction<unknown> = <T>(value: unknown) => {
-	return { ok: true, value: value as T };
-};
+/**
+ * Creates a decoder that always succeeds with the given value.
+ * @param {unknown} value - The value to return.
+ * @returns {DecodeFunction<unknown>} A decoder that always returns the given value.
+ */
+const valueDecoder = new _Decoder<unknown, never>((value) => {
+	return { ok: true, value };
+});
 
 /**
  * A decoder for booleans.
- *
- * @returns {Decoder<boolean, Issues<TypeOf<boolean>>>}
+ * @returns {Decoder<boolean, IssueMessage<"boolean", { expected: "type.boolean"; received: string }>>}
  */
-export function boolean(): Decoder<boolean, Issues<TypeOf<boolean>>> {
-	return new _Decoder(undefined, decodeBooleanFunc);
+export function boolean(): Decoder<
+	boolean,
+	IssueMessage<"boolean", { expected: "type.boolean"; received: string }>
+> {
+	return booleanDecoder;
 }
 
 /**
@@ -365,12 +497,15 @@ export function boolean(): Decoder<boolean, Issues<TypeOf<boolean>>> {
  *
  * @template {boolean | number | string} T The type of the value.
  * @param {T} expected The value to return.
- * @returns {Decoder<T>} A decoder that always returns the given value.
+ * @returns {Decoder<T, IssueMessage<"constant", { expected: Primitive; received: Primitive }>>} A decoder that always returns the given value.
  */
 export function constant<T extends boolean | number | string>(
 	expected: T,
-): Decoder<T, Issues<"constant">> {
-	return new _Decoder(undefined, decodeConstantFunc(expected));
+): Decoder<
+	T,
+	IssueMessage<"constant", { expected: Primitive; received: Primitive }>
+> {
+	return new _Decoder(decodeConstantFunc(expected));
 }
 
 export function map<
@@ -414,25 +549,34 @@ export function failed<T extends Issues>(
 	message?: string,
 	issues?: T,
 ): Decoder<never, T> {
-	return new _Decoder<never, T>(undefined, decodeFailedFunc(message, issues));
+	return new _Decoder<never, T>(decodeFailedFunc(message, issues));
 }
 
 /**
  * A decoder for integers.
  *
- * @returns {Decoder<number, Issues<TypeOf<number>>>} A decoder for integers.
+ * @returns {Decoder<number, IssueMessage<"integer", { expected: "type.integer" | "type.number"; received: string }>>} A decoder for integers.
  */
-export function integer(): Decoder<number, Issues<TypeOf<number>>> {
-	return new _Decoder(undefined, decodeIntegerFunc);
+export function integer(): Decoder<
+	number,
+	IssueMessage<
+		"integer",
+		{ expected: "type.integer" | "type.number"; received: string }
+	>
+> {
+	return integerDecoder;
 }
 
 /**
- * A decoder for numbers.
+ * A decoder for floats.
  *
- * @returns {Decoder<number, Issues<TypeOf<number>>>} A decoder for numbers.
+ * @returns {Decoder<number, IssueMessage<"float", { expected: "type.float"; received: string }>>} A decoder for floats.
  */
-export function number(): Decoder<number, Issues<TypeOf<number>>> {
-	return new _Decoder(undefined, decodeNumberFunc);
+export function float(): Decoder<
+	number,
+	IssueMessage<"float", { expected: "type.float"; received: string }>
+> {
+	return floatDecoder;
 }
 
 /**
@@ -441,14 +585,20 @@ export function number(): Decoder<number, Issues<TypeOf<number>>> {
  * @template T The type of the object.
  * @template {ObjectDecoders<T>} U The type of the decoders.
  * @param {U} decoders The decoders for the object properties.
- * @returns {Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>>} A decoder for the object.
+ * @returns {Decoder<ObjectDecodeResponse<U>, IssueMessage | ObjectDecodeIssues<U>>} A decoder for the object.
  */
 export function object<
 	T extends Record<string, unknown>,
-	U extends
-		| ObjectDecoders<T>
-		| Record<string, Decoder<unknown>> = ObjectDecoders<T>,
->(decoders: U): Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U>> {}
+	U extends ObjectDecoders<T> = ObjectDecoders<T>,
+>(
+	decoders: U,
+): Decoder<
+	ObjectDecodeResponse<U>,
+	| IssueMessage<"object", { expected: "type.object"; received: string }>
+	| ObjectDecodeIssues<U>
+> {
+	return new _Decoder(decodeObjectFunc<T, U>(decoders));
+}
 
 /**
  * Create a decoder that makes a decoder optional.
@@ -461,20 +611,23 @@ export function object<
 export function optional<T, I extends Issues = Issues>(
 	decoder: Decoder<T, I>,
 ): Decoder<T | undefined, I> {
-	return new _Decoder(undefined, (value, i18nOptions) => {
+	return new _Decoder((value) => {
 		if (value == null) return { ok: true, value: undefined as T | undefined };
 
-		return decoder.i18n(i18nOptions).decodeValue(value);
+		return decoder.decodeValue(value);
 	});
 }
 
 /**
  * A decoder for strings.
  *
- * @returns {Decoder<string, Issues<TypeOf<string>>>} A decoder for strings.
+ * @returns {Decoder<string, IssueMessage<"string", { expected: "type.string"; received: string }>>} A decoder for strings.
  */
-export function string(): Decoder<string, Issues<TypeOf<string>>> {
-	return new _Decoder(undefined, decodeStringFunc);
+export function string(): Decoder<
+	string,
+	IssueMessage<"string", { expected: "type.string"; received: string }>
+> {
+	return stringDecoder;
 }
 
 /**
@@ -485,7 +638,7 @@ export function string(): Decoder<string, Issues<TypeOf<string>>> {
  * @returns {Decoder<T>} A decoder that always returns the given value.
  */
 export function succeed<T>(value: T): Decoder<T, never> {
-	return new _Decoder<T, never>(undefined, decodeSucceedFunc(value));
+	return new _Decoder<T, never>(decodeSucceedFunc(value));
 }
 
 /**
@@ -514,6 +667,11 @@ export function union<
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
 >(...decoders: U): Decoder<UnionDecodeResponse<U>> {}
 
-export function value<T = unknown>(): Decoder<T> {
-	return new _Decoder<T>(undefined, decodeValueFunc as DecodeFunction<T>);
+/**
+ * Creates a decoder that always succeeds with the given value.
+ * @template T The type of the value.
+ * @returns {Decoder<T, never>} A decoder that always returns the given value.
+ */
+export function value<T = unknown>(): Decoder<T, never> {
+	return valueDecoder as Decoder<T, never>;
 }

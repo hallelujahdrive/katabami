@@ -1,5 +1,4 @@
 import type { InitOptions, Namespace } from "i18next";
-
 import en from "./locales/en.json" with { type: "json" };
 import ja from "./locales/ja.json" with { type: "json" };
 
@@ -28,73 +27,10 @@ export type ResourceLanguage = (typeof i18nResources)[CommonLanguage];
  */
 export type Resource = { [key in Language]: ResourceLanguage };
 
-/**
- * Interface for locale resources
- */
-interface ResourceInterface {
-	[key: string]: ResourceInterface | string;
-}
-
-/**
- * Prefixes keys with their hierarchical path
- */
-type Prefix<T extends null | string> = T extends string ? `${T}.` : "";
-
-/**
- * Recursively generates locale templates by prefixing keys with their hierarchical path
- */
-type ResourceTemplateInterface<
-	T extends ResourceInterface,
-	U extends null | string = null,
-> = {
-	[key in keyof T]: T[key] extends string
-		? `${Prefix<U>}${key extends symbol ? string : key}`
-		: T[key] extends ResourceInterface
-			? ResourceTemplateInterface<
-					T[key],
-					`${Prefix<U>}${key extends symbol ? string : key}`
-				>
-			: never;
-};
-
-/**
- * Recursively generates locale templates by prefixing keys with their hierarchical path.
- *
- * @template T - The type extending ResourceInterface.
- * @param {T} resource - The resource object containing locale entries.
- * @param {string} [objectKey] - The key to use as prefix for nested objects.
- * @returns {T} - The transformed resource with prefixed keys.
- */
-const generateLocaleTemplates = <
-	T extends ResourceInterface,
-	U extends null | string = null,
->(
-	resource: T,
-	objectKey?: U,
-): ResourceTemplateInterface<T, U> => {
-	const prefix = objectKey == null ? "" : `${objectKey}.`;
-
-	return Object.fromEntries(
-		Object.entries(resource).map(([key, value]) => [
-			key,
-			typeof value === "string"
-				? `${prefix}${key}`
-				: generateLocaleTemplates(value, `${prefix}${key}`),
-		]),
-	) as ResourceTemplateInterface<T, U>;
-};
-
-/**
- * Language templates
- */
-export const resourceLanguageTemplates = generateLocaleTemplates(
-	i18nResources.ja,
-);
-
 const mergeNamespaces = (
-	defaultNamespaces?: Namespace,
-	namespaces?: Namespace,
-): Namespace | undefined => {
+	defaultNamespaces?: Namespace<string>,
+	namespaces?: Namespace<string>,
+): Namespace<string> | undefined => {
 	if (defaultNamespaces == null || namespaces == null)
 		return namespaces ?? defaultNamespaces;
 
@@ -107,9 +43,9 @@ const mergeNamespaces = (
 };
 
 const mergeFallbackNamespaces = (
-	defaultNamespaces?: false | Namespace,
-	namespaces?: false | Namespace,
-): false | Namespace | undefined => {
+	defaultNamespaces?: false | Namespace<string>,
+	namespaces?: false | Namespace<string>,
+): false | Namespace<string> | undefined => {
 	if (defaultNamespaces === false) return namespaces;
 	if (namespaces === false) return defaultNamespaces;
 

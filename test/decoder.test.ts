@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-import { boolean, constant, DecodeError, string } from "../src/index.js";
+import {
+	boolean,
+	constant,
+	DecodeError,
+	integer,
+	object,
+	string,
+} from "../src/index.js";
 
 describe("decoder", () => {
 	describe("boolean", () => {
@@ -75,6 +82,55 @@ describe("decoder", () => {
 
 			test("fail", () => {
 				const result = decoder.decodeString('"bar"');
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+			});
+		});
+	});
+
+	describe("object", () => {
+		const decoder = object({
+			bar: integer(),
+			foo: string(),
+		});
+
+		describe("decode value", () => {
+			test("success", () => {
+				const result = decoder.decodeValue({
+					bar: 1,
+					foo: "foo",
+				});
+
+				const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
+
+				expect(result).toStrictEqual(expectedResult);
+			});
+
+			test("fail", () => {
+				const result = decoder.decodeValue({
+					bar: "1",
+					foo: "foo",
+				});
+
+				const expectedResult = { error: expect.any(DecodeError), ok: false };
+
+				expect(result).toStrictEqual(expectedResult);
+			});
+		});
+
+		describe("decode string", () => {
+			test("success", () => {
+				const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
+
+				const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
+
+				expect(result).toStrictEqual(expectedResult);
+			});
+
+			test("fail", () => {
+				const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 

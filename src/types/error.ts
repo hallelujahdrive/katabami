@@ -1,3 +1,4 @@
+import type { TFunction, TOptions } from "i18next";
 import type { Primitive } from "./primitive.js";
 
 /**
@@ -7,7 +8,8 @@ type CommonIssueType =
 	| "array"
 	| "boolean"
 	| "constant"
-	| "number"
+	| "float"
+	| "integer"
 	| "object"
 	| "string"
 	| "union";
@@ -22,61 +24,44 @@ type CustomIssueType = never;
  */
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
-type IssueMessageBase<
-	T extends IssueType,
-	Vars extends Primitive[] | Record<string, Primitive> =
-		| Primitive[]
-		| Record<string, Primitive>,
-> = Readonly<{
-	template: string;
-	type: T;
-	vars?: Vars;
-}>;
+export interface IssueMessage<
+	T extends IssueType = IssueType,
+	V extends Primitive[] | Record<string, Primitive> = Record<string, Primitive>,
+> {
+	/**
+	 * Gets the variables of the issue.
+	 * @returns {V} The variables of the issue.
+	 */
+	getVars(): V;
+	/**
+	 * The string representation of the issue.
+	 * @param {TFunction} t - The i18n function.
+	 * @param {TOptions} tOptions - The i18n options.
+	 * @returns {string} The string representation of the issue.
+	 */
+	toString(t?: TFunction, tOptions?: TOptions): string;
 
-type BooleanIssueMessage = IssueMessageBase<
-	"boolean",
-	{ expected: string; received: string }
->;
-
-type ConstantIssueMessage = IssueMessageBase<
-	"constant",
-	{ expected: boolean | number | string; received: boolean | number | string }
->;
-
-type NumberIssueMessage = IssueMessageBase<
-	"number",
-	{ expected: string; received: string }
->;
-
-type StringIssueMessage = IssueMessageBase<
-	"string",
-	{ expected: string; received: string }
->;
-
-export type IssueMessage<T extends IssueType = IssueType> = T extends "boolean"
-	? BooleanIssueMessage
-	: T extends "constant"
-		? ConstantIssueMessage
-		: T extends "number"
-			? NumberIssueMessage
-			: T extends "string"
-				? StringIssueMessage
-				: IssueMessageBase<T>;
-
+	/**
+	 * The type of the issue.
+	 */
+	readonly type: T;
+}
 interface IssuesObject {
 	readonly [key: string]:
 		| IssueMessage
 		| IssuesObject
 		| readonly IssuesObject[]
-		| string;
+		| string
+		| undefined;
 }
 
 export type Issues<T extends IssueType = IssueType> = T extends
 	| "boolean"
 	| "constant"
+	| "integer"
 	| "number"
 	| "string"
-	? IssueMessage<T> | string
+	? IssueMessage<T>
 	: T extends "null" | "undefined"
 		? IssueMessage
 		: T extends "union"

@@ -26,12 +26,16 @@
 		"url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
 	},
 	"scripts": {
-		"check": "biome check --write . && eslint . --fix",
-		"format": "biome format --write . && eslint . --fix",
+		"check": "biome check . && eslint .",
+		"check:fix": "biome check --write . && eslint . --fix",
+		"format": "biome format . && eslint .",
+		"format:fix": "biome format --write . && eslint . --fix",
 		"lint": "biome lint . && eslint .",
+		"lint:fix": "biome lint --write . && eslint . --fix",
 		"prepare": "husky",
 		"test": "vitest",
-		"test:typecheck": "vitest --typecheck"
+		"test:typecheck": "vitest --typecheck",
+		"types:check": "tsc --noEmit --pretty"
 	},
 	"type": "module",
 	"version": "0.0.0"

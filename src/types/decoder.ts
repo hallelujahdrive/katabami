@@ -1,6 +1,4 @@
-import type { i18n, TOptions } from "i18next";
-
-import type { IssueMessage, Issues } from "./error.js";
+import type { Issues } from "./error.js";
 import type { TypeOf, UnionToTuple } from "./helpers.js";
 import type { Result } from "./result.js";
 
@@ -15,7 +13,6 @@ export type Infer<T extends Decoder<unknown>> =
  */
 export type DecodeFunction<T, I extends Issues = Issues<TypeOf<T>>> = (
 	value: unknown,
-	i18nOptions: I18nOptions,
 ) => Result<T, I>;
 
 /**
@@ -101,11 +98,6 @@ export type UnionDecodeResponse<T extends Array<Decoder<unknown>>> = T extends [
 		: A
 	: never;
 
-export type I18nOptions = {
-	i18n?: i18n;
-	tOptions?: TOptions<{ katabamiNS?: string }>;
-};
-
 /**
  * Decoder interface.
  */
@@ -153,12 +145,4 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 */
 	decodeValue(value: unknown): Result<T, I>;
-
-	/**
-	 * Provides a custom i18n instance and/or options to the decoder.
-	 *
-	 * @param {I18nOptions} options The i18n instance and/or options.
-	 * @returns {Decoder<T, I>} A new decoder with the provided i18n instance and/or options.
-	 */
-	i18n(options: I18nOptions): Decoder<T, I>;
 }

@@ -2,9 +2,9 @@ import { describe, expectTypeOf, test } from "vitest";
 
 import {
 	constant,
+	float,
 	type Infer,
 	map,
-	number,
 	object,
 	optional,
 	string,
@@ -21,8 +21,8 @@ describe("Decoder", () => {
 				TupleDecoders<[{ bar: number }, { foo: number }]>
 			>(
 				(foo, bar) => Object.assign(foo, bar),
-				object({ bar: number() }),
-				object({ foo: number() }),
+				object({ bar: float() }),
+				object({ foo: float() }),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -34,8 +34,8 @@ describe("Decoder", () => {
 		test("complement", () => {
 			const _decoder = map(
 				(foo, bar) => Object.assign(foo, bar),
-				object({ foo: number() }),
-				object({ bar: number() }),
+				object({ foo: float() }),
+				object({ bar: float() }),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -51,7 +51,7 @@ describe("Decoder", () => {
 	describe("object", () => {
 		test("fixed", () => {
 			const _decoder = object<{ num: number; optionalStr?: string }>({
-				num: number(),
+				num: float(),
 				optionalStr: optional(string()),
 			});
 
@@ -63,7 +63,7 @@ describe("Decoder", () => {
 
 		test("complement", () => {
 			const _decoder = object({
-				num: number(),
+				num: float(),
 				optionalStr: optional(string()),
 			});
 
@@ -76,7 +76,7 @@ describe("Decoder", () => {
 
 	describe("optional", () => {
 		test("fixed", () => {
-			const _decoder = optional<number>(number());
+			const _decoder = optional<number>(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				number | undefined
@@ -84,7 +84,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = optional(number());
+			const _decoder = optional(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				number | undefined
