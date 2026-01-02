@@ -1,4 +1,4 @@
-import type { DecodeErrorInterface, Issues } from "./error.js";
+import type { DecodeErrorInterface, Issues } from "./decoder.js";
 
 /**
  * Result type

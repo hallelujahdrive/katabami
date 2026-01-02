@@ -5,8 +5,8 @@ import {
 	constant,
 	type Decoder,
 	float,
-	type IssueMessage,
 	type Issues,
+	type IssueType,
 	integer,
 	object,
 	type Primitive,
@@ -19,17 +19,20 @@ type DecodeResult<T extends Decoder<unknown, Issues>> = ReturnType<
 >;
 
 type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
-	Result<unknown, infer I>,
+	Result<unknown, infer Is>,
 ]
-	? I extends IssueMessage
-		? never
-		: NonNullable<I>
+	? GetIssuesObject<Is>
 	: never;
 
+type GetIssuesObject<I extends Issues> =
+	I extends Record<string, Issues>
+		? { [k in keyof Omit<I, symbol>]: GetIssuesObject<I[k]> }
+		: I;
+
 type GetVars<T extends Result<unknown, Issues>> = [T] extends [
-	Result<unknown, infer I>,
+	Result<unknown, infer Is>,
 ]
-	? I extends IssueMessage
+	? Is extends Issues<IssueType, infer I>
 		? ReturnType<NonNullable<I["getVars"]>>
 		: never
 	: never;
@@ -98,14 +101,8 @@ describe("DecodeError", () => {
 
 			test("object decode issues", () => {
 				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					readonly bar?: IssueMessage<
-						"integer",
-						{ expected: "type.integer" | "type.number"; received: string }
-					>;
-					readonly foo?: IssueMessage<
-						"string",
-						{ expected: "type.string"; received: string }
-					>;
+					readonly bar?: Record<never, never>;
+					readonly foo?: Record<never, never>;
 				}>();
 			});
 		});
@@ -126,17 +123,9 @@ describe("DecodeError", () => {
 
 			test("object decode issues", () => {
 				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					readonly bar?:
-						| {
-								readonly foo?: IssueMessage<
-									"string",
-									{ expected: "type.string"; received: string }
-								>;
-						  }
-						| IssueMessage<
-								"object",
-								{ expected: "type.object"; received: string }
-						  >;
+					readonly bar?: {
+						readonly foo?: Record<never, never>;
+					};
 				}>();
 			});
 		});

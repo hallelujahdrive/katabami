@@ -1,5 +1,6 @@
-import type { Issues } from "./error.js";
+import type { TFunction, TOptions } from "i18next";
 import type { TypeOf, UnionToTuple } from "./helpers.js";
+import type { Primitive } from "./primitive.js";
 import type { Result } from "./result.js";
 
 /**
@@ -11,9 +12,9 @@ export type Infer<T extends Decoder<unknown>> =
 /**
  * The decode function for a decoder.
  */
-export type DecodeFunction<T, I extends Issues = Issues<TypeOf<T>>> = (
+export type DecodeFunction<T, Is extends Issues = Issues<TypeOf<T>>> = (
 	value: unknown,
-) => Result<T, I>;
+) => Result<T, Is>;
 
 /**
  * The map function for a decoder.
@@ -52,11 +53,17 @@ export type ObjectDecodeResponse<T extends Record<string, Decoder<unknown>>> = {
 /**
  * The issues type of an object decoder.
  */
-export type ObjectDecodeIssues<T extends Record<string, Decoder<unknown>>> = {
-	readonly [key in keyof T]?: T[key] extends Decoder<unknown, infer A>
-		? A
-		: never;
-};
+export type ObjectDecodeIssues<
+	T extends Record<string, Decoder<unknown>>,
+	I extends IssueMessage,
+> = _Issue<
+	{
+		readonly [key in keyof T]?: T[key] extends Decoder<unknown, infer A>
+			? A
+			: never;
+	},
+	I
+>;
 
 /**
  * The type of a tuple decoder.
@@ -145,4 +152,76 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 */
 	decodeValue(value: unknown): Result<T, I>;
+}
+
+declare const labelSymbol: unique symbol;
+
+/**
+ * Common issue types
+ */
+type CommonIssueType =
+	| "array"
+	| "boolean"
+	| "constant"
+	| "float"
+	| "integer"
+	| "object"
+	| "string"
+	| "union";
+
+/**
+ * Custom issue types
+ */
+type CustomIssueType = never;
+
+/**
+ * Issue types
+ */
+export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
+
+export interface IssueMessage<
+	T extends IssueType = IssueType,
+	V extends Primitive[] | Record<string, Primitive> = Record<string, Primitive>,
+> {
+	/**
+	 * Gets the variables of the issue.
+	 * @returns {V} The variables of the issue.
+	 */
+	getVars(): V;
+	/**
+	 * The string representation of the issue.
+	 * @param {TFunction} t - The i18n function.
+	 * @param {TOptions} tOptions - The i18n options.
+	 * @returns {string} The string representation of the issue.
+	 */
+	toString(t?: TFunction, tOptions?: TOptions): string;
+
+	/**
+	 * The type of the issue.
+	 */
+	readonly type: T;
+}
+
+interface IssuesObject {
+	readonly [key: string]: IssuesObject | readonly IssuesObject[] | undefined;
+}
+
+type _Issue<T, I extends IssueMessage> = T & {
+	readonly [labelSymbol]?: I;
+};
+
+export type Issues<
+	T extends IssueType = IssueType,
+	I extends IssueMessage = IssueMessage,
+> = _Issue<
+	T extends "union"
+		? readonly IssuesObject[]
+		: T extends "array" | "object"
+			? IssuesObject
+			: Record<never, never>,
+	I
+>;
+
+export interface DecodeErrorInterface<T extends Issues> extends Error {
+	issues: T;
 }
