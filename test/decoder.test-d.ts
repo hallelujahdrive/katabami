@@ -1,24 +1,40 @@
 import { describe, expectTypeOf, test } from "vitest";
 
 import {
+	array,
 	constant,
+	type Decoder,
 	float,
 	type Infer,
 	map,
 	object,
 	optional,
 	string,
-	type TupleDecoders,
 	tuple,
 	union,
 } from "../src/index.js";
 
 describe("Decoder", () => {
+
+	describe("array", () => {
+		test("fixed", () => {
+			const _decoder = array<number>(float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
+		});
+
+		test("complement", () => {
+			const _decoder = array(float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
+		});
+	});
+
 	describe("map", () => {
 		test("fixed", () => {
 			const _decoder = map<
 				{ bar: number; foo: number },
-				TupleDecoders<[{ bar: number }, { foo: number }]>
+				[Decoder<{ bar: number }>, Decoder<{ foo: number }>]
 			>(
 				(foo, bar) => Object.assign(foo, bar),
 				object({ bar: float() }),
@@ -108,7 +124,7 @@ describe("Decoder", () => {
 
 	describe("union", () => {
 		test("fixed", () => {
-			const _decoder = union(constant("bar"), constant("foo"));
+			const _decoder = union<"bar" | "foo">(constant("bar"), constant("foo"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});

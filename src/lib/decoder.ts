@@ -12,6 +12,7 @@ import type {
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
 	ObjectDecoders,
+	Ok,
 	Primitive,
 	Result,
 	TupleDecodeResponse,
@@ -98,8 +99,24 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @param {string} value The string to decode as T.
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 */
-	public decodeString(value: string): Result<T, I> {
-		return this._decode(JSON.parse(value));
+	public decodeString(value: string): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>> {
+		try {
+			const _value = JSON.parse(value);
+			return this._decode(_value);
+		} catch {
+				const issue = {} as Issues<"parseJson", IssueMessage<"parseJson", never>>;
+				const issueMessage = new _IssueMessage(
+					"parseJson",
+					"issue.failedToDecode"
+				);
+
+				weakMap.set(issue, issueMessage);
+
+				return {
+				error: new DecodeError("Failed to decode string", issue),
+				ok: false,
+			};
+		}
 	}
 
 	/**
@@ -365,6 +382,59 @@ const stringDecoder = new _Decoder<
 });
 
 /**
+ * Creates a decoder that always succeeds with the given value.
+ * @param {unknown} value - The value to return.
+ * @returns {DecodeFunction<unknown>} A decoder that always returns the given value.
+ */
+const valueDecoder = new _Decoder<unknown, never>((value) => {
+	return { ok: true, value };
+});
+
+/**
+ * Creates a decoder that decodes an array.
+ * @template T - The type of the array elements.
+ * @param {Decoder<T>} decoder - The decoder to use.
+ * @returns {DecodeFunction<Array<T>>} A decoder that decodes an array.
+ */
+const decodeArrayFunc = <T>(
+	decoder: Decoder<T>
+): DecodeFunction<Array<T>, Issues<"array", IssueMessage<"array", { expected: "type.array"; received: string }>>> =>
+	(value) => {
+		if (!Array.isArray(value)) return { error: new DecodeError("Array expected", {}), ok: false };
+
+		const results = value.reduce<
+			| { entries: Array<[number, Issues]>; ok: false }
+			| { entries: Array<T>; ok: true }
+		>(
+			(accumulator, item, i) => {
+				const result = decoder.decodeValue(item);
+
+				if (accumulator.ok) {
+					if (result.ok) {
+						accumulator.entries.push(result.value);
+					} else {
+						return { entries: [[i, result.error.issues]], ok: false };
+					}
+				}
+				else {
+					if (!result.ok) {
+						accumulator.entries.push([i, result.error.issues]);
+					}
+				}
+
+				return accumulator;
+			},
+			{ entries: [], ok: true },
+		);
+		
+		if (results.ok) {
+			return { ok: true, value: results.entries as Array<T> };
+		} else {
+			return { error: new DecodeError("Array expected", Object.fromEntries(results.entries) as Issues), ok: false };
+		}
+	};
+
+/**
  * Creates a decoder that always returns the same value.
  * @param {T} expected - The value to return.
  * @returns {DecodeFunction<T, Issues<"constant", IssueMessage<"constant", { expected: Primitive; received: Primitive }>>>} A decoder that always returns the given value.
@@ -427,6 +497,49 @@ const decodeFailedFunc = <
 		};
 	};
 };
+
+const decodeMapFunc =
+	<T, U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>>(
+		mapFunc: MapDecodeFunction<T, U>,
+		...decoders: U
+	): DecodeFunction<MapDecodeResponse<MapDecodeFunction<T, U>>> =>
+	(value) => {
+		const results = decoders.reduce<
+			| { entries: Array<Issues>; ok: false }
+			| { entries: Array<unknown>; ok: true }
+		>(
+			(accumulator, decoder) => {
+				const result = decoder.decodeValue(value);
+
+				if (accumulator.ok) {
+					if (result.ok) {
+						accumulator.entries.push(result.value);
+					} else {
+						return { entries: [result.error.issues], ok: false };
+					}
+				} else {
+					if (!result.ok) {
+						accumulator.entries.push(result.error.issues);
+					}
+				}
+
+				return accumulator;
+			},
+			{ entries: [], ok: true },
+		);
+
+		if (results.ok) {
+			return {
+				ok: true,
+				value: mapFunc(...(results.entries as TupleDecodeResponse<U>)),
+			};
+		} else {
+			return {
+				error: new DecodeError("Map expected", results.entries as Issues),
+				ok: false,
+			};
+		}
+	};
 
 /**
  * Creates a decoder that decodes an object.
@@ -531,16 +644,114 @@ const decodeSucceedFunc =
 		return { ok: true, value };
 	};
 
-/**
- * Creates a decoder that always succeeds with the given value.
- * @param {unknown} value - The value to return.
- * @returns {DecodeFunction<unknown>} A decoder that always returns the given value.
- */
-const valueDecoder = new _Decoder<unknown, never>((value) => {
-	return { ok: true, value };
-});
+const decodeTupleFunc =
+	<T extends unknown[], U extends Array<Decoder<unknown>>|TupleDecoders<T>>(
+		decoders: U
+	): DecodeFunction<TupleDecodeResponse<U>> =>
+	(value) => {
+		if (!Array.isArray(value)) {
+			const issue = {} as Issues<
+				"tuple",
+				IssueMessage<"tuple:type", { expected: "type.array"; received: string }>
+			>;
+			const issueMessage = new _IssueMessage(
+				"tuple:type",
+				"issue.aExpectedIsExpectedButTheValueIsAReceived",
+			);
+
+			weakMap.set(issue, issueMessage);
+
+			return { error: new DecodeError("Array expected", issue), ok: false };
+		}
+
+		if (decoders.length !== value.length) {
+			const issue = {} as Issues<
+				"tuple",
+				IssueMessage<"tuple:length", { expected: "type.array"; received: string }>
+			>;
+			const issueMessage = new _IssueMessage(
+				"tuple:type",
+				"issue.aExpectedIsExpectedButTheValueIsAReceived",
+			);
+
+			weakMap.set(issue, issueMessage);
+
+			return { error: new DecodeError("Array expected", issue), ok: false };
+		}
+
+		const results = decoders.reduce<
+			| { entries: Array<[number, Issues]>; ok: false }
+			| { entries: Array<unknown>; ok: true }
+		>(
+			(accumulator, decoder, i) => {
+				const result = decoder.decodeValue(value[i]);
+
+				if (accumulator.ok) {
+					if (result.ok) {
+						accumulator.entries.push(result.value);
+					} else {
+						return { entries: [[i, result.error.issues]], ok: false };
+					}
+				} else {
+					if (!result.ok) {
+						accumulator.entries.push([i, result.error.issues]);
+					}
+				}
+
+				return accumulator;
+			},
+			{ entries: [], ok: true },
+		);
+
+		if (results.ok) {
+			return { ok: true, value: results.entries as TupleDecodeResponse<U> };
+		} else {
+			return { error: new DecodeError("Tuple expected", Object.fromEntries(results.entries) as Issues), ok: false };
+		}
+	};
+
+	const decodeUnionFunc =
+		<T, U extends Array<Decoder<unknown>> | UnionDecoders<T>>(
+			decoders: U
+		): DecodeFunction<UnionDecodeResponse<U>> =>
+		(value) => {
+			const results = (decoders as Array<Decoder<unknown>>).reduce<
+				| { entries: Array<Issues>; ok: false }
+				| { ok: true; value:unknown; }
+			>(
+				(accumulator, decoder) => {
+					if (accumulator.ok) return accumulator;
+
+					const result = decoder.decodeValue(value);
+						if (result.ok)
+							return result;
+
+						accumulator.entries.push(result.error.issues);
+						return accumulator;
+				},
+				{ entries: [], ok: false },
+			);
+
+			if (results.ok) {
+				return results as Ok<UnionDecodeResponse<U>>;
+			} else {
+				return { error: new DecodeError("Union expected", results.entries as Issues), ok: false };
+			}
+		}
 
 /**
+ * Creates a decoder that decodes an array.
+ * @template T - The type of the array elements.
+ * @param {Decoder<T>} decoder - The decoder to use.
+ * @returns {Decoder<Array<T>>} A decoder that decodes an array.
+ */
+export function array<T>(
+	decoder: Decoder<T>
+): Decoder<Array<T>, Issues<"array", IssueMessage<"array", { expected: "type.array"; received: string }>>> {
+	return new _Decoder(decodeArrayFunc(decoder));
+}
+
+	/**
  * A decoder for booleans.
  * @returns {Decoder<boolean, IssueMessage<"boolean", { expected: "type.boolean"; received: string }>>}
  */
@@ -572,14 +783,6 @@ export function constant<T extends boolean | number | string>(
 > {
 	return new _Decoder(decodeConstantFunc(expected));
 }
-
-export function map<
-	T,
-	U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>,
->(
-	mapFunc: MapDecodeFunction<T, U>,
-	...decoders: U
-): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {}
 
 /**
  * Create a decoder that always fails with the given message and issues.
@@ -623,6 +826,21 @@ export function failed<T extends Issues>(
 }
 
 /**
+ * A decoder for floats.
+ *
+ * @returns {Decoder<number, Issues<"float", IssueMessage<"float", { expected: "type.float"; received: string }>>>} A decoder for floats.
+ */
+export function float(): Decoder<
+	number,
+	Issues<
+		"float",
+		IssueMessage<"float", { expected: "type.float"; received: string }>
+	>
+> {
+	return floatDecoder;
+}
+
+/**
  * A decoder for integers.
  *
  * @returns {Decoder<number, Issues<"integer", IssueMessage<"integer", { expected: "type.integer" | "type.number"; received: string }>>>} A decoder for integers.
@@ -641,18 +859,29 @@ export function integer(): Decoder<
 }
 
 /**
- * A decoder for floats.
- *
- * @returns {Decoder<number, Issues<"float", IssueMessage<"float", { expected: "type.float"; received: string }>>>} A decoder for floats.
+ * Gets the issue message for the issues.
+ * @template T - The type of the issues.
+ * @param {T | undefined} issues - The issues to get the issue message for.
+ * @returns {T extends Issues<IssueType, infer I> ? I | undefined : undefined} The issue message for the issues.
  */
-export function float(): Decoder<
-	number,
-	Issues<
-		"float",
-		IssueMessage<"float", { expected: "type.float"; received: string }>
-	>
-> {
-	return floatDecoder;
+export function issueMessage<T extends Issues>(
+	issues: T | undefined,
+): T extends Issues<IssueType, infer I> ? I | undefined : undefined {
+	if (issues == null) return undefined as T extends Issues<IssueType, infer I> ? I | undefined : undefined;
+
+	return weakMap.get(issues) as T extends Issues<IssueType, infer I>
+		? I | undefined
+		: undefined;
+}
+
+export function map<
+	T,
+	U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>,
+>(
+	mapFunc: MapDecodeFunction<T, U>,
+	...decoders: U
+): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {
+	return new _Decoder(decodeMapFunc(mapFunc, ...decoders));
 }
 
 /**
@@ -733,20 +962,24 @@ export function succeed<T>(value: T): Decoder<T, never> {
 export function tuple<
 	T extends unknown[],
 	U extends Array<Decoder<unknown>> | TupleDecoders<T> = TupleDecoders<T>,
->(...decoders: U): Decoder<TupleDecodeResponse<U>> {}
+>(...decoders: U): Decoder<TupleDecodeResponse<U>> {
+	return new _Decoder(decodeTupleFunc<T, U>(decoders));
+}
 
 /**
  * Create a decoder that accepts any of the given decoders.
  *
  * @template T The type of the value.
- * @template {UnionDecoders<T>} U The type of the decoders.
+ * @template {Array<Decoder<unknown>> | UnionDecoders<T>} U The type of the decoders.
  * @param {U} decoders The decoders to use.
  * @returns {Decoder<UnionDecodeResponse<U>>} A decoder that accepts any of the given decoders.
  */
 export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
->(...decoders: U): Decoder<UnionDecodeResponse<U>> {}
+>(...decoders: U): Decoder<UnionDecodeResponse<U>> {
+	return new _Decoder(decodeUnionFunc<T, U>(decoders));
+}
 
 /**
  * Creates a decoder that always succeeds with the given value.
@@ -755,14 +988,4 @@ export function union<
  */
 export function value<T = unknown>(): Decoder<T, never> {
 	return valueDecoder as Decoder<T, never>;
-}
-
-export function issueMessage<T extends Issues>(
-	issues: T | undefined,
-): T extends Issues<IssueType, infer I> ? I | undefined : undefined {
-	if (issues == null) return undefined;
-
-	return weakMap.get(issues) as T extends Issues<IssueType, infer I>
-		? I | undefined
-		: undefined;
 }

@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 
-import type { IsUnion, TypeOf } from "../src/index.js";
+import type { IsUnion, TypeOf, UnionToTuple } from "../src/index.js";
 
 describe("helpers", () => {
 	describe("isUnion", () => {
@@ -54,6 +54,14 @@ describe("helpers", () => {
 			type T = TypeOf<boolean | number>;
 
 			expectTypeOf<T>().toEqualTypeOf<"union">();
+		});
+	});
+
+	describe("unionToTuple", () => {
+		test("union", () => {
+			type T = UnionToTuple<number | string>;
+
+			expectTypeOf<T>().toEqualTypeOf<[string, number]>();
 		});
 	});
 });

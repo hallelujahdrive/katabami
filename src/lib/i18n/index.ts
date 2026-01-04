@@ -10,22 +10,22 @@ export const i18nResources = {
 	ja,
 } as const;
 
-type CommonLanguage = keyof typeof i18nResources;
-
 /**
  * Supported languages
  */
 export type Language = ({} & string) | CommonLanguage;
 
 /**
+ * i18n resource
+ */
+export type Resource = { [key in Language]: ResourceLanguage };
+
+/**
  * Resource language
  */
 export type ResourceLanguage = (typeof i18nResources)[CommonLanguage];
 
-/**
- * i18n resource
- */
-export type Resource = { [key in Language]: ResourceLanguage };
+type CommonLanguage = keyof typeof i18nResources;
 
 const mergeNamespaces = (
 	defaultNamespaces?: Namespace<string>,

@@ -9,14 +9,6 @@ export type IsUnion<T, U = T> = T extends T
 		: true
 	: never;
 
-type PrimitiveTypeOf<T extends Primitive> = boolean extends T
-	? "boolean"
-	: number extends T
-		? "number"
-		: string extends T
-			? "string"
-			: "constant";
-
 /**
  * Get the type of a type.
  */
@@ -42,13 +34,12 @@ export type TypeOf<T, U = T> = IsUnion<T> extends true
 									? "object"
 									: "unknown";
 
-type UnionToIntersection<U> = (
-	U extends unknown
-		? (x: U) => void
-		: never
-) extends (x: infer I) => void
-	? I
-	: never;
+/**
+ * Convert a union to a tuple.
+ */
+export type UnionToTuple<U, T extends unknown[] = []> = [U] extends [never]
+	? T
+	: UnionToTuple<Exclude<U, LastInUnion<U>>, [LastInUnion<U>, ...T]>;
 
 type LastInUnion<U> =
 	UnionToIntersection<U extends unknown ? (x: U) => void : never> extends (
@@ -57,9 +48,18 @@ type LastInUnion<U> =
 		? L
 		: never;
 
-/**
- * Convert a union to a tuple.
- */
-export type UnionToTuple<U, T extends unknown[] = []> = [U] extends [never]
-	? T
-	: UnionToTuple<Exclude<U, LastInUnion<U>>, [LastInUnion<U>, ...T]>;
+type PrimitiveTypeOf<T extends Primitive> = boolean extends T
+	? "boolean"
+	: number extends T
+		? "number"
+		: string extends T
+			? "string"
+			: "constant";
+
+type UnionToIntersection<U> = (
+	U extends unknown
+		? (x: U) => void
+		: never
+) extends (x: infer I) => void
+	? I
+	: never;
