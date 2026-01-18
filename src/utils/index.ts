@@ -13,3 +13,14 @@ export const isRecord = (value?: unknown): value is Record<string, unknown> => {
 
 	return true;
 };
+
+/**
+ * Replaces "a" with "an" and "an" with "a" in the value.
+ * @param {string} value - The value to replace.
+ * @returns {string} The replaced value.
+ */
+export const replaceArticle = (value: string): string => {
+	return value
+		.replace(/^A ([aeiou])/, "An $1")
+		.replace(/(?<=\s)a ([aeiou])/, "an $1");
+};

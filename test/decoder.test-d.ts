@@ -15,7 +15,6 @@ import {
 } from "../src/index.js";
 
 describe("Decoder", () => {
-
 	describe("array", () => {
 		test("fixed", () => {
 			const _decoder = array<number>(float());
@@ -36,7 +35,7 @@ describe("Decoder", () => {
 				{ bar: number; foo: number },
 				[Decoder<{ bar: number }>, Decoder<{ foo: number }>]
 			>(
-				(foo, bar) => Object.assign(foo, bar),
+				(foo, bar) => ({ ...foo, ...bar }),
 				object({ bar: float() }),
 				object({ foo: float() }),
 			);
@@ -49,18 +48,15 @@ describe("Decoder", () => {
 
 		test("complement", () => {
 			const _decoder = map(
-				(foo, bar) => Object.assign(foo, bar),
+				(foo, bar) => ({ ...foo, ...bar }),
 				object({ foo: float() }),
 				object({ bar: float() }),
 			);
 
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				{
-					bar: number;
-				} & {
-					foo: number;
-				}
-			>();
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
+				bar: number;
+				foo: number;
+			}>();
 		});
 	});
 

@@ -265,7 +265,7 @@ describe("decoder", () => {
 			});
 
 			test("fail", () => {
-				const result = decoder.decodeString('[true,1]');
+				const result = decoder.decodeString("[true,1]");
 
 				const expectedResult = { error: expect.any(DecodeError), ok: false };
 

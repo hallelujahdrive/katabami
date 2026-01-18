@@ -55,7 +55,9 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @param {string} value The string to decode as T.
 	 * @returns {Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>>} The decoded value or an error with issues.
 	 */
-	decodeString(value: string): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>>;
+	decodeString(
+		value: string,
+	): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>>;
 
 	/**
 	 * Decode a value as T.
@@ -75,6 +77,18 @@ export type Infer<T extends Decoder<unknown>> =
 export type MapDecodeFunction<T, U extends Array<Decoder<unknown>>> = (
 	...args: TupleDecodeResponse<U>
 ) => T;
+
+/**
+ * The issues type of a map decoder.
+ */
+export type MapDecodeIssues<T extends Array<Decoder<unknown>>> = T extends [
+	Decoder<unknown, infer A>,
+	...infer B,
+]
+	? B extends Array<Decoder<unknown>>
+		? A | MapDecodeIssues<B>
+		: A
+	: never;
 
 /**
  * The response type of a map decoder.
@@ -110,9 +124,20 @@ export type ObjectDecodeResponse<T extends Record<string, Decoder<unknown>>> = {
 	[key in keyof T]: T[key] extends Decoder<infer A> ? A : never;
 };
 
+/**
+ * The decoders type of an object.
+ */
 export type ObjectDecoders<T extends Record<string, unknown>> = {
 	[key in keyof T]-?: T[key] extends infer A ? Decoder<A> : never;
 };
+
+/**
+ * The issues type of a tuple decoder.
+ */
+export type TupleDecodeIssues<
+	T extends Array<Decoder<unknown>>,
+	I extends IssueMessage,
+> = _Issue<TupleDecodeIssueHelper<T, []>, I>;
 
 /**
  * The response type of a tuple decoder.
@@ -136,12 +161,21 @@ export type TupleDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
 	: [];
 
 /**
- * The response type of a union decoder.
+ * The issues type of a union decoder.
  */
-export type UnionDecodeResponse<T> = T extends [
-	Decoder<infer A>,
+export type UnionDecodeIssues<T> = T extends [
+	Decoder<unknown, infer A>,
 	...infer B,
 ]
+	? B extends Array<Decoder<unknown>>
+		? A | UnionDecodeIssues<B>
+		: A
+	: never;
+
+/**
+ * The response type of a union decoder.
+ */
+export type UnionDecodeResponse<T> = T extends [Decoder<infer A>, ...infer B]
 	? B extends Array<Decoder<unknown>>
 		? A | UnionDecodeResponse<B>
 		: A
@@ -153,6 +187,18 @@ export type UnionDecodeResponse<T> = T extends [
 export type UnionDecoders<T> = UnionToTuple<
 	T extends infer A ? Decoder<A> : never
 >;
+
+type TupleDecodeIssueHelper<
+	T extends Array<Decoder<unknown>>,
+	Counter extends unknown[],
+> = T extends [Decoder<unknown, infer A>, ...infer B]
+	? B extends Array<Decoder<unknown>>
+		? { readonly [key in Counter["length"]]?: A } & TupleDecodeIssueHelper<
+				B,
+				[unknown, ...Counter]
+			>
+		: { readonly [key in Counter["length"]]?: A }
+	: Record<never, never>;
 
 declare const labelSymbol: unique symbol;
 
@@ -201,9 +247,12 @@ export type Issues<
  */
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
-type _Issue<T, I extends IssueMessage> = T & {
-	readonly [labelSymbol]?: I;
-};
+type _Issue<T, I extends IssueMessage> = T &
+	([I] extends [never]
+		? Record<never, never>
+		: {
+				readonly [labelSymbol]?: I;
+			});
 
 /**
  * Common issue types

@@ -8,10 +8,12 @@ import {
 	type Issues,
 	type IssueType,
 	integer,
+	map,
 	object,
 	type Primitive,
 	type Result,
 	string,
+	tuple,
 } from "../src/index.js";
 
 type DecodeResult<T extends Decoder<unknown, Issues>> = ReturnType<
@@ -85,34 +87,86 @@ describe("DecodeError", () => {
 		});
 	});
 
-	describe("Object", () => {
-		describe("flattened object", () => {
-			const decoder = object({
-				bar: integer(),
-				foo: string(),
+	describe("Data Structures", () => {
+		describe("object", () => {
+			describe("flattened", () => {
+				const decoder = object({
+					bar: integer(),
+					foo: string(),
+				});
+
+				test("issue message", () => {
+					expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
+						expected: "type.object";
+						received: string;
+					}>();
+				});
+
+				test("object decode issues", () => {
+					expectTypeOf<
+						GetIssues<DecodeResult<typeof decoder>>
+					>().toEqualTypeOf<{
+						readonly bar?: Record<never, never>;
+						readonly foo?: Record<never, never>;
+					}>();
+				});
 			});
 
-			test("issue message", () => {
-				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					expected: "type.object";
-					received: string;
-				}>();
-			});
+			describe("nested", () => {
+				const decoder = object({
+					bar: object({
+						foo: string(),
+					}),
+				});
 
-			test("object decode issues", () => {
-				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					readonly bar?: Record<never, never>;
-					readonly foo?: Record<never, never>;
-				}>();
+				test("issue message", () => {
+					expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
+						expected: "type.object";
+						received: string;
+					}>();
+				});
+
+				test("object decode issues", () => {
+					expectTypeOf<
+						GetIssues<DecodeResult<typeof decoder>>
+					>().toEqualTypeOf<{
+						readonly bar?: {
+							readonly foo?: Record<never, never>;
+						};
+					}>();
+				});
 			});
 		});
 
-		describe("nested object", () => {
-			const decoder = object({
-				bar: object({
-					foo: string(),
-				}),
+		describe("tuple", () => {
+			const decoder = tuple(integer(), string());
+
+			test("issue message", () => {
+				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
+					expected: "type.array";
+					received: string;
+				}>();
 			});
+
+			test("tuple decode issues", () => {
+				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<
+					| {
+							readonly 0?: Record<never, never>;
+							readonly 1?: Record<never, never>;
+					  }
+					| Record<never, never>
+				>();
+			});
+		});
+	});
+
+	describe("Mapping", () => {
+		describe("map", () => {
+			const decoder = map(
+				(foo, bar) => ({ ...foo, ...bar }),
+				object({ foo: float() }),
+				object({ bar: string() }),
+			);
 
 			test("issue message", () => {
 				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
@@ -121,12 +175,15 @@ describe("DecodeError", () => {
 				}>();
 			});
 
-			test("object decode issues", () => {
-				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					readonly bar?: {
-						readonly foo?: Record<never, never>;
-					};
-				}>();
+			test("map decode issues", () => {
+				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<
+					| {
+							readonly bar?: Record<never, never>;
+					  }
+					| {
+							readonly foo?: Record<never, never>;
+					  }
+				>();
 			});
 		});
 	});

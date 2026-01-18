@@ -3,10 +3,12 @@ import type {
 	CatchFunction,
 	DecodeFunction,
 	Decoder,
+	Err,
 	IssueMessage,
 	Issues,
 	IssueType,
 	MapDecodeFunction,
+	MapDecodeIssues,
 	MapDecodeResponse,
 	MapFunction,
 	ObjectDecodeIssues,
@@ -15,9 +17,11 @@ import type {
 	Ok,
 	Primitive,
 	Result,
+	TupleDecodeIssues,
 	TupleDecodeResponse,
 	TupleDecoders,
 	TypeOf,
+	UnionDecodeIssues,
 	UnionDecodeResponse,
 	UnionDecoders,
 } from "../types/index.js";
@@ -99,20 +103,22 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @param {string} value The string to decode as T.
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 */
-	public decodeString(value: string): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>> {
+	public decodeString(
+		value: string,
+	): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>> {
 		try {
 			const _value = JSON.parse(value);
 			return this._decode(_value);
 		} catch {
-				const issue = {} as Issues<"parseJson", IssueMessage<"parseJson", never>>;
-				const issueMessage = new _IssueMessage(
-					"parseJson",
-					"issue.failedToDecode"
-				);
+			const issue = {} as Issues<"parseJson", IssueMessage<"parseJson", never>>;
+			const issueMessage = new _IssueMessage(
+				"parseJson",
+				"issue.failedToDecode",
+			);
 
-				weakMap.set(issue, issueMessage);
+			weakMap.set(issue, issueMessage);
 
-				return {
+			return {
 				error: new DecodeError("Failed to decode string", issue),
 				ok: false,
 			};
@@ -396,11 +402,19 @@ const valueDecoder = new _Decoder<unknown, never>((value) => {
  * @param {Decoder<T>} decoder - The decoder to use.
  * @returns {DecodeFunction<Array<T>>} A decoder that decodes an array.
  */
-const decodeArrayFunc = <T>(
-	decoder: Decoder<T>
-): DecodeFunction<Array<T>, Issues<"array", IssueMessage<"array", { expected: "type.array"; received: string }>>> =>
+const decodeArrayFunc =
+	<T>(
+		decoder: Decoder<T>,
+	): DecodeFunction<
+		Array<T>,
+		Issues<
+			"array",
+			IssueMessage<"array", { expected: "type.array"; received: string }>
+		>
+	> =>
 	(value) => {
-		if (!Array.isArray(value)) return { error: new DecodeError("Array expected", {}), ok: false };
+		if (!Array.isArray(value))
+			return { error: new DecodeError("Array expected", {}), ok: false };
 
 		const results = value.reduce<
 			| { entries: Array<[number, Issues]>; ok: false }
@@ -415,8 +429,7 @@ const decodeArrayFunc = <T>(
 					} else {
 						return { entries: [[i, result.error.issues]], ok: false };
 					}
-				}
-				else {
+				} else {
 					if (!result.ok) {
 						accumulator.entries.push([i, result.error.issues]);
 					}
@@ -426,11 +439,17 @@ const decodeArrayFunc = <T>(
 			},
 			{ entries: [], ok: true },
 		);
-		
+
 		if (results.ok) {
 			return { ok: true, value: results.entries as Array<T> };
 		} else {
-			return { error: new DecodeError("Array expected", Object.fromEntries(results.entries) as Issues), ok: false };
+			return {
+				error: new DecodeError(
+					"Array expected",
+					Object.fromEntries(results.entries) as Issues,
+				),
+				ok: false,
+			};
 		}
 	};
 
@@ -502,25 +521,23 @@ const decodeMapFunc =
 	<T, U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>>(
 		mapFunc: MapDecodeFunction<T, U>,
 		...decoders: U
-	): DecodeFunction<MapDecodeResponse<MapDecodeFunction<T, U>>> =>
+	): DecodeFunction<
+		MapDecodeResponse<MapDecodeFunction<T, U>>,
+		MapDecodeIssues<U>
+	> =>
 	(value) => {
-		const results = decoders.reduce<
-			| { entries: Array<Issues>; ok: false }
-			| { entries: Array<unknown>; ok: true }
+		const result = decoders.reduce<
+			{ entries: Array<unknown>; ok: true } | { error: Issues; ok: false }
 		>(
 			(accumulator, decoder) => {
+				if (!accumulator.ok) return accumulator;
+
 				const result = decoder.decodeValue(value);
 
-				if (accumulator.ok) {
-					if (result.ok) {
-						accumulator.entries.push(result.value);
-					} else {
-						return { entries: [result.error.issues], ok: false };
-					}
+				if (result.ok) {
+					accumulator.entries.push(result.value);
 				} else {
-					if (!result.ok) {
-						accumulator.entries.push(result.error.issues);
-					}
+					return result;
 				}
 
 				return accumulator;
@@ -528,16 +545,13 @@ const decodeMapFunc =
 			{ entries: [], ok: true },
 		);
 
-		if (results.ok) {
+		if (result.ok) {
 			return {
 				ok: true,
-				value: mapFunc(...(results.entries as TupleDecodeResponse<U>)),
+				value: mapFunc(...(result.entries as TupleDecodeResponse<U>)),
 			};
 		} else {
-			return {
-				error: new DecodeError("Map expected", results.entries as Issues),
-				ok: false,
-			};
+			return result as Err<MapDecodeIssues<U>>;
 		}
 	};
 
@@ -645,9 +659,23 @@ const decodeSucceedFunc =
 	};
 
 const decodeTupleFunc =
-	<T extends unknown[], U extends Array<Decoder<unknown>>|TupleDecoders<T>>(
-		decoders: U
-	): DecodeFunction<TupleDecodeResponse<U>> =>
+	<T extends unknown[], U extends Array<Decoder<unknown>> | TupleDecoders<T>>(
+		decoders: U,
+	): DecodeFunction<
+		TupleDecodeResponse<U>,
+		| Issues<
+				"tuple",
+				IssueMessage<
+					"tuple:length",
+					{ expected: "type.array"; received: string }
+				>
+		  >
+		| Issues<
+				"tuple",
+				IssueMessage<"tuple:type", { expected: "type.array"; received: string }>
+		  >
+		| TupleDecodeIssues<U, never>
+	> =>
 	(value) => {
 		if (!Array.isArray(value)) {
 			const issue = {} as Issues<
@@ -667,7 +695,10 @@ const decodeTupleFunc =
 		if (decoders.length !== value.length) {
 			const issue = {} as Issues<
 				"tuple",
-				IssueMessage<"tuple:length", { expected: "type.array"; received: string }>
+				IssueMessage<
+					"tuple:length",
+					{ expected: "type.array"; received: string }
+				>
 			>;
 			const issueMessage = new _IssueMessage(
 				"tuple:type",
@@ -706,38 +737,51 @@ const decodeTupleFunc =
 		if (results.ok) {
 			return { ok: true, value: results.entries as TupleDecodeResponse<U> };
 		} else {
-			return { error: new DecodeError("Tuple expected", Object.fromEntries(results.entries) as Issues), ok: false };
+			return {
+				error: new DecodeError(
+					"Tuple expected",
+					Object.fromEntries(results.entries) as TupleDecodeIssues<
+						U,
+						IssueMessage<"tuple", never>
+					>,
+				),
+				ok: false,
+			};
 		}
 	};
 
-	const decodeUnionFunc =
-		<T, U extends Array<Decoder<unknown>> | UnionDecoders<T>>(
-			decoders: U
-		): DecodeFunction<UnionDecodeResponse<U>> =>
-		(value) => {
-			const results = (decoders as Array<Decoder<unknown>>).reduce<
-				| { entries: Array<Issues>; ok: false }
-				| { ok: true; value:unknown; }
-			>(
-				(accumulator, decoder) => {
-					if (accumulator.ok) return accumulator;
+const decodeUnionFunc =
+	<T, U extends Array<Decoder<unknown>> | UnionDecoders<T>>(
+		decoders: U,
+	): DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>> =>
+	(value) => {
+		const results = (decoders as Array<Decoder<unknown>>).reduce<
+			{ entries: Array<Issues>; ok: false } | { ok: true; value: unknown }
+		>(
+			(accumulator, decoder) => {
+				if (accumulator.ok) return accumulator;
 
-					const result = decoder.decodeValue(value);
-						if (result.ok)
-							return result;
+				const result = decoder.decodeValue(value);
+				if (result.ok) return result;
 
-						accumulator.entries.push(result.error.issues);
-						return accumulator;
-				},
-				{ entries: [], ok: false },
-			);
+				accumulator.entries.push(result.error.issues);
+				return accumulator;
+			},
+			{ entries: [], ok: false },
+		);
 
-			if (results.ok) {
-				return results as Ok<UnionDecodeResponse<U>>;
-			} else {
-				return { error: new DecodeError("Union expected", results.entries as Issues), ok: false };
-			}
+		if (results.ok) {
+			return results as Ok<UnionDecodeResponse<U>>;
+		} else {
+			return {
+				error: new DecodeError(
+					"Union expected",
+					results.entries as UnionDecodeIssues<U>,
+				),
+				ok: false,
+			};
 		}
+	};
 
 /**
  * Creates a decoder that decodes an array.
@@ -746,12 +790,18 @@ const decodeTupleFunc =
  * @returns {Decoder<Array<T>>} A decoder that decodes an array.
  */
 export function array<T>(
-	decoder: Decoder<T>
-): Decoder<Array<T>, Issues<"array", IssueMessage<"array", { expected: "type.array"; received: string }>>> {
+	decoder: Decoder<T>,
+): Decoder<
+	Array<T>,
+	Issues<
+		"array",
+		IssueMessage<"array", { expected: "type.array"; received: string }>
+	>
+> {
 	return new _Decoder(decodeArrayFunc(decoder));
 }
 
-	/**
+/**
  * A decoder for booleans.
  * @returns {Decoder<boolean, IssueMessage<"boolean", { expected: "type.boolean"; received: string }>>}
  */
@@ -867,7 +917,10 @@ export function integer(): Decoder<
 export function issueMessage<T extends Issues>(
 	issues: T | undefined,
 ): T extends Issues<IssueType, infer I> ? I | undefined : undefined {
-	if (issues == null) return undefined as T extends Issues<IssueType, infer I> ? I | undefined : undefined;
+	if (issues == null)
+		return undefined as T extends Issues<IssueType, infer I>
+			? I | undefined
+			: undefined;
 
 	return weakMap.get(issues) as T extends Issues<IssueType, infer I>
 		? I | undefined
@@ -880,7 +933,7 @@ export function map<
 >(
 	mapFunc: MapDecodeFunction<T, U>,
 	...decoders: U
-): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>> {
+): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>> {
 	return new _Decoder(decodeMapFunc(mapFunc, ...decoders));
 }
 
@@ -957,12 +1010,25 @@ export function succeed<T>(value: T): Decoder<T, never> {
  * @template T The type of the tuple.
  * @template {Array<Decoder<unknown>> | TupleDecoders<T>} U The type of the decoders.
  * @param {...U} decoders The decoders for each tuple element.
- * @returns {Decoder<TupleDecodeResponse<U>>} A decoder for the tuple.
+ * @returns {Decoder<TupleDecodeResponse<U>, Issues<"tuple", IssueMessage<"tuple:length", { expected: "type.array"; received: string }> | IssueMessage<"tuple:type", { expected: "type.array"; received: string }>> | TupleDecodeIssues<U>>} A decoder for the tuple.
  */
 export function tuple<
 	T extends unknown[],
 	U extends Array<Decoder<unknown>> | TupleDecoders<T> = TupleDecoders<T>,
->(...decoders: U): Decoder<TupleDecodeResponse<U>> {
+>(
+	...decoders: U
+): Decoder<
+	TupleDecodeResponse<U>,
+	| Issues<
+			"tuple",
+			IssueMessage<"tuple:length", { expected: "type.array"; received: string }>
+	  >
+	| Issues<
+			"tuple",
+			IssueMessage<"tuple:type", { expected: "type.array"; received: string }>
+	  >
+	| TupleDecodeIssues<U, IssueMessage<"tuple", never>>
+> {
 	return new _Decoder(decodeTupleFunc<T, U>(decoders));
 }
 
@@ -977,7 +1043,7 @@ export function tuple<
 export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
->(...decoders: U): Decoder<UnionDecodeResponse<U>> {
+>(...decoders: U): Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>> {
 	return new _Decoder(decodeUnionFunc<T, U>(decoders));
 }
 

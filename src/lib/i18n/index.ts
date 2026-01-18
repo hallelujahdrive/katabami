@@ -2,6 +2,8 @@ import type { InitOptions, Namespace } from "i18next";
 import en from "./locales/en.json" with { type: "json" };
 import ja from "./locales/ja.json" with { type: "json" };
 
+export * from "./plugin.js";
+
 /**
  * Supported language resources
  */
@@ -163,6 +165,7 @@ export function setupI18nInitOptions(
 	return mergeInitOptions(initOptions, {
 		fallbackNS: [ns],
 		katabamiNS: ns,
+		postProcess: ["katabamiPostProcessor"],
 		resources: buildResources(ns, i18nResources),
 	});
 }

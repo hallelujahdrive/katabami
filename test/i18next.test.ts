@@ -7,6 +7,7 @@ import {
 	DecodeError,
 	integer,
 	issueMessage,
+	katabamiPostProcessor,
 	object,
 	setupI18nInitOptions,
 	string,
@@ -14,8 +15,12 @@ import {
 
 describe("i18next", () => {
 	beforeAll(async () => {
-		await i18next.init(
-			setupI18nInitOptions({ fallbackLng: "en", supportedLngs: ["en", "ja"] }),
+		await i18next.use(katabamiPostProcessor()).init(
+			setupI18nInitOptions({
+				debug: true,
+				fallbackLng: "en",
+				supportedLngs: ["en", "ja"],
+			}),
 		);
 	});
 
