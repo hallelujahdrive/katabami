@@ -142,7 +142,6 @@ const buildResources = (
  * @returns {InitOptions} - The set up initialization options.
  */
 export function setupI18nInitOptions(ns?: string): InitOptions;
-
 /**
  * Sets up the initialization options for the i18next library.
  *
@@ -154,7 +153,6 @@ export function setupI18nInitOptions(
 	initOptions: InitOptions,
 	ns?: string,
 ): InitOptions;
-
 export function setupI18nInitOptions(
 	arg0?: InitOptions | string,
 	arg1?: string,

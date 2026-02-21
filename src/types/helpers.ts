@@ -12,27 +12,28 @@ export type IsUnion<T, U = T> = T extends T
 /**
  * Get the type of a type.
  */
-export type TypeOf<T, U = T> = IsUnion<T> extends true
-	? [U] extends [boolean]
-		? "boolean"
-		: "union"
-	: T extends Primitive
-		? PrimitiveTypeOf<T>
-		: T extends bigint
-			? "bigint"
-			: T extends symbol
-				? "symbol"
-				: T extends undefined
-					? "undefined"
-					: T extends (...args: never) => unknown
-						? "function"
-						: T extends unknown[]
-							? "array"
-							: T extends null
-								? "null"
-								: T extends object
-									? "object"
-									: "unknown";
+export type TypeOf<T, U = T> =
+	IsUnion<T> extends true
+		? [U] extends [boolean]
+			? "boolean"
+			: "union"
+		: T extends Primitive
+			? PrimitiveTypeOf<T>
+			: T extends bigint
+				? "bigint"
+				: T extends symbol
+					? "symbol"
+					: T extends undefined
+						? "undefined"
+						: T extends (...args: never) => unknown
+							? "function"
+							: T extends unknown[]
+								? "array"
+								: T extends null
+									? "null"
+									: T extends object
+										? "object"
+										: "unknown";
 
 /**
  * Convert a union to a tuple.

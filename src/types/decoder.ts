@@ -1,4 +1,3 @@
-import type { TFunction, TOptions } from "i18next";
 import type { TypeOf, UnionToTuple } from "./helpers.js";
 import type { Primitive } from "./primitive.js";
 import type { Result } from "./result.js";
@@ -53,11 +52,11 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * Decode a string as T.
 	 *
 	 * @param {string} value The string to decode as T.
-	 * @returns {Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>>} The decoded value or an error with issues.
+	 * @returns {Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>} The decoded value or an error with issues.
 	 */
 	decodeString(
 		value: string,
-	): Result<T, I | Issues<"parseJson", IssueMessage<"parseJson", never>>>;
+	): Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
 
 	/**
 	 * Decode a value as T.
@@ -107,8 +106,8 @@ export type MapFunction<T, U> = (value: T) => U;
  */
 export type ObjectDecodeIssues<
 	T extends Record<string, Decoder<unknown>>,
-	I extends IssueMessage,
-> = _Issue<
+	I extends Issue,
+> = _Issues<
 	{
 		readonly [key in keyof T]?: T[key] extends Decoder<unknown, infer A>
 			? A
@@ -136,8 +135,8 @@ export type ObjectDecoders<T extends Record<string, unknown>> = {
  */
 export type TupleDecodeIssues<
 	T extends Array<Decoder<unknown>>,
-	I extends IssueMessage,
-> = _Issue<TupleDecodeIssueHelper<T, []>, I>;
+	I extends Issue,
+> = _Issues<TupleDecodeIssueHelper<T, []>, I>;
 
 /**
  * The response type of a tuple decoder.
@@ -206,7 +205,7 @@ export interface DecodeErrorInterface<T extends Issues> extends Error {
 	issues: T;
 }
 
-export interface IssueMessage<
+export interface Issue<
 	T extends IssueType = IssueType,
 	V extends Primitive[] | Record<string, Primitive> = Record<string, Primitive>,
 > {
@@ -215,25 +214,19 @@ export interface IssueMessage<
 	 * @returns {V} The variables of the issue.
 	 */
 	getVars(): V;
-
-	/**
-	 * The string representation of the issue.
-	 * @param {TFunction} t - The i18n function.
-	 * @param {TOptions} tOptions - The i18n options.
-	 * @returns {string} The string representation of the issue.
-	 */
-	toString(t?: TFunction, tOptions?: TOptions): string;
-
 	/**
 	 * The type of the issue.
 	 */
 	readonly type: T;
 }
 
+/**
+ * The issues type.
+ */
 export type Issues<
 	T extends IssueType = IssueType,
-	I extends IssueMessage = IssueMessage,
-> = _Issue<
+	I extends Issue = Issue,
+> = _Issues<
 	T extends "union"
 		? readonly IssuesObject[]
 		: T extends "array" | "object"
@@ -247,7 +240,7 @@ export type Issues<
  */
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
-type _Issue<T, I extends IssueMessage> = T &
+type _Issues<T, I extends Issue> = T &
 	([I] extends [never]
 		? Record<never, never>
 		: {
