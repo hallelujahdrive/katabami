@@ -35,7 +35,7 @@ type GetVars<T extends Result<unknown, Issues>> = [T] extends [
 	Result<unknown, infer Is>,
 ]
 	? Is extends Issues<IssueType, infer I>
-		? ReturnType<NonNullable<I["getVars"]>>
+		? NonNullable<I["vars"]>
 		: never
 	: never;
 

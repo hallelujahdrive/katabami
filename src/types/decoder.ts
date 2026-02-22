@@ -207,17 +207,22 @@ export interface DecodeErrorInterface<T extends Issues> extends Error {
 
 export interface Issue<
 	T extends IssueType = IssueType,
-	V extends Primitive[] | Record<string, Primitive> = Record<string, Primitive>,
+	Msg extends string = string,
+	Vers extends Record<string, Primitive> = Record<string, Primitive>,
 > {
 	/**
-	 * Gets the variables of the issue.
-	 * @returns {V} The variables of the issue.
+	 * The message of the issue.
 	 */
-	getVars(): V;
+	readonly message: Msg;
 	/**
 	 * The type of the issue.
 	 */
 	readonly type: T;
+	/**
+	 * Gets the variables of the issue.
+	 * @returns {Vers} The variables of the issue.
+	 */
+	readonly vars?: Vers;
 }
 
 /**

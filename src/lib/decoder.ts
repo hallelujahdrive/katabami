@@ -1,4 +1,4 @@
-import type { ParseKeys, TFunction, TOptions } from "i18next";
+import type { ParseKeys } from "i18next";
 import type {
 	CatchFunction,
 	DecodeFunction,
@@ -6,7 +6,6 @@ import type {
 	Err,
 	Issue,
 	Issues,
-	IssueType,
 	MapDecodeFunction,
 	MapDecodeIssues,
 	MapDecodeResponse,
@@ -27,11 +26,7 @@ import type {
 } from "../types/index.js";
 import { isRecord } from "../utils/index.js";
 import { DecodeError } from "./error.js";
-
-/**
- * A weak map to store the issue message string representations.
- */
-const weakMap = new WeakMap<object, Issue>();
+import { issue } from "./issue.js";
 
 /**
  * Creates a decoder that always succeeds with the given value.
@@ -119,16 +114,11 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 			const _value = JSON.parse(value);
 			return this._decode(_value);
 		} catch {
-			const issue = {} as Issues<"parseJson", Issue<"parseJson", never>>;
-			const issueMessage = new _IssueMessage(
-				"parseJson",
-				"issue.failedToDecode",
-			);
-
-			weakMap.set(issue, issueMessage);
-
 			return {
-				error: new DecodeError("Failed to decode string", issue),
+				error: new DecodeError(
+					"Failed to decode string",
+					issue("parseJson", "issue.failedToDecode"),
+				),
 				ok: false,
 			};
 		}
@@ -201,28 +191,19 @@ const booleanDecoder = new _Decoder<
 	boolean,
 	Issues<
 		"boolean",
-		Issue<"boolean", { expected: "type.boolean"; received: string }>
+		Issue<"boolean", string, { expected: "type.boolean"; received: string }>
 	>
 >((value) => {
 	if (typeof value === "boolean") return { ok: true, value };
 
-	const issue = {} as Issues<
-		"boolean",
-		Issue<"boolean", { expected: "type.boolean"; received: string }>
-	>;
-	const issueMessage = new _IssueMessage(
-		"boolean",
-		"issue.aExpectedIsExpectedButTheValueIsAReceived",
-		{
-			expected: "type.boolean",
-			received: typeOf(value),
-		},
-	);
-
-	weakMap.set(issue, issueMessage);
-
 	return {
-		error: new DecodeError("Boolean expected", issue),
+		error: new DecodeError(
+			"Boolean expected",
+			issue("boolean", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+				expected: "type.boolean",
+				received: typeOf(value),
+			}),
+		),
 		ok: false,
 	};
 });
@@ -236,46 +217,35 @@ const integerDecoder = new _Decoder<
 		"integer",
 		Issue<
 			"integer",
+			string,
 			{ expected: "type.integer" | "type.number"; received: string }
 		>
 	>
 >((value) => {
 	// If the value is not a number, return an error.
 	if (typeof value !== "number") {
-		const issue = {};
-		const issueMessage = new _IssueMessage(
-			"integer",
-			"issue.aExpectedIsExpectedButTheValueIsAReceived",
-			{
-				expected: "type.number",
-				received: typeOf(value),
-			},
-		);
-
-		weakMap.set(issue, issueMessage);
-
 		return {
-			error: new DecodeError("Integer expected", issue as never),
+			error: new DecodeError(
+				"Integer expected",
+				issue("integer", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+					expected: "type.number",
+					received: typeOf(value),
+				}),
+			),
 			ok: false,
 		};
 	}
 
 	// If the value is not an integer, return an error.
 	if (!Number.isInteger(value)) {
-		const issue = {};
-		const issueMessage = new _IssueMessage(
-			"integer",
-			"issue.aExpectedIsExpectedButTheValueIsAReceived",
-			{
-				expected: "type.integer",
-				received: "type.float",
-			},
-		);
-
-		weakMap.set(issue, issueMessage);
-
 		return {
-			error: new DecodeError("Integer expected", issue as never),
+			error: new DecodeError(
+				"Integer expected",
+				issue("integer", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+					expected: "type.integer",
+					received: "type.float",
+				}),
+			),
 			ok: false,
 		};
 	}
@@ -289,27 +259,21 @@ const integerDecoder = new _Decoder<
  */
 const floatDecoder = new _Decoder<
 	number,
-	Issues<"float", Issue<"float", { expected: "type.float"; received: string }>>
+	Issues<
+		"float",
+		Issue<"float", string, { expected: "type.float"; received: string }>
+	>
 >((value) => {
 	if (typeof value === "number") return { ok: true, value };
 
-	const issue = {} as Issues<
-		"float",
-		Issue<"float", { expected: "type.float"; received: string }>
-	>;
-	const issueMessage = new _IssueMessage(
-		"float",
-		"issue.aExpectedIsExpectedButTheValueIsAReceived",
-		{
-			expected: "type.float",
-			received: typeOf(value),
-		},
-	);
-
-	weakMap.set(issue, issueMessage);
-
 	return {
-		error: new DecodeError("Float expected", issue),
+		error: new DecodeError(
+			"Float expected",
+			issue("float", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+				expected: "type.float",
+				received: typeOf(value),
+			}),
+		),
 		ok: false,
 	};
 });
@@ -321,28 +285,19 @@ const stringDecoder = new _Decoder<
 	string,
 	Issues<
 		"string",
-		Issue<"string", { expected: "type.string"; received: string }>
+		Issue<"string", string, { expected: "type.string"; received: string }>
 	>
 >((value) => {
 	if (typeof value === "string") return { ok: true, value };
 
-	const issue = {} as Issues<
-		"string",
-		Issue<"string", { expected: "type.string"; received: string }>
-	>;
-	const issueMessage = new _IssueMessage(
-		"string",
-		"issue.aExpectedIsExpectedButTheValueIsAReceived",
-		{
-			expected: "type.string",
-			received: typeOf(value),
-		},
-	);
-
-	weakMap.set(issue, issueMessage);
-
 	return {
-		error: new DecodeError("Expected string", issue),
+		error: new DecodeError(
+			"Expected string",
+			issue("string", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+				expected: "type.string",
+				received: typeOf(value),
+			}),
+		),
 		ok: false,
 	};
 });
@@ -369,12 +324,21 @@ const decodeArrayFunc =
 		Array<T>,
 		Issues<
 			"array",
-			Issue<"array", { expected: "type.array"; received: string }>
+			Issue<"array", string, { expected: "type.array"; received: string }>
 		>
 	> =>
 	(value) => {
 		if (!Array.isArray(value))
-			return { error: new DecodeError("Array expected", {}), ok: false };
+			return {
+				error: new DecodeError(
+					"Array expected",
+					issue("array", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+						expected: "type.array",
+						received: typeOf(value),
+					}),
+				),
+				ok: false,
+			};
 
 		const results = value.reduce<
 			| { entries: Array<[number, Issues]>; ok: false }
@@ -406,7 +370,15 @@ const decodeArrayFunc =
 			return {
 				error: new DecodeError(
 					"Array expected",
-					Object.fromEntries(results.entries) as Issues,
+					issue(
+						"array",
+						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						{
+							expected: "type.array",
+							received: typeOf(value),
+						},
+						Object.fromEntries(results.entries),
+					),
 				),
 				ok: false,
 			};
@@ -425,28 +397,20 @@ const decodeConstantFunc =
 		T,
 		Issues<
 			"constant",
-			Issue<"constant", { expected: Primitive; received: Primitive }>
+			Issue<"constant", string, { expected: Primitive; received: Primitive }>
 		>
 	> =>
 	(value) => {
 		if (value === expected) return { ok: true, value: value as T };
 
-		const issue = {};
-		const issueMessage = new _IssueMessage(
-			"constant",
-			"issue.aExpectedIsExpectedButTheValueIsAReceived",
-			typeof value === typeof expected
-				? {
-						expected: expected,
-						received: quoteValue(value as Primitive),
-					}
-				: { expected: quoteValue(expected), received: typeOf(value) },
-		);
-
-		weakMap.set(issue, issueMessage);
-
 		return {
-			error: new DecodeError("Constant expected", issue as never),
+			error: new DecodeError(
+				"Constant expected",
+				issue("constant", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+					expected,
+					received: quoteValue(value as Primitive),
+				}),
+			),
 			ok: false,
 		};
 	};
@@ -463,14 +427,12 @@ const decodeFailedFunc = <
 	message?: string,
 	issues?: T,
 ): DecodeFunction<never, T> => {
-	const issue = issues ?? ({} as Issues<"failed", Issue<"failed", never>> as T);
-	const issueMessage = new _IssueMessage("failed", "issue.failedToDecode");
-
-	weakMap.set(issue, issueMessage);
-
 	return () => {
 		return {
-			error: new DecodeError(message ?? "Failed to decode", issue),
+			error: new DecodeError(
+				message ?? "Failed to decode",
+				issue("failed", "issue.failedToDecode", undefined, issues as T) as T,
+			),
 			ok: false,
 		};
 	};
@@ -528,28 +490,26 @@ const decodeObjectFunc =
 		ObjectDecodeResponse<U>,
 		ObjectDecodeIssues<
 			U,
-			Issue<"object", { expected: "type.object"; received: string }>
+			Issue<"object", string, { expected: "type.object"; received: string }>
 		>
 	> =>
 	(value) => {
 		if (!isRecord(value)) {
-			const issue = {} as ObjectDecodeIssues<
-				U,
-				Issue<"object", { expected: "type.object"; received: string }>
-			>;
-			const issueMessage = new _IssueMessage(
-				"object",
-				"issue.aExpectedIsExpectedButTheValueIsAReceived",
-				{
-					expected: "type.object",
-					received: typeOf(value),
-				},
-			);
-
-			weakMap.set(issue, issueMessage);
-
 			return {
-				error: new DecodeError("Object expected", issue),
+				error: new DecodeError(
+					"Object expected",
+					issue("object", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+						expected: "type.object",
+						received: typeOf(value),
+					}) as ObjectDecodeIssues<
+						U,
+						Issue<
+							"object",
+							string,
+							{ expected: "type.object"; received: string }
+						>
+					>,
+				),
 				ok: false,
 			};
 		}
@@ -586,21 +546,26 @@ const decodeObjectFunc =
 		} else {
 			const issues = Object.fromEntries(results.entries) as ObjectDecodeIssues<
 				U,
-				Issue<"object", { expected: "type.object"; received: string }>
+				Issue<"object", string, { expected: "type.object"; received: string }>
 			>;
-			const issueMessage = new _IssueMessage(
-				"object",
-				"issue.aExpectedIsExpectedButTheValueIsAReceived",
-				{
-					expected: "type.object",
-					received: typeOf(value),
-				},
-			);
-
-			weakMap.set(issues, issueMessage);
 
 			return {
-				error: new DecodeError("Object expected", issues),
+				error: new DecodeError(
+					"Object expected",
+					issue(
+						"object",
+						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						{ expected: "type.object", received: typeOf(value) },
+						issues,
+					) as ObjectDecodeIssues<
+						U,
+						Issue<
+							"object",
+							string,
+							{ expected: "type.object"; received: string }
+						>
+					>,
+				),
 				ok: false,
 			};
 		}
@@ -624,43 +589,49 @@ const decodeTupleFunc =
 		TupleDecodeResponse<U>,
 		| Issues<
 				"tuple",
-				Issue<"tuple:length", { expected: "type.array"; received: string }>
+				Issue<
+					"tuple:length",
+					string,
+					{ expected: "type.array"; received: string }
+				>
 		  >
 		| Issues<
 				"tuple",
-				Issue<"tuple:type", { expected: "type.array"; received: string }>
+				Issue<
+					"tuple:type",
+					string,
+					{ expected: "type.array"; received: string }
+				>
 		  >
 		| TupleDecodeIssues<U, never>
 	> =>
 	(value) => {
 		if (!Array.isArray(value)) {
-			const issue = {} as Issues<
-				"tuple",
-				Issue<"tuple:type", { expected: "type.array"; received: string }>
-			>;
-			const issueMessage = new _IssueMessage(
-				"tuple:type",
-				"issue.aExpectedIsExpectedButTheValueIsAReceived",
-			);
-
-			weakMap.set(issue, issueMessage);
-
-			return { error: new DecodeError("Array expected", issue), ok: false };
+			return {
+				error: new DecodeError(
+					"Array expected",
+					issue(
+						"tuple:type",
+						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						{ expected: "type.array", received: typeOf(value) },
+					),
+				),
+				ok: false,
+			};
 		}
 
 		if (decoders.length !== value.length) {
-			const issue = {} as Issues<
-				"tuple",
-				Issue<"tuple:length", { expected: "type.array"; received: string }>
-			>;
-			const issueMessage = new _IssueMessage(
-				"tuple:type",
-				"issue.aExpectedIsExpectedButTheValueIsAReceived",
-			);
-
-			weakMap.set(issue, issueMessage);
-
-			return { error: new DecodeError("Array expected", issue), ok: false };
+			return {
+				error: new DecodeError(
+					"Array expected",
+					issue(
+						"tuple:length",
+						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						{ expected: "type.array", received: typeOf(value) },
+					),
+				),
+				ok: false,
+			};
 		}
 
 		const results = decoders.reduce<
@@ -737,52 +708,6 @@ const decodeUnionFunc =
 	};
 
 /**
- * Implementation of the IssueMessage interface.
- */
-class _IssueMessage<
-	T extends IssueType,
-	Vars extends
-		| Array<ParseKeys | Primitive>
-		| Record<string, ParseKeys | Primitive> = never,
-> implements Issue<T, Vars>
-{
-	constructor(
-		public readonly type: T,
-		private readonly key: ParseKeys,
-		private readonly vars?: Vars,
-	) {}
-
-	/**
-	 * Gets the variables of the issue.
-	 * @returns {Vars} The variables of the issue.
-	 */
-	getVars(): Vars {
-		return this.vars as Vars;
-	}
-
-	/**
-	 * The string representation of the issue.
-	 * @param {TFunction} t - The i18n function.
-	 * @param {TOptions} tOptions - The i18n options.
-	 * @returns {string} The string representation of the issue.
-	 */
-	toString(t?: TFunction, tOptions?: TOptions): string {
-		if (!t) return this.key;
-
-		const _tOptions = tOptions ?? {};
-
-		const _vars = Object.fromEntries(
-			Object.entries(this.vars ?? {}).map(([key, value]) => [
-				key,
-				t(value.toString() as ParseKeys, _tOptions),
-			]),
-		);
-
-		return t(this.key, { ..._vars, ..._tOptions });
-	}
-}
-
-/**
  * Creates a decoder that decodes an array.
  * @template T - The type of the array elements.
  * @param {Decoder<T>} decoder - The decoder to use.
@@ -792,20 +717,23 @@ export function array<T>(
 	decoder: Decoder<T>,
 ): Decoder<
 	Array<T>,
-	Issues<"array", Issue<"array", { expected: "type.array"; received: string }>>
+	Issues<
+		"array",
+		Issue<"array", string, { expected: "type.array"; received: string }>
+	>
 > {
 	return new _Decoder(decodeArrayFunc(decoder));
 }
 
 /**
  * A decoder for booleans.
- * @returns {Decoder<boolean, Issue<"boolean", { expected: "type.boolean"; received: string }>>}
+ * @returns {Decoder<boolean, Issue<"boolean", string, { expected: "type.boolean"; received: string }>>}
  */
 export function boolean(): Decoder<
 	boolean,
 	Issues<
 		"boolean",
-		Issue<"boolean", { expected: "type.boolean"; received: string }>
+		Issue<"boolean", string, { expected: "type.boolean"; received: string }>
 	>
 > {
 	return booleanDecoder;
@@ -824,7 +752,7 @@ export function constant<T extends boolean | number | string>(
 	T,
 	Issues<
 		"constant",
-		Issue<"constant", { expected: Primitive; received: Primitive }>
+		Issue<"constant", string, { expected: Primitive; received: Primitive }>
 	>
 > {
 	return new _Decoder(decodeConstantFunc(expected));
@@ -838,7 +766,10 @@ export function constant<T extends boolean | number | string>(
  */
 export function failed(
 	message?: string,
-): Decoder<never, Issues<"failed", Issue<"failed", { message: string }>>>;
+): Decoder<
+	never,
+	Issues<"failed", Issue<"failed", string, { message: string }>>
+>;
 /**
  * Create a decoder that always fails with the given message and issues.
  *
@@ -873,7 +804,10 @@ export function failed<T extends Issues>(
  */
 export function float(): Decoder<
 	number,
-	Issues<"float", Issue<"float", { expected: "type.float"; received: string }>>
+	Issues<
+		"float",
+		Issue<"float", string, { expected: "type.float"; received: string }>
+	>
 > {
 	return floatDecoder;
 }
@@ -889,30 +823,12 @@ export function integer(): Decoder<
 		"integer",
 		Issue<
 			"integer",
+			string,
 			{ expected: "type.integer" | "type.number"; received: string }
 		>
 	>
 > {
 	return integerDecoder;
-}
-
-/**
- * Gets the issue message for the issues.
- * @template T - The type of the issues.
- * @param {T | undefined} issues - The issues to get the issue message for.
- * @returns {T extends Issues<IssueType, infer I> ? I | undefined : undefined} The issue message for the issues.
- */
-export function issueMessage<T extends Issues>(
-	issues: T | undefined,
-): T extends Issues<IssueType, infer I> ? I | undefined : undefined {
-	if (issues == null)
-		return undefined as T extends Issues<IssueType, infer I>
-			? I | undefined
-			: undefined;
-
-	return weakMap.get(issues) as T extends Issues<IssueType, infer I>
-		? I | undefined
-		: undefined;
 }
 
 export function map<
@@ -942,7 +858,7 @@ export function object<
 	ObjectDecodeResponse<U>,
 	ObjectDecodeIssues<
 		U,
-		Issue<"object", { expected: "type.object"; received: string }>
+		Issue<"object", string, { expected: "type.object"; received: string }>
 	>
 > {
 	return new _Decoder(decodeObjectFunc<T, U>(decoders));
@@ -975,7 +891,7 @@ export function string(): Decoder<
 	string,
 	Issues<
 		"string",
-		Issue<"string", { expected: "type.string"; received: string }>
+		Issue<"string", string, { expected: "type.string"; received: string }>
 	>
 > {
 	return stringDecoder;
@@ -1009,11 +925,15 @@ export function tuple<
 	TupleDecodeResponse<U>,
 	| Issues<
 			"tuple",
-			Issue<"tuple:length", { expected: "type.array"; received: string }>
+			Issue<
+				"tuple:length",
+				string,
+				{ expected: "type.array"; received: string }
+			>
 	  >
 	| Issues<
 			"tuple",
-			Issue<"tuple:type", { expected: "type.array"; received: string }>
+			Issue<"tuple:type", string, { expected: "type.array"; received: string }>
 	  >
 	| TupleDecodeIssues<U, Issue<"tuple", never>>
 > {
