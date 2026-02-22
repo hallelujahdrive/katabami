@@ -1,5 +1,8 @@
 # Devbox
 .devbox
 
+# Cursor
+.cursor/
+
 # Dependency directories
 node_modules/
