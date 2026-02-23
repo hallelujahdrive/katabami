@@ -8,13 +8,15 @@ const weakMap = new WeakMap<object, Issue>();
 class _IssueMessage<
 	T extends IssueType,
 	Msg extends string = string,
-	Vars extends Record<string, Primitive> = Record<never, never>,
+	Vars extends Record<string, Primitive> | undefined =
+		| Record<string, Primitive>
+		| undefined,
 > implements Issue<T, Msg, Vars>
 {
 	constructor(
 		public readonly type: T,
 		public readonly message: Msg,
-		public readonly vars?: Vars,
+		public readonly vars: Vars,
 	) {}
 
 	/**
@@ -37,14 +39,13 @@ class _IssueMessage<
 export function issue<
 	T extends IssueType,
 	Msg extends string = string,
-	Vars extends Record<string, Primitive> = Record<never, never>,
+	Vars extends Record<string, Primitive> | undefined = undefined,
 >(
 	type: T,
 	message: Msg,
 	vars: undefined | Vars,
 	issues: Issues<T, Issue<T, Msg, Vars>>,
 ): Issues<T, Issue<T, Msg, Vars>>;
-
 /**
  * Creates an issue.
  * @param {T} type - The type of the issue.
@@ -57,11 +58,10 @@ export function issue<
 	Msg extends string = string,
 	Vars extends Record<string, Primitive> = Record<never, never>,
 >(type: T, message: Msg, vars?: Vars): never;
-
 export function issue<
 	T extends IssueType,
 	Msg extends string = string,
-	Vars extends Record<string, Primitive> = Record<never, never>,
+	Vars extends Record<string, Primitive> | undefined = undefined,
 >(
 	type: T,
 	message: Msg,

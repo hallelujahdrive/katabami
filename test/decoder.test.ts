@@ -1,19 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import {
-	boolean,
-	constant,
-	DecodeError,
-	integer,
-	object,
-	string,
-	tuple,
-	union,
-} from "../src/index.js";
+import { DecodeError, katabami } from "../src/index.js";
 
 describe("decoder", () => {
 	describe("boolean", () => {
-		const decoder = boolean();
+		const decoder = katabami.boolean();
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -53,7 +44,7 @@ describe("decoder", () => {
 	});
 
 	describe("constant", () => {
-		const decoder = constant("foo");
+		const decoder = katabami.constant("foo");
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -94,9 +85,9 @@ describe("decoder", () => {
 
 	describe("object", () => {
 		describe("flattened object", () => {
-			const decoder = object({
-				bar: integer(),
-				foo: string(),
+			const decoder = katabami.object({
+				bar: katabami.integer(),
+				foo: katabami.string(),
 			});
 
 			describe("decode value", () => {
@@ -144,9 +135,9 @@ describe("decoder", () => {
 	});
 
 	describe("nested object", () => {
-		const decoder = object({
-			bar: object({
-				foo: string(),
+		const decoder = katabami.object({
+			bar: katabami.object({
+				foo: katabami.string(),
 			}),
 		});
 
@@ -195,7 +186,7 @@ describe("decoder", () => {
 	});
 
 	describe("string", () => {
-		const decoder = string();
+		const decoder = katabami.string();
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -235,7 +226,7 @@ describe("decoder", () => {
 	});
 
 	describe("tuple", () => {
-		const decoder = tuple(string(), integer());
+		const decoder = katabami.tuple(katabami.string(), katabami.integer());
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -275,7 +266,7 @@ describe("decoder", () => {
 	});
 
 	describe("union", () => {
-		const decoder = union(string(), integer());
+		const decoder = katabami.union(katabami.string(), katabami.integer());
 
 		describe("decode value", () => {
 			test("success", () => {

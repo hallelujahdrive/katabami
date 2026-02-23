@@ -21,6 +21,7 @@ export default [
 			"perfectionist/sort-enums": "error",
 			"perfectionist/sort-interfaces": "error",
 			"perfectionist/sort-jsx-props": "error",
+			"perfectionist/sort-modules": "error",
 			"perfectionist/sort-object-types": "error",
 			"perfectionist/sort-objects": "error",
 			"perfectionist/sort-switch-case": "error",

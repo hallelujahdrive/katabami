@@ -1,19 +1,12 @@
 import { describe, expectTypeOf, test } from "vitest";
 
 import {
-	boolean,
-	constant,
 	type Decoder,
-	float,
 	type Issues,
 	type IssueType,
-	integer,
-	map,
-	object,
+	katabami,
 	type Primitive,
 	type Result,
-	string,
-	tuple,
 } from "../src/index.js";
 
 type DecodeResult<T extends Decoder<unknown, Issues>> = ReturnType<
@@ -42,46 +35,46 @@ type GetVars<T extends Result<unknown, Issues>> = [T] extends [
 describe("DecodeError", () => {
 	describe("Primitives", () => {
 		test("boolean", () => {
-			const decoder = boolean();
+			const decoder = katabami.boolean();
 
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-				expected: "type.boolean";
+				expected: string;
 				received: string;
 			}>();
 		});
 
 		test("constant", () => {
-			const decoder = constant("foo");
+			const decoder = katabami.constant("foo");
 
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-				expected: Primitive;
+				expected: "foo";
 				received: Primitive;
 			}>();
 		});
 
 		test("integer", () => {
-			const decoder = integer();
+			const decoder = katabami.integer();
 
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-				expected: "type.integer" | "type.number";
+				expected: string;
 				received: string;
 			}>();
 		});
 
 		test("float", () => {
-			const decoder = float();
+			const decoder = katabami.float();
 
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-				expected: "type.float";
+				expected: string;
 				received: string;
 			}>();
 		});
 
 		test("string", () => {
-			const decoder = string();
+			const decoder = katabami.string();
 
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-				expected: "type.string";
+				expected: string;
 				received: string;
 			}>();
 		});
@@ -90,14 +83,14 @@ describe("DecodeError", () => {
 	describe("Data Structures", () => {
 		describe("object", () => {
 			describe("flattened", () => {
-				const decoder = object({
-					bar: integer(),
-					foo: string(),
+				const decoder = katabami.object({
+					bar: katabami.integer(),
+					foo: katabami.string(),
 				});
 
 				test("issue message", () => {
 					expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-						expected: "type.object";
+						expected: string;
 						received: string;
 					}>();
 				});
@@ -113,15 +106,15 @@ describe("DecodeError", () => {
 			});
 
 			describe("nested", () => {
-				const decoder = object({
-					bar: object({
-						foo: string(),
+				const decoder = katabami.object({
+					bar: katabami.object({
+						foo: katabami.string(),
 					}),
 				});
 
 				test("issue message", () => {
 					expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-						expected: "type.object";
+						expected: string;
 						received: string;
 					}>();
 				});
@@ -139,11 +132,11 @@ describe("DecodeError", () => {
 		});
 
 		describe("tuple", () => {
-			const decoder = tuple(integer(), string());
+			const decoder = katabami.tuple(katabami.integer(), katabami.string());
 
 			test("issue message", () => {
 				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					expected: "type.array";
+					expected: string;
 					received: string;
 				}>();
 			});
@@ -162,15 +155,15 @@ describe("DecodeError", () => {
 
 	describe("Mapping", () => {
 		describe("map", () => {
-			const decoder = map(
+			const decoder = katabami.map(
 				(foo, bar) => ({ ...foo, ...bar }),
-				object({ foo: float() }),
-				object({ bar: string() }),
+				katabami.object({ foo: katabami.float() }),
+				katabami.object({ bar: katabami.string() }),
 			);
 
 			test("issue message", () => {
 				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
-					expected: "type.object";
+					expected: string;
 					received: string;
 				}>();
 			});

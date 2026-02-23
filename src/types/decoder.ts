@@ -187,6 +187,9 @@ export type UnionDecoders<T> = UnionToTuple<
 	T extends infer A ? Decoder<A> : never
 >;
 
+/**
+ * The helper type for the issues type of a tuple decoder.
+ */
 type TupleDecodeIssueHelper<
 	T extends Array<Decoder<unknown>>,
 	Counter extends unknown[],
@@ -201,14 +204,22 @@ type TupleDecodeIssueHelper<
 
 declare const labelSymbol: unique symbol;
 
+/**
+ * The interface for the decode error.
+ */
 export interface DecodeErrorInterface<T extends Issues> extends Error {
 	issues: T;
 }
 
+/**
+ * The issue type.
+ */
 export interface Issue<
 	T extends IssueType = IssueType,
 	Msg extends string = string,
-	Vers extends Record<string, Primitive> = Record<string, Primitive>,
+	Vers extends Record<string, Primitive> | undefined =
+		| Record<string, Primitive>
+		| undefined,
 > {
 	/**
 	 * The message of the issue.
@@ -222,7 +233,7 @@ export interface Issue<
 	 * Gets the variables of the issue.
 	 * @returns {Vers} The variables of the issue.
 	 */
-	readonly vars?: Vers;
+	readonly vars: Vers;
 }
 
 /**

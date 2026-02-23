@@ -6,10 +6,12 @@ import type {
 	Err,
 	Issue,
 	Issues,
+	KatabamiConfig,
 	MapDecodeFunction,
 	MapDecodeIssues,
 	MapDecodeResponse,
 	MapFunction,
+	MessageResources,
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
 	ObjectDecoders,
@@ -25,8 +27,94 @@ import type {
 	UnionDecoders,
 } from "../types/index.js";
 import { isRecord } from "../utils/index.js";
+import { defaultConfig } from "./config.js";
 import { DecodeError } from "./error.js";
 import { issue } from "./issue.js";
+
+type DeepRequired<T> = {
+	[K in keyof T]-?: NonNullable<T[K]> extends Record<string, unknown>
+		? DeepRequired<NonNullable<T[K]>>
+		: NonNullable<T[K]>;
+};
+
+class ConfigStore {
+	public get messages(): DeepRequired<MessageResources> {
+		return this.config.messages;
+	}
+
+	private config: DeepRequired<KatabamiConfig>;
+
+	constructor(config?: KatabamiConfig) {
+		this.config =
+			config != null ? deepMerge(defaultConfig, config) : defaultConfig;
+	}
+}
+
+/**
+ * The instance of the Katabami class.
+ */
+let _katabami: Katabami | undefined;
+
+/**
+ * Gets the instance of the Katabami class.
+ * @throws {Error} If the Katabami class is not initialized.
+ * @returns {Katabami} The instance of the Katabami class.
+ */
+const getKatabami = (): Katabami => {
+	if (_katabami == null) {
+		_katabami = Katabami.init();
+	}
+
+	return _katabami;
+};
+
+/**
+ * Merges two objects deeply.
+ * @template T The type of the target object.
+ * @template S The type of the source object.
+ * @param {Base} base The first object.
+ * @param {Additional} additional The second object.
+ * @returns {Base & Additional} The merged object.
+ */
+const deepMerge = <
+	Base extends Record<string, unknown>,
+	Additional extends Record<string, unknown>,
+>(
+	base: Base,
+	additional: Additional,
+): Base => {
+	return Object.keys(base).reduce<Record<string, unknown>>((acc, key) => {
+		if (isRecord(base[key]) && isRecord(additional[key])) {
+			acc[key] = deepMerge(base[key], additional[key]);
+		} else {
+			acc[key] = additional[key] ?? base[key];
+		}
+
+		return acc;
+	}, {}) as Base;
+};
+
+class Katabami {
+	public readonly configStore: ConfigStore;
+
+	/**
+	 * @constructor
+	 * @param {KatabamiConfig} config - The configuration for Katabami.
+	 */
+	private constructor(config?: KatabamiConfig) {
+		this.configStore = new ConfigStore(config);
+	}
+
+	/**
+	 * Initializes the Katabami class.
+	 * @returns {Katabami} The instance of the Katabami class.
+	 */
+	public static init(): Katabami {
+		_katabami = new Katabami();
+
+		return _katabami;
+	}
+}
 
 /**
  * Creates a decoder that always succeeds with the given value.
@@ -43,17 +131,23 @@ export function value<T = unknown>(): Decoder<T, never> {
 class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	implements Decoder<T, I>
 {
-	constructor(decodeFunc: DecodeFunction<T, I>);
+	private readonly katabami: Katabami;
+
+	constructor(katabami: Katabami | undefined, decodeFunc: DecodeFunction<T, I>);
 
 	constructor(
+		katabami: Katabami | undefined,
 		decodeFunc: DecodeFunction<T, Issues>,
 		cacheFunc?: CatchFunction<T, Issues, I>,
 	);
 
 	constructor(
+		katabami: Katabami | undefined,
 		private readonly decodeFunc: DecodeFunction<T, Issues>,
 		private readonly cacheFunc?: CatchFunction<T, Issues, I>,
-	) {}
+	) {
+		this.katabami = katabami ?? getKatabami();
+	}
 
 	/**
 	 * @template U
@@ -61,7 +155,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @returns {Decoder<U, I>}
 	 */
 	public andMap<U>(mapFunc: MapFunction<T, U>): Decoder<U, I> {
-		return new _Decoder((value) => {
+		return new _Decoder(this.katabami, (value) => {
 			const result = this._decode(value);
 			if (!result.ok) return result;
 
@@ -79,7 +173,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
 		decoder: Decoder<U, J>,
 	): Decoder<U, I | J> {
-		return new _Decoder((value) => {
+		return new _Decoder(this.katabami, (value) => {
 			const result = this._decode(value);
 			if (!result.ok) return result as Result<U, I | J>;
 
@@ -97,6 +191,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		catchFunc: CatchFunction<T, I, K>,
 	): Decoder<T, K> {
 		return new _Decoder(
+			this.katabami,
 			this.decodeFunc,
 			catchFunc as CatchFunction<T, Issues, K>,
 		);
@@ -141,7 +236,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 */
 	private _decode(value: unknown): Result<T, I> {
 		// Decode the value.
-		const result = this.decodeFunc(value);
+		const result = this.decodeFunc.call(this.katabami, value);
 
 		// If the result is ok or no cacheFunc is set, return the result as is.
 		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
@@ -185,92 +280,22 @@ const quoteValue = (
 };
 
 /**
- * A decoder for booleans.
- */
-const booleanDecoder = new _Decoder<
-	boolean,
-	Issues<
-		"boolean",
-		Issue<"boolean", string, { expected: "type.boolean"; received: string }>
-	>
->((value) => {
-	if (typeof value === "boolean") return { ok: true, value };
-
-	return {
-		error: new DecodeError(
-			"Boolean expected",
-			issue("boolean", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-				expected: "type.boolean",
-				received: typeOf(value),
-			}),
-		),
-		ok: false,
-	};
-});
-
-/**
- * A decoder for integers.
- */
-const integerDecoder = new _Decoder<
-	number,
-	Issues<
-		"integer",
-		Issue<
-			"integer",
-			string,
-			{ expected: "type.integer" | "type.number"; received: string }
-		>
-	>
->((value) => {
-	// If the value is not a number, return an error.
-	if (typeof value !== "number") {
-		return {
-			error: new DecodeError(
-				"Integer expected",
-				issue("integer", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-					expected: "type.number",
-					received: typeOf(value),
-				}),
-			),
-			ok: false,
-		};
-	}
-
-	// If the value is not an integer, return an error.
-	if (!Number.isInteger(value)) {
-		return {
-			error: new DecodeError(
-				"Integer expected",
-				issue("integer", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-					expected: "type.integer",
-					received: "type.float",
-				}),
-			),
-			ok: false,
-		};
-	}
-
-	// If the value is an integer, return the value.
-	return { ok: true, value };
-});
-
-/**
  * A decoder for floats.
  */
 const floatDecoder = new _Decoder<
 	number,
 	Issues<
 		"float",
-		Issue<"float", string, { expected: "type.float"; received: string }>
+		Issue<"float", string, { expected: string; received: string }>
 	>
->((value) => {
+>(undefined, function (this: Katabami, value) {
 	if (typeof value === "number") return { ok: true, value };
 
 	return {
 		error: new DecodeError(
 			"Float expected",
-			issue("float", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-				expected: "type.float",
+			issue("float", this.configStore.messages.issue.unexpectedValue, {
+				expected: this.configStore.messages.type.float,
 				received: typeOf(value),
 			}),
 		),
@@ -285,16 +310,16 @@ const stringDecoder = new _Decoder<
 	string,
 	Issues<
 		"string",
-		Issue<"string", string, { expected: "type.string"; received: string }>
+		Issue<"string", string, { expected: string; received: string }>
 	>
->((value) => {
+>(undefined, function (this: Katabami, value) {
 	if (typeof value === "string") return { ok: true, value };
 
 	return {
 		error: new DecodeError(
 			"Expected string",
-			issue("string", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-				expected: "type.string",
+			issue("string", this.configStore.messages.issue.unexpectedValue, {
+				expected: this.configStore.messages.type.string,
 				received: typeOf(value),
 			}),
 		),
@@ -307,33 +332,35 @@ const stringDecoder = new _Decoder<
  * @param {unknown} value - The value to return.
  * @returns {DecodeFunction<unknown>} A decoder that always returns the given value.
  */
-const valueDecoder = new _Decoder<unknown, never>((value) => {
-	return { ok: true, value };
-});
+const valueDecoder = new _Decoder<unknown, never>(
+	undefined,
+	function (this: Katabami, value) {
+		return { ok: true, value };
+	},
+);
 
 /**
  * Creates a decoder that decodes an array.
  * @template T - The type of the array elements.
  * @param {Decoder<T>} decoder - The decoder to use.
- * @returns {DecodeFunction<Array<T>>} A decoder that decodes an array.
+ * @returns {DecodeFunction<Array<T>, Issues<"array", Issue<"array", string, { expected: string; received: string }>>>} A decoder that decodes an array.
  */
-const decodeArrayFunc =
-	<T>(
-		decoder: Decoder<T>,
-	): DecodeFunction<
-		Array<T>,
-		Issues<
-			"array",
-			Issue<"array", string, { expected: "type.array"; received: string }>
-		>
-	> =>
-	(value) => {
+const decodeArrayFunc = <T>(
+	decoder: Decoder<T>,
+): DecodeFunction<
+	Array<T>,
+	Issues<
+		"array",
+		Issue<"array", string, { expected: string; received: string }>
+	>
+> =>
+	function (this: Katabami, value) {
 		if (!Array.isArray(value))
 			return {
 				error: new DecodeError(
 					"Array expected",
-					issue("array", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-						expected: "type.array",
+					issue("array", this.configStore.messages.issue.unexpectedValue, {
+						expected: this.configStore.messages.type.array,
 						received: typeOf(value),
 					}),
 				),
@@ -372,9 +399,9 @@ const decodeArrayFunc =
 					"Array expected",
 					issue(
 						"array",
-						"issue.aExpectedIsExpectedButTheValueIsAReceived",
+						this.configStore.messages.issue.unexpectedValue,
 						{
-							expected: "type.array",
+							expected: this.configStore.messages.type.array,
 							received: typeOf(value),
 						},
 						Object.fromEntries(results.entries),
@@ -388,25 +415,24 @@ const decodeArrayFunc =
 /**
  * Creates a decoder that always returns the same value.
  * @param {T} expected - The value to return.
- * @returns {DecodeFunction<T, Issues<"constant", Issue<"constant", { expected: Primitive; received: Primitive }>>>} A decoder that always returns the given value.
+ * @returns {DecodeFunction<T, Issues<"constant", Issue<"constant", string, { expected: T; received: Primitive }>>>} A decoder that always returns the given value.
  */
-const decodeConstantFunc =
-	<T extends Primitive>(
-		expected: T,
-	): DecodeFunction<
-		T,
-		Issues<
-			"constant",
-			Issue<"constant", string, { expected: Primitive; received: Primitive }>
-		>
-	> =>
-	(value) => {
+const decodeConstantFunc = <T extends Primitive>(
+	expected: T,
+): DecodeFunction<
+	T,
+	Issues<
+		"constant",
+		Issue<"constant", string, { expected: T; received: Primitive }>
+	>
+> =>
+	function (this: Katabami, value) {
 		if (value === expected) return { ok: true, value: value as T };
 
 		return {
 			error: new DecodeError(
 				"Constant expected",
-				issue("constant", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
+				issue("constant", this.configStore.messages.issue.unexpectedValue, {
 					expected,
 					received: quoteValue(value as Primitive),
 				}),
@@ -422,16 +448,21 @@ const decodeConstantFunc =
  * @returns {DecodeFunction<never, Issue | T>} A decoder that always fails with the given message and issues.
  */
 const decodeFailedFunc = <
-	T extends Issues = Issues<"failed", Issue<"failed", never>>,
+	T extends Issues = Issues<"failed", Issue<"failed", string, never>>,
 >(
 	message?: string,
 	issues?: T,
 ): DecodeFunction<never, T> => {
-	return () => {
+	return function (this: Katabami) {
 		return {
 			error: new DecodeError(
 				message ?? "Failed to decode",
-				issue("failed", "issue.failedToDecode", undefined, issues as T) as T,
+				issue(
+					"failed",
+					this.configStore.messages.issue.failedToDecode,
+					undefined,
+					issues as T,
+				) as T,
 			),
 			ok: false,
 		};
@@ -481,33 +512,31 @@ const decodeMapFunc =
  * @template T - The type of the object.
  * @template {ObjectDecoders<T>} U - The type of the decoders.
  * @param {U} decoders - The decoders for the object properties.
- * @returns {DecodeFunction<ObjectDecodeResponse<U>, Issue<"object", { expected: string; received: string }> | ObjectDecodeIssues<U>>} A decoder that decodes an object.
+ * @returns {DecodeFunction<ObjectDecodeResponse<U>, Issue<"object", string, { expected: string; received: string }> | ObjectDecodeIssues<U>>} A decoder that decodes an object.
  */
-const decodeObjectFunc =
-	<T extends Record<string, unknown>, U extends ObjectDecoders<T>>(
-		decoders: U,
-	): DecodeFunction<
-		ObjectDecodeResponse<U>,
-		ObjectDecodeIssues<
-			U,
-			Issue<"object", string, { expected: "type.object"; received: string }>
-		>
-	> =>
-	(value) => {
+const decodeObjectFunc = <
+	T extends Record<string, unknown>,
+	U extends ObjectDecoders<T>,
+>(
+	decoders: U,
+): DecodeFunction<
+	ObjectDecodeResponse<U>,
+	ObjectDecodeIssues<
+		U,
+		Issue<"object", string, { expected: string; received: string }>
+	>
+> =>
+	function (this: Katabami, value) {
 		if (!isRecord(value)) {
 			return {
 				error: new DecodeError(
 					"Object expected",
-					issue("object", "issue.aExpectedIsExpectedButTheValueIsAReceived", {
-						expected: "type.object",
+					issue("object", this.configStore.messages.issue.unexpectedValue, {
+						expected: this.configStore.messages.type.object,
 						received: typeOf(value),
 					}) as ObjectDecodeIssues<
 						U,
-						Issue<
-							"object",
-							string,
-							{ expected: "type.object"; received: string }
-						>
+						Issue<"object", string, { expected: string; received: string }>
 					>,
 				),
 				ok: false,
@@ -546,7 +575,7 @@ const decodeObjectFunc =
 		} else {
 			const issues = Object.fromEntries(results.entries) as ObjectDecodeIssues<
 				U,
-				Issue<"object", string, { expected: "type.object"; received: string }>
+				Issue<"object", string, { expected: string; received: string }>
 			>;
 
 			return {
@@ -554,16 +583,15 @@ const decodeObjectFunc =
 					"Object expected",
 					issue(
 						"object",
-						"issue.aExpectedIsExpectedButTheValueIsAReceived",
-						{ expected: "type.object", received: typeOf(value) },
+						this.configStore.messages.issue.unexpectedValue,
+						{
+							expected: this.configStore.messages.type.object,
+							received: typeOf(value),
+						},
 						issues,
 					) as ObjectDecodeIssues<
 						U,
-						Issue<
-							"object",
-							string,
-							{ expected: "type.object"; received: string }
-						>
+						Issue<"object", string, { expected: string; received: string }>
 					>,
 				),
 				ok: false,
@@ -582,39 +610,32 @@ const decodeSucceedFunc =
 		return { ok: true, value };
 	};
 
-const decodeTupleFunc =
-	<T extends unknown[], U extends Array<Decoder<unknown>> | TupleDecoders<T>>(
-		decoders: U,
-	): DecodeFunction<
-		TupleDecodeResponse<U>,
-		| Issues<
-				"tuple",
-				Issue<
-					"tuple:length",
-					string,
-					{ expected: "type.array"; received: string }
-				>
-		  >
-		| Issues<
-				"tuple",
-				Issue<
-					"tuple:type",
-					string,
-					{ expected: "type.array"; received: string }
-				>
-		  >
-		| TupleDecodeIssues<U, never>
-	> =>
-	(value) => {
+const decodeTupleFunc = <
+	T extends unknown[],
+	U extends Array<Decoder<unknown>> | TupleDecoders<T>,
+>(
+	decoders: U,
+): DecodeFunction<
+	TupleDecodeResponse<U>,
+	| Issues<
+			"tuple",
+			Issue<"tuple:length", string, { expected: string; received: string }>
+	  >
+	| Issues<
+			"tuple",
+			Issue<"tuple:type", string, { expected: string; received: string }>
+	  >
+	| TupleDecodeIssues<U, never>
+> =>
+	function (this: Katabami, value) {
 		if (!Array.isArray(value)) {
 			return {
 				error: new DecodeError(
 					"Array expected",
-					issue(
-						"tuple:type",
-						"issue.aExpectedIsExpectedButTheValueIsAReceived",
-						{ expected: "type.array", received: typeOf(value) },
-					),
+					issue("tuple:type", this.configStore.messages.issue.unexpectedValue, {
+						expected: this.configStore.messages.type.array,
+						received: typeOf(value),
+					}),
 				),
 				ok: false,
 			};
@@ -626,8 +647,11 @@ const decodeTupleFunc =
 					"Array expected",
 					issue(
 						"tuple:length",
-						"issue.aExpectedIsExpectedButTheValueIsAReceived",
-						{ expected: "type.array", received: typeOf(value) },
+						this.configStore.messages.issue.unexpectedValue,
+						{
+							expected: this.configStore.messages.type.array,
+							received: typeOf(value),
+						},
 					),
 				),
 				ok: false,
@@ -674,11 +698,13 @@ const decodeTupleFunc =
 		}
 	};
 
-const decodeUnionFunc =
-	<T, U extends Array<Decoder<unknown>> | UnionDecoders<T>>(
-		decoders: U,
-	): DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>> =>
-	(value) => {
+const decodeUnionFunc = <
+	T,
+	U extends Array<Decoder<unknown>> | UnionDecoders<T>,
+>(
+	decoders: U,
+): DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>> =>
+	function (this: Katabami, value) {
 		const results = (decoders as Array<Decoder<unknown>>).reduce<
 			{ entries: Array<Issues>; ok: false } | { ok: true; value: unknown }
 		>(
@@ -719,21 +745,21 @@ export function array<T>(
 	Array<T>,
 	Issues<
 		"array",
-		Issue<"array", string, { expected: "type.array"; received: string }>
+		Issue<"array", string, { expected: string; received: string }>
 	>
 > {
-	return new _Decoder(decodeArrayFunc(decoder));
+	return new _Decoder(undefined, decodeArrayFunc(decoder));
 }
 
 /**
  * A decoder for booleans.
- * @returns {Decoder<boolean, Issue<"boolean", string, { expected: "type.boolean"; received: string }>>}
+ * @returns {Decoder<boolean, Issues<"boolean", Issue<"boolean", string, { expected: "type.boolean"; received: string }>>>}
  */
 export function boolean(): Decoder<
 	boolean,
 	Issues<
 		"boolean",
-		Issue<"boolean", string, { expected: "type.boolean"; received: string }>
+		Issue<"boolean", string, { expected: string; received: string }>
 	>
 > {
 	return booleanDecoder;
@@ -744,7 +770,7 @@ export function boolean(): Decoder<
  *
  * @template {boolean | number | string} T The type of the value.
  * @param {T} expected The value to return.
- * @returns {Decoder<T, Issues<"constant", Issue<"constant", { expected: Primitive; received: Primitive }>>>} A decoder that always returns the given value.
+ * @returns {Decoder<T, Issues<"constant", Issue<"constant", string, { expected: T; received: Primitive }>>>} A decoder that always returns the given value.
  */
 export function constant<T extends boolean | number | string>(
 	expected: T,
@@ -752,12 +778,11 @@ export function constant<T extends boolean | number | string>(
 	T,
 	Issues<
 		"constant",
-		Issue<"constant", string, { expected: Primitive; received: Primitive }>
+		Issue<"constant", string, { expected: T; received: Primitive }>
 	>
 > {
-	return new _Decoder(decodeConstantFunc(expected));
+	return new _Decoder(undefined, decodeConstantFunc(expected));
 }
-
 /**
  * Create a decoder that always fails with the given message and issues.
  *
@@ -794,19 +819,19 @@ export function failed<T extends Issues>(
 	message?: string,
 	issues?: T,
 ): Decoder<never, T> {
-	return new _Decoder<never, T>(decodeFailedFunc(message, issues));
+	return new _Decoder<never, T>(undefined, decodeFailedFunc(message, issues));
 }
 
 /**
  * A decoder for floats.
  *
- * @returns {Decoder<number, Issues<"float", Issue<"float", { expected: "type.float"; received: string }>>>} A decoder for floats.
+ * @returns {Decoder<number, Issues<"float", Issue<"float", string, { expected: string; received: string }>>>} A decoder for floats.
  */
 export function float(): Decoder<
 	number,
 	Issues<
 		"float",
-		Issue<"float", string, { expected: "type.float"; received: string }>
+		Issue<"float", string, { expected: string; received: string }>
 	>
 > {
 	return floatDecoder;
@@ -815,17 +840,13 @@ export function float(): Decoder<
 /**
  * A decoder for integers.
  *
- * @returns {Decoder<number, Issues<"integer", Issue<"integer", { expected: "type.integer" | "type.number"; received: string }>>>} A decoder for integers.
+ * @returns {Decoder<number, Issues<"integer", Issue<"integer", string, { expected: string; received: string }>>>} A decoder for integers.
  */
 export function integer(): Decoder<
 	number,
 	Issues<
 		"integer",
-		Issue<
-			"integer",
-			string,
-			{ expected: "type.integer" | "type.number"; received: string }
-		>
+		Issue<"integer", string, { expected: string; received: string }>
 	>
 > {
 	return integerDecoder;
@@ -838,7 +859,7 @@ export function map<
 	mapFunc: MapDecodeFunction<T, U>,
 	...decoders: U
 ): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>> {
-	return new _Decoder(decodeMapFunc(mapFunc, ...decoders));
+	return new _Decoder(undefined, decodeMapFunc(mapFunc, ...decoders));
 }
 
 /**
@@ -847,7 +868,7 @@ export function map<
  * @template T The type of the object.
  * @template {ObjectDecoders<T>} U The type of the decoders.
  * @param {U} decoders The decoders for the object properties.
- * @returns {Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U, Issue<"object", { expected: "type.object"; received: string }>>>} A decoder for the object.
+ * @returns {Decoder<ObjectDecodeResponse<U>, ObjectDecodeIssues<U, Issue<"object", string, { expected: string; received: string }>>>} A decoder for the object.
  */
 export function object<
 	T extends Record<string, unknown>,
@@ -858,10 +879,10 @@ export function object<
 	ObjectDecodeResponse<U>,
 	ObjectDecodeIssues<
 		U,
-		Issue<"object", string, { expected: "type.object"; received: string }>
+		Issue<"object", string, { expected: string; received: string }>
 	>
 > {
-	return new _Decoder(decodeObjectFunc<T, U>(decoders));
+	return new _Decoder(undefined, decodeObjectFunc<T, U>(decoders));
 }
 
 /**
@@ -875,7 +896,7 @@ export function object<
 export function optional<T, I extends Issues = Issues>(
 	decoder: Decoder<T, I>,
 ): Decoder<T | undefined, I> {
-	return new _Decoder((value) => {
+	return new _Decoder(undefined, (value) => {
 		if (value == null) return { ok: true, value: undefined as T | undefined };
 
 		return decoder.decodeValue(value);
@@ -885,13 +906,13 @@ export function optional<T, I extends Issues = Issues>(
 /**
  * A decoder for strings.
  *
- * @returns {Decoder<string, Issues<"string", Issue<"string", { expected: "type.string"; received: string }>>>} A decoder for strings.
+ * @returns {Decoder<string, Issues<"string", Issue<"string", string, { expected: string; received: string }>>>} A decoder for strings.
  */
 export function string(): Decoder<
 	string,
 	Issues<
 		"string",
-		Issue<"string", string, { expected: "type.string"; received: string }>
+		Issue<"string", string, { expected: string; received: string }>
 	>
 > {
 	return stringDecoder;
@@ -905,7 +926,7 @@ export function string(): Decoder<
  * @returns {Decoder<T>} A decoder that always returns the given value.
  */
 export function succeed<T>(value: T): Decoder<T, never> {
-	return new _Decoder<T, never>(decodeSucceedFunc(value));
+	return new _Decoder<T, never>(undefined, decodeSucceedFunc(value));
 }
 
 /**
@@ -914,7 +935,7 @@ export function succeed<T>(value: T): Decoder<T, never> {
  * @template T The type of the tuple.
  * @template {Array<Decoder<unknown>> | TupleDecoders<T>} U The type of the decoders.
  * @param {...U} decoders The decoders for each tuple element.
- * @returns {Decoder<TupleDecodeResponse<U>, Issues<"tuple", Issue<"tuple:length", { expected: "type.array"; received: string }> | Issue<"tuple:type", { expected: "type.array"; received: string }>> | TupleDecodeIssues<U>>} A decoder for the tuple.
+ * @returns {Decoder<TupleDecodeResponse<U>, Issues<"tuple", Issue<"tuple:length", string, { expected: string; received: string }> | Issue<"tuple:type", string, { expected: string; received: string }>> | TupleDecodeIssues<U>>} A decoder for the tuple.
  */
 export function tuple<
 	T extends unknown[],
@@ -925,21 +946,16 @@ export function tuple<
 	TupleDecodeResponse<U>,
 	| Issues<
 			"tuple",
-			Issue<
-				"tuple:length",
-				string,
-				{ expected: "type.array"; received: string }
-			>
+			Issue<"tuple:length", string, { expected: string; received: string }>
 	  >
 	| Issues<
 			"tuple",
-			Issue<"tuple:type", string, { expected: "type.array"; received: string }>
+			Issue<"tuple:type", string, { expected: string; received: string }>
 	  >
-	| TupleDecodeIssues<U, Issue<"tuple", never>>
+	| TupleDecodeIssues<U, Issue<"tuple", string, undefined>>
 > {
-	return new _Decoder(decodeTupleFunc<T, U>(decoders));
+	return new _Decoder(undefined, decodeTupleFunc<T, U>(decoders));
 }
-
 /**
  * Create a decoder that accepts any of the given decoders.
  *
@@ -952,5 +968,71 @@ export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
 >(...decoders: U): Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>> {
-	return new _Decoder(decodeUnionFunc<T, U>(decoders));
+	return new _Decoder(undefined, decodeUnionFunc<T, U>(decoders));
 }
+
+/**
+ * A decoder for booleans.
+ */
+const booleanDecoder = new _Decoder<
+	boolean,
+	Issues<
+		"boolean",
+		Issue<"boolean", string, { expected: string; received: string }>
+	>
+>(undefined, function (this: Katabami, value) {
+	if (typeof value === "boolean") return { ok: true, value };
+
+	return {
+		error: new DecodeError(
+			"Boolean expected",
+			issue("boolean", this.configStore.messages.issue.unexpectedValue, {
+				expected: this.configStore.messages.type.boolean,
+				received: typeOf(value),
+			}),
+		),
+		ok: false,
+	};
+});
+
+/**
+ * A decoder for integers.
+ */
+const integerDecoder = new _Decoder<
+	number,
+	Issues<
+		"integer",
+		Issue<"integer", string, { expected: string; received: string }>
+	>
+>(undefined, function (this: Katabami, value) {
+	// If the value is not a number, return an error.
+	if (typeof value !== "number") {
+		return {
+			error: new DecodeError(
+				"Integer expected",
+				issue("integer", this.configStore.messages.issue.unexpectedValue, {
+					expected: this.configStore.messages.type.number,
+					received: typeOf(value),
+				}),
+			),
+			ok: false,
+		};
+	}
+
+	// If the value is not an integer, return an error.
+	if (!Number.isInteger(value)) {
+		return {
+			error: new DecodeError(
+				"Integer expected",
+				issue("integer", this.configStore.messages.issue.unexpectedValue, {
+					expected: this.configStore.messages.type.integer,
+					received: this.configStore.messages.type.float,
+				}),
+			),
+			ok: false,
+		};
+	}
+
+	// If the value is an integer, return the value.
+	return { ok: true, value };
+});

@@ -1,29 +1,17 @@
 import { describe, expectTypeOf, test } from "vitest";
 
-import {
-	array,
-	constant,
-	type Decoder,
-	float,
-	type Infer,
-	map,
-	object,
-	optional,
-	string,
-	tuple,
-	union,
-} from "../src/index.js";
+import { type Decoder, type Infer, katabami } from "../src/index.js";
 
 describe("Decoder", () => {
 	describe("array", () => {
 		test("fixed", () => {
-			const _decoder = array<number>(float());
+			const _decoder = katabami.array<number>(katabami.float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
 
 		test("complement", () => {
-			const _decoder = array(float());
+			const _decoder = katabami.array(katabami.float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
@@ -31,13 +19,13 @@ describe("Decoder", () => {
 
 	describe("map", () => {
 		test("fixed", () => {
-			const _decoder = map<
+			const _decoder = katabami.map<
 				{ bar: number; foo: number },
 				[Decoder<{ bar: number }>, Decoder<{ foo: number }>]
 			>(
 				(foo, bar) => ({ ...foo, ...bar }),
-				object({ bar: float() }),
-				object({ foo: float() }),
+				katabami.object({ bar: katabami.float() }),
+				katabami.object({ foo: katabami.float() }),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -47,10 +35,10 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = map(
+			const _decoder = katabami.map(
 				(foo, bar) => ({ ...foo, ...bar }),
-				object({ foo: float() }),
-				object({ bar: float() }),
+				katabami.object({ foo: katabami.float() }),
+				katabami.object({ bar: katabami.float() }),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -62,9 +50,9 @@ describe("Decoder", () => {
 
 	describe("object", () => {
 		test("fixed", () => {
-			const _decoder = object<{ num: number; optionalStr?: string }>({
-				num: float(),
-				optionalStr: optional(string()),
+			const _decoder = katabami.object<{ num: number; optionalStr?: string }>({
+				num: katabami.float(),
+				optionalStr: katabami.optional(katabami.string()),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -74,9 +62,9 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = object({
-				num: float(),
-				optionalStr: optional(string()),
+			const _decoder = katabami.object({
+				num: katabami.float(),
+				optionalStr: katabami.optional(katabami.string()),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -88,7 +76,7 @@ describe("Decoder", () => {
 
 	describe("optional", () => {
 		test("fixed", () => {
-			const _decoder = optional<number>(float());
+			const _decoder = katabami.optional<number>(katabami.float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				number | undefined
@@ -96,7 +84,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = optional(float());
+			const _decoder = katabami.optional(katabami.float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				number | undefined
@@ -106,13 +94,19 @@ describe("Decoder", () => {
 
 	describe("tuple", () => {
 		test("fixed", () => {
-			const _decoder = tuple<["foo", "bar"]>(constant("foo"), constant("bar"));
+			const _decoder = katabami.tuple<["foo", "bar"]>(
+				katabami.constant("foo"),
+				katabami.constant("bar"),
+			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
 
 		test("complement", () => {
-			const _decoder = tuple(constant("foo"), constant("bar"));
+			const _decoder = katabami.tuple(
+				katabami.constant("foo"),
+				katabami.constant("bar"),
+			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
@@ -120,13 +114,19 @@ describe("Decoder", () => {
 
 	describe("union", () => {
 		test("fixed", () => {
-			const _decoder = union<"bar" | "foo">(constant("bar"), constant("foo"));
+			const _decoder = katabami.union<"bar" | "foo">(
+				katabami.constant("bar"),
+				katabami.constant("foo"),
+			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
 
 		test("complement", () => {
-			const _decoder = union(constant("bar"), constant("foo"));
+			const _decoder = katabami.union(
+				katabami.constant("bar"),
+				katabami.constant("foo"),
+			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
