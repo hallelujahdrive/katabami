@@ -3,6 +3,23 @@ import type { Primitive } from "./primitive.js";
 import type { Result } from "./result.js";
 
 /**
+ * The issues type of an array decoder.
+ */
+export type ArrayDecodeIssues<
+	T extends Decoder<unknown>,
+	I extends Issue = Issue,
+> =
+	T extends Decoder<unknown, infer A>
+		? _Issues<{ readonly [key: number]: A } | undefined, I>
+		: never;
+
+/**
+ * The response type of an array decoder.
+ */
+export type ArrayDecodeResponse<T extends Decoder<unknown>> =
+	T extends Decoder<infer A> ? A[] : never;
+
+/**
  * The catch function for a decoder.
  */
 export type CatchFunction<T, I extends Issues, J extends Issues> = (

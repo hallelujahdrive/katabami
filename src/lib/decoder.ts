@@ -1,5 +1,7 @@
 import type { ParseKeys } from "i18next";
 import type {
+	ArrayDecodeIssues,
+	ArrayDecodeResponse,
 	CatchFunction,
 	DecodeFunction,
 	Decoder,
@@ -342,15 +344,16 @@ const valueDecoder = new _Decoder<unknown, never>(
 /**
  * Creates a decoder that decodes an array.
  * @template T - The type of the array elements.
- * @param {Decoder<T>} decoder - The decoder to use.
- * @returns {DecodeFunction<Array<T>, Issues<"array", Issue<"array", string, { expected: string; received: string }>>>} A decoder that decodes an array.
+ * @template {Decoder<T>} U - The decoder to use.
+ * @param {U} decoder - The decoder to use.
+ * @returns {DecodeFunction<Array<T>, ArrayDecodeIssues<U, Issue<"array", string, { expected: string; received: string }>>>} A decoder that decodes an array.
  */
-const decodeArrayFunc = <T>(
-	decoder: Decoder<T>,
+const decodeArrayFunc = <T, U extends Decoder<T>>(
+	decoder: U,
 ): DecodeFunction<
-	Array<T>,
-	Issues<
-		"array",
+	ArrayDecodeResponse<U>,
+	ArrayDecodeIssues<
+		U,
 		Issue<"array", string, { expected: string; received: string }>
 	>
 > =>
@@ -369,7 +372,7 @@ const decodeArrayFunc = <T>(
 
 		const results = value.reduce<
 			| { entries: Array<[number, Issues]>; ok: false }
-			| { entries: Array<T>; ok: true }
+			| { entries: T[]; ok: true }
 		>(
 			(accumulator, item, i) => {
 				const result = decoder.decodeValue(item);
@@ -392,7 +395,7 @@ const decodeArrayFunc = <T>(
 		);
 
 		if (results.ok) {
-			return { ok: true, value: results.entries as Array<T> };
+			return { ok: true, value: results.entries as ArrayDecodeResponse<U> };
 		} else {
 			return {
 				error: new DecodeError(
@@ -405,7 +408,10 @@ const decodeArrayFunc = <T>(
 							received: typeOf(value),
 						},
 						Object.fromEntries(results.entries),
-					),
+					) as ArrayDecodeIssues<
+						U,
+						Issue<"array", string, { expected: string; received: string }>
+					>,
 				),
 				ok: false,
 			};
@@ -739,12 +745,12 @@ const decodeUnionFunc = <
  * @param {Decoder<T>} decoder - The decoder to use.
  * @returns {Decoder<Array<T>>} A decoder that decodes an array.
  */
-export function array<T>(
-	decoder: Decoder<T>,
+export function array<T, U extends Decoder<T> = Decoder<T>>(
+	decoder: U,
 ): Decoder<
-	Array<T>,
-	Issues<
-		"array",
+	ArrayDecodeResponse<U>,
+	ArrayDecodeIssues<
+		U,
 		Issue<"array", string, { expected: string; received: string }>
 	>
 > {

@@ -81,6 +81,23 @@ describe("DecodeError", () => {
 	});
 
 	describe("Data Structures", () => {
+		describe("array", () => {
+			const decoder = katabami.array(katabami.integer());
+
+			test("issue message", () => {
+				expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
+					expected: string;
+					received: string;
+				}>();
+			});
+
+			test("array decode issues", () => {
+				expectTypeOf<GetIssues<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
+					readonly [key: number]: Record<never, never>;
+				}>();
+			});
+		});
+
 		describe("object", () => {
 			describe("flattened", () => {
 				const decoder = katabami.object({
