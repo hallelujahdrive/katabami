@@ -9,8 +9,8 @@ import {
 	type Result,
 } from "../src/index.js";
 
-type DecodeResult<T extends Decoder<unknown, Issues>> = ReturnType<
-	T["decodeValue"]
+type DecodeResult<T extends Decoder<unknown, Issues>> = Awaited<
+	ReturnType<T["decodeValue"]>
 >;
 
 type GetIssues<T extends Result<unknown, Issues>> = [T] extends [

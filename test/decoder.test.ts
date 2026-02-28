@@ -331,7 +331,7 @@ describe("decoder", () => {
 				expect(result).toStrictEqual(expectedResult);
 			});
 
-			test("fail", () => {
+			test("fail", async () => {
 				const result = decoder.decodeValue(true);
 
 				const expectedResult = {

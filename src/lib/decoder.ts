@@ -34,6 +34,15 @@ import { DecodeError } from "./error.js";
 import { issue } from "./issue.js";
 
 /**
+ * Checks if an array has a promise.
+ * @param {unknown[]} value - The array to check.
+ * @returns {boolean} - True if the array has a promise, false otherwise.
+ */
+const hasPromise = (value: unknown[]): boolean => {
+	return value.some((v) => v instanceof Promise);
+};
+
+/**
  * The decode function for a decoder.
  */
 type DecodeFunction<T, Is extends Issues = Issues<TypeOf<T>>> = (
@@ -137,7 +146,7 @@ class Katabami {
  * @returns {Decoder<T, never>} A decoder that always returns the given value.
  */
 export function value<T = unknown>(): Decoder<T, never> {
-	return valueDecoder as Decoder<T, never>;
+	return valueDecoder as unknown as Decoder<T, never>;
 }
 
 /**
@@ -169,12 +178,13 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @param {MapFunction<T, U>} mapFunc
 	 * @returns {Decoder<U, I>}
 	 */
-	public andMap<U>(mapFunc: (value: T) => U): Decoder<U, I> {
-		return new _Decoder(this.katabami, (value) => {
-			const result = this._decode(value);
+	public andMap<U>(mapFunc: (value: Awaited<T>) => U): Decoder<U, I> {
+		return new _Decoder(this.katabami, async (value) => {
+			const result = await this._decode(value);
 			if (!result.ok) return result;
 
-			return { ok: true, value: mapFunc(result.value) };
+			const resolved = await (result.value as Awaitable<Awaited<T>>);
+			return { ok: true, value: mapFunc(resolved) };
 		});
 	}
 
@@ -186,14 +196,16 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @returns {Decoder<Awaitable<U>, I | J>}
 	 */
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
-		nextFunc: (value: T) => Awaitable<Decoder<U, J>>,
+		nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
 	): Decoder<U, I | J> {
 		return new _Decoder(this.katabami, async (value) => {
-			const result = this._decode(value);
+			const result = await this._decode(value);
 			if (!result.ok) return result as Result<U, I | J>;
 
-			return (await nextFunc(result.value)).decodeValue(result.value);
-		});
+			const nextDecoder = await nextFunc(result.value);
+			return (await nextDecoder.decodeValue(result.value)) as Result<U, I | J>;
+			// Cast needed: implementation satisfies both sync and async overloads
+		}) as Decoder<U, I | J> & Decoder<Promise<U>, I | J>;
 	}
 
 	/**
@@ -209,20 +221,32 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 			this.katabami,
 			this.decodeFunc,
 			catchFunc as CatchFunction<T, Issues, K>,
-		);
+		) as unknown as Decoder<T, K>;
 	}
 
 	/**
 	 * Decodes a string as T.
+	 * When T is Promise, returns Promise; otherwise returns Result.
 	 * @param {string} value The string to decode as T.
-	 * @returns {Result<T, I>} The decoded value or an error with issues.
+	 * @returns {T extends Promise<unknown> ? Promise<Result<Awaited<T>, I | ...>> : Result<T, I | ...>} The decoded value or an error with issues.
 	 */
 	public decodeString(
 		value: string,
-	): Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>> {
+	): T extends Promise<unknown>
+		? Promise<
+				Result<Awaited<T>, I | Issues<"parseJson", Issue<"parseJson", never>>>
+			>
+		: Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>> {
 		try {
 			const _value = JSON.parse(value);
-			return this._decode(_value);
+			return this._decode(_value) as T extends Promise<unknown>
+				? Promise<
+						Result<
+							Awaited<T>,
+							I | Issues<"parseJson", Issue<"parseJson", never>>
+						>
+					>
+				: Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
 		} catch {
 			return {
 				error: new DecodeError(
@@ -230,33 +254,68 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 					issue("parseJson", "issue.failedToDecode"),
 				),
 				ok: false,
-			};
+			} as unknown as T extends Promise<unknown>
+				? Promise<
+						Result<
+							Awaited<T>,
+							I | Issues<"parseJson", Issue<"parseJson", never>>
+						>
+					>
+				: Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
 		}
 	}
 
 	/**
 	 * Decodes an unknown value as T.
+	 * When T is Promise, returns Promise<Result<Awaited<T>, I>>; otherwise returns Result<T, I>.
 	 * @param {unknown} value
-	 * @returns {Result<T>}
+	 * @returns {T extends Promise<unknown> ? Promise<Result<Awaited<T>, I>> : Result<T, I>}
 	 */
-	public decodeValue(value: unknown): Result<T, I> {
-		return this._decode(value);
+	public decodeValue(
+		value: unknown,
+	): T extends Promise<unknown>
+		? Promise<Result<Awaited<T>, I>>
+		: Result<T, I> {
+		const r = this._decode(value);
+		if (r instanceof Promise) {
+			return r.then(async (res) => {
+				if (!res.ok) return res as Result<Awaited<T>, I>;
+				const v = res.value instanceof Promise ? await res.value : res.value;
+				return { ok: true as const, value: v as Awaited<T> };
+			}) as T extends Promise<unknown>
+				? Promise<Result<Awaited<T>, I>>
+				: Result<T, I>;
+		}
+		if (r.ok && (r as Ok<T>).value instanceof Promise) {
+			return ((r as Ok<T>).value as Promise<Awaited<T>>).then((v) => ({
+				ok: true as const,
+				value: v,
+			})) as T extends Promise<unknown>
+				? Promise<Result<Awaited<T>, I>>
+				: Result<T, I>;
+		}
+		return r as T extends Promise<unknown>
+			? Promise<Result<Awaited<T>, I>>
+			: Result<T, I>;
 	}
 
 	/**
 	 * Internal decode function.
 	 * @param {unknown} value The value to decode.
-	 * @returns {Result<T, I>} The decoded value or an error with issues.
+	 * @returns {Awaitable<Result<T, I>>} The decoded value or an error with issues.
 	 * @private
 	 */
-	private async _decode(value: unknown): Promise<Awaitable<Result<T, I>>> {
-		// Decode the value.
-		const result = await this.decodeFunc.call(this.katabami, value);
+	private _decode(value: unknown): Awaitable<Result<T, I>> {
+		const result = this.decodeFunc.call(this.katabami, value);
 
-		// If the result is ok or no cacheFunc is set, return the result as is.
+		if (result instanceof Promise) {
+			return result.then((r) => {
+				if (r.ok || !this.cacheFunc) return r as Result<T, I>;
+				return this.cacheFunc(r.error.issues);
+			});
+		}
+
 		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
-
-		// If the result is not ok, call the cacheFunc with the issues and return the result.
 		return this.cacheFunc(result.error.issues);
 	}
 }
@@ -370,7 +429,7 @@ const decodeArrayFunc = <T, U extends Decoder<T>>(
 		Issue<"array", string, { expected: string; received: string }>
 	>
 > =>
-	function (this: Katabami, value) {
+	async function (this: Katabami, value) {
 		if (!Array.isArray(value))
 			return {
 				error: new DecodeError(
@@ -383,52 +442,34 @@ const decodeArrayFunc = <T, U extends Decoder<T>>(
 				ok: false,
 			};
 
-		const results = value.reduce<
-			| { entries: Array<[number, Issues]>; ok: false }
-			| { entries: T[]; ok: true }
-		>(
-			(accumulator, item, i) => {
-				const result = decoder.decodeValue(item);
+		const entries: T[] = [];
+		for (let i = 0; i < value.length; i++) {
+			const _result = await decoder.decodeValue(value[i]);
+			const result = _result instanceof Promise ? await _result : _result;
 
-				if (accumulator.ok) {
-					if (result.ok) {
-						accumulator.entries.push(result.value);
-					} else {
-						return { entries: [[i, result.error.issues]], ok: false };
-					}
-				} else {
-					if (!result.ok) {
-						accumulator.entries.push([i, result.error.issues]);
-					}
-				}
-
-				return accumulator;
-			},
-			{ entries: [], ok: true },
-		);
-
-		if (results.ok) {
-			return { ok: true, value: results.entries as ArrayDecodeResponse<U> };
-		} else {
-			return {
-				error: new DecodeError(
-					"Array expected",
-					issue(
-						"array",
-						this.configStore.messages.issue.unexpectedValue,
-						{
-							expected: this.configStore.messages.type.array,
-							received: typeOf(value),
-						},
-						Object.fromEntries(results.entries),
-					) as ArrayDecodeIssues<
-						U,
-						Issue<"array", string, { expected: string; received: string }>
-					>,
-				),
-				ok: false,
-			};
+			if (!result.ok) {
+				return {
+					error: new DecodeError(
+						"Array expected",
+						issue(
+							"array",
+							this.configStore.messages.issue.unexpectedValue,
+							{
+								expected: this.configStore.messages.type.array,
+								received: typeOf(value),
+							},
+							{ [i]: result.error.issues },
+						) as ArrayDecodeIssues<
+							U,
+							Issue<"array", string, { expected: string; received: string }>
+						>,
+					),
+					ok: false,
+				};
+			}
+			entries.push(result.value);
 		}
+		return { ok: true, value: entries as ArrayDecodeResponse<U> };
 	};
 
 /**
@@ -496,44 +537,59 @@ const decodeMapFunc =
 		MapDecodeResponse<MapDecodeFunction<T, U>>,
 		MapDecodeIssues<U>
 	> =>
-	(value) => {
-		const result = decoders.reduce<
-			{ entries: Array<unknown>; ok: true } | { error: Issues; ok: false }
-		>(
-			(accumulator, decoder) => {
-				if (!accumulator.ok) return accumulator;
-
-				const result = decoder.decodeValue(value);
-
-				if (result.ok) {
-					accumulator.entries.push(result.value);
-				} else {
-					return result;
-				}
-
-				return accumulator;
-			},
-			{ entries: [], ok: true },
-		);
-
-		if (result.ok) {
-			return {
-				ok: true,
-				value: mapFunc(...(result.entries as MapDecodeFunctionParams<U>)),
-			};
-		} else {
-			return result as Err<MapDecodeIssues<U>>;
+	async (value) => {
+		const entries: unknown[] = [];
+		for (const decoder of decoders) {
+			const result = await decoder.decodeValue(value);
+			if (!result.ok) return result as Err<MapDecodeIssues<U>>;
+			entries.push(result.value);
 		}
+		return {
+			ok: true,
+			value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
+		} as Result<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>>;
 	};
 
 /**
- * Creates a decoder that decodes an object.
+ * Creates a decoder that decodes an object asynchronously.
+ * @template T - The type of the object.
+ * @template {ObjectDecoders<T>} U - The type of the decoders.
+ * @param {Katabami} katabami - The katabami instance.
+ * @param {unknown} value - The value to check.
+ * @returns {DecodeError<ObjectDecodeIssues<U, Issue<"object", string, { expected: string; received: string }>>} An error if the value is not a record.
+ */
+const notRecordError = <
+	T extends Record<string, unknown>,
+	U extends ObjectDecoders<T>,
+>(
+	katabami: Katabami,
+	value: unknown,
+): DecodeError<
+	ObjectDecodeIssues<
+		U,
+		Issue<"object", string, { expected: string; received: string }>
+	>
+> => {
+	return new DecodeError(
+		"Object expected",
+		issue("object", katabami.configStore.messages.issue.unexpectedValue, {
+			expected: katabami.configStore.messages.type.object,
+			received: typeOf(value),
+		}) as ObjectDecodeIssues<
+			U,
+			Issue<"object", string, { expected: string; received: string }>
+		>,
+	);
+};
+
+/**
+ * Creates a decoder that decodes an object synchronously.
  * @template T - The type of the object.
  * @template {ObjectDecoders<T>} U - The type of the decoders.
  * @param {U} decoders - The decoders for the object properties.
  * @returns {DecodeFunction<ObjectDecodeResponse<U>, Issue<"object", string, { expected: string; received: string }> | ObjectDecodeIssues<U>>} A decoder that decodes an object.
  */
-const decodeObjectFunc = <
+const decodeObjectSyncFunc = <
 	T extends Record<string, unknown>,
 	U extends ObjectDecoders<T>,
 >(
@@ -547,75 +603,80 @@ const decodeObjectFunc = <
 > =>
 	function (this: Katabami, value) {
 		if (!isRecord(value)) {
-			return {
-				error: new DecodeError(
-					"Object expected",
-					issue("object", this.configStore.messages.issue.unexpectedValue, {
-						expected: this.configStore.messages.type.object,
-						received: typeOf(value),
-					}) as ObjectDecodeIssues<
-						U,
-						Issue<"object", string, { expected: string; received: string }>
-					>,
-				),
-				ok: false,
-			};
+			return { error: notRecordError(this, value), ok: false };
 		}
 
-		const results = Object.entries(decoders).reduce<
-			| { entries: Array<[string, Issues]>; ok: false }
-			| { entries: Array<[string, unknown]>; ok: true }
-		>(
-			(accumulator, [key, decoder]: [string, Decoder<U[keyof U]>]) => {
-				const result = decoder.decodeValue(value[key]);
+		
+	};
 
-				if (accumulator.ok) {
-					if (result.ok) {
-						accumulator.entries.push([key, result.value]);
-					} else {
-						return { entries: [[key, result.error.issues]], ok: false };
-					}
-				} else {
-					if (!result.ok) {
-						accumulator.entries.push([key, result.error.issues]);
-					}
-				}
+/**
+ * Creates a decoder that decodes an object asynchronously.
+ * @template T - The type of the object.
+ * @template {ObjectDecoders<T>} U - The type of the decoders.
+ * @param {U} decoders - The decoders for the object properties.
+ * @returns {DecodeFunction<ObjectDecodeResponse<U>, Issue<"object", string, { expected: string; received: string }> | ObjectDecodeIssues<U>>} A decoder that decodes an object.
+ */
+const decodeObjectAsyncFunc = <
+	T extends Record<string, unknown>,
+	U extends ObjectDecoders<T>,
+>(
+	decoders: U,
+): DecodeFunction<
+	ObjectDecodeResponse<U>,
+	ObjectDecodeIssues<
+		U,
+		Issue<"object", string, { expected: string; received: string }>
+	>
+> =>
+	async function (this: Katabami, value) {
+		if (!isRecord(value))
+			return { error: notRecordError(this, value), ok: false };
+		
 
-				return accumulator;
-			},
-			{ entries: [], ok: true },
-		);
+		const entries: Array<[string, unknown]> = [];
 
-		if (results.ok) {
-			return {
-				ok: true,
-				value: Object.fromEntries(results.entries) as ObjectDecodeResponse<U>,
-			};
-		} else {
-			const issues = Object.fromEntries(results.entries) as ObjectDecodeIssues<
+		const results = 
+
+		for (const [key, decoder] of Object.entries(decoders)) {
+			const result = await decoder.decodeValue(value[key]);
+			if (!result.ok) {
+				return {
+					error: new DecodeError(
+						"Object expected",
+						issue(
+							"object",
+							this.configStore.messages.issue.unexpectedValue,
+							{
+								expected: this.configStore.messages.type.object,
+								received: typeOf(value),
+							},
+							{ [key]: result.error.issues },
+						) as ObjectDecodeIssues<
+							U,
+							Issue<"object", string, { expected: string; received: string }>
+						>,
+					),
+					ok: false,
+				};
+			}
+			entries.push([key, result.value]);
+		}
+
+		new DecodeError(
+			"Object expected",
+			issue("object", this.configStore.messages.issue.unexpectedValue, {
+				expected: this.configStore.messages.type.object,
+				received: typeOf(value),
+			}) as ObjectDecodeIssues<
 				U,
 				Issue<"object", string, { expected: string; received: string }>
-			>;
+			>,
+		)
 
-			return {
-				error: new DecodeError(
-					"Object expected",
-					issue(
-						"object",
-						this.configStore.messages.issue.unexpectedValue,
-						{
-							expected: this.configStore.messages.type.object,
-							received: typeOf(value),
-						},
-						issues,
-					) as ObjectDecodeIssues<
-						U,
-						Issue<"object", string, { expected: string; received: string }>
-					>,
-				),
-				ok: false,
-			};
-		}
+		return {
+			ok: true,
+			value: Object.fromEntries(entries) as ObjectDecodeResponse<U>,
+		};
 	};
 
 /**
@@ -646,7 +707,7 @@ const decodeTupleFunc = <
 	  >
 	| TupleDecodeIssues<U, never>
 > =>
-	function (this: Katabami, value) {
+	async function (this: Katabami, value) {
 		if (!Array.isArray(value)) {
 			return {
 				error: new DecodeError(
@@ -677,44 +738,20 @@ const decodeTupleFunc = <
 			};
 		}
 
-		const results = decoders.reduce<
-			| { entries: Array<[number, Issues]>; ok: false }
-			| { entries: Array<unknown>; ok: true }
-		>(
-			(accumulator, decoder, i) => {
-				const result = decoder.decodeValue(value[i]);
-
-				if (accumulator.ok) {
-					if (result.ok) {
-						accumulator.entries.push(result.value);
-					} else {
-						return { entries: [[i, result.error.issues]], ok: false };
-					}
-				} else {
-					if (!result.ok) {
-						accumulator.entries.push([i, result.error.issues]);
-					}
-				}
-
-				return accumulator;
-			},
-			{ entries: [], ok: true },
-		);
-
-		if (results.ok) {
-			return { ok: true, value: results.entries as TupleDecodeResponse<U> };
-		} else {
-			return {
-				error: new DecodeError(
-					"Tuple expected",
-					Object.fromEntries(results.entries) as TupleDecodeIssues<
-						U,
-						Issue<"tuple", never>
-					>,
-				),
-				ok: false,
-			};
+		const entries: unknown[] = [];
+		for (let i = 0; i < decoders.length; i++) {
+			const result = await decoders[i].decodeValue(value[i]);
+			if (!result.ok) {
+				return {
+					error: new DecodeError("Tuple expected", {
+						[i]: result.error.issues,
+					} as TupleDecodeIssues<U, Issue<"tuple", never>>),
+					ok: false,
+				};
+			}
+			entries.push(result.value);
 		}
+		return { ok: true, value: entries as TupleDecodeResponse<U> };
 	};
 
 const decodeUnionFunc = <
@@ -723,33 +760,17 @@ const decodeUnionFunc = <
 >(
 	decoders: U,
 ): DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>> =>
-	function (this: Katabami, value) {
-		const results = (decoders as Array<Decoder<unknown>>).reduce<
-			{ entries: Array<Issues>; ok: false } | { ok: true; value: unknown }
-		>(
-			(accumulator, decoder) => {
-				if (accumulator.ok) return accumulator;
-
-				const result = decoder.decodeValue(value);
-				if (result.ok) return result;
-
-				accumulator.entries.push(result.error.issues);
-				return accumulator;
-			},
-			{ entries: [], ok: false },
-		);
-
-		if (results.ok) {
-			return results as Ok<UnionDecodeResponse<U>>;
-		} else {
-			return {
-				error: new DecodeError(
-					"Union expected",
-					results.entries as UnionDecodeIssues<U>,
-				),
-				ok: false,
-			};
+	async function (this: Katabami, value) {
+		const entries: Issues[] = [];
+		for (const decoder of decoders as Array<Decoder<unknown>>) {
+			const result = await decoder.decodeValue(value);
+			if (result.ok) return result as Ok<UnionDecodeResponse<U>>;
+			entries.push(result.error.issues);
 		}
+		return {
+			error: new DecodeError("Union expected", entries as UnionDecodeIssues<U>),
+			ok: false,
+		};
 	};
 
 /**
@@ -767,7 +788,13 @@ export function array<T, U extends Decoder<T> = Decoder<T>>(
 		Issue<"array", string, { expected: string; received: string }>
 	>
 > {
-	return new _Decoder(undefined, decodeArrayFunc(decoder));
+	return new _Decoder<
+		ArrayDecodeResponse<U>,
+		ArrayDecodeIssues<
+			U,
+			Issue<"array", string, { expected: string; received: string }>
+		>
+	>(undefined, decodeArrayFunc(decoder));
 }
 
 /**
@@ -878,7 +905,10 @@ export function map<
 	mapFunc: MapDecodeFunction<T, U>,
 	...decoders: U
 ): Decoder<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>> {
-	return new _Decoder(undefined, decodeMapFunc(mapFunc, ...decoders));
+	return new _Decoder<
+		MapDecodeResponse<MapDecodeFunction<T, U>>,
+		MapDecodeIssues<U>
+	>(undefined, decodeMapFunc(mapFunc, ...decoders));
 }
 
 /**
@@ -901,7 +931,18 @@ export function object<
 		Issue<"object", string, { expected: string; received: string }>
 	>
 > {
-	return new _Decoder(undefined, decodeObjectFunc<T, U>(decoders));
+	return new _Decoder<
+		ObjectDecodeResponse<U>,
+		ObjectDecodeIssues<
+			U,
+			Issue<"object", string, { expected: string; received: string }>
+		>
+	>(
+		undefined,
+		hasPromise(Object.values(decoders))
+			? decodeObjectAsyncFunc(decoders)
+			: decodeObjectSyncFunc(decoders),
+	);
 }
 
 /**
@@ -973,7 +1014,18 @@ export function tuple<
 	  >
 	| TupleDecodeIssues<U, Issue<"tuple", string, undefined>>
 > {
-	return new _Decoder(undefined, decodeTupleFunc<T, U>(decoders));
+	return new _Decoder<
+		TupleDecodeResponse<U>,
+		| Issues<
+				"tuple",
+				Issue<"tuple:length", string, { expected: string; received: string }>
+		  >
+		| Issues<
+				"tuple",
+				Issue<"tuple:type", string, { expected: string; received: string }>
+		  >
+		| TupleDecodeIssues<U, Issue<"tuple", string, undefined>>
+	>(undefined, decodeTupleFunc<T, U>(decoders));
 }
 /**
  * Create a decoder that accepts any of the given decoders.
@@ -987,7 +1039,10 @@ export function union<
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T> = UnionDecoders<T>,
 >(...decoders: U): Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>> {
-	return new _Decoder(undefined, decodeUnionFunc<T, U>(decoders));
+	return new _Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>>(
+		undefined,
+		decodeUnionFunc<T, U>(decoders),
+	);
 }
 
 /**
