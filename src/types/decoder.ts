@@ -1,4 +1,4 @@
-import type { TypeOf, UnionToTuple } from "./helpers.js";
+import type { UnionToTuple } from "./helpers.js";
 import type { Primitive } from "./primitive.js";
 import type { Result } from "./result.js";
 
@@ -17,7 +17,11 @@ export type ArrayDecodeIssues<
  * The response type of an array decoder.
  */
 export type ArrayDecodeResponse<T extends Decoder<unknown>> =
-	T extends Decoder<infer A> ? A[] : never;
+	T extends Decoder<infer A>
+		? A extends Awaited<A>
+			? A[]
+			: Promise<Awaited<A>[]>
+		: never;
 
 /**
  * The catch function for a decoder.
@@ -25,13 +29,6 @@ export type ArrayDecodeResponse<T extends Decoder<unknown>> =
 export type CatchFunction<T, I extends Issues, J extends Issues> = (
 	issues: I,
 ) => Result<T, J>;
-
-/**
- * The decode function for a decoder.
- */
-export type DecodeFunction<T, Is extends Issues = Issues<TypeOf<T>>> = (
-	value: unknown,
-) => Result<T, Is>;
 
 /**
  * Decoder interface.
@@ -44,17 +41,31 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @param {MapFunction<T, U>} mapFunc The mapping function.
 	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
 	 */
-	andMap<U>(mapFunc: MapFunction<T, U>): Decoder<U, I>;
+	andMap<U>(mapFunc: (value: T) => U): Decoder<U, I>;
 
 	/**
 	 * Applies another decoder to the decoded value.
 	 *
 	 * @template U The type of the decoded value.
 	 * @template {Issues<U>} J The type of the issues of the other decoder.
-	 * @param {Decoder<U, J>} decoder The other decoder.
+	 * @param {(value: T) => Decoder<U, J>} nextFunc The function to apply the next decoder to the decoded value.
 	 * @returns {Decoder<U, J>} A new decoder that applies the other decoder to the decoded value.
 	 */
-	andThen<U, J extends Issues>(decoder: Decoder<U, J>): Decoder<U, I | J>;
+	andThen<U, J extends Issues = Issues>(
+		nextFunc: (value: T) => Decoder<U, J>,
+	): Decoder<U, I | J>;
+
+	/**
+	 * Applies another decoder to the decoded value.
+	 *
+	 * @template U The type of the decoded value.
+	 * @template {Issues<U>} J The type of the issues of the other decoder.
+	 * @param {(value: T) => Promise<Decoder<U, J>>} nextFunc The function to apply the next decoder to the decoded value.
+	 * @returns {Decoder<Promise<U>, J>} A new decoder that applies the other decoder to the decoded value.
+	 */
+	andThen<U, J extends Issues = Issues>(
+		nextFunc: (value: T) => Promise<Decoder<U, J>>,
+	): Decoder<Promise<U>, I | J>;
 
 	/**
 	 * Catches and transforms issues during decoding.
@@ -90,9 +101,22 @@ export interface Decoder<T, I extends Issues = Issues> {
 export type Infer<T extends Decoder<unknown>> =
 	T extends Decoder<infer A> ? A : "";
 
+/**
+ * The type of a map decode function.
+ */
 export type MapDecodeFunction<T, U extends Array<Decoder<unknown>>> = (
-	...args: TupleDecodeResponse<U>
+	...args: MapDecodeFunctionParams<U>
 ) => T;
+
+/**
+ * The parameters type of a map decode function.
+ */
+export type MapDecodeFunctionParams<T extends Array<Decoder<unknown>>> =
+	T extends [Decoder<infer A>, ...infer B]
+		? B extends Array<Decoder<unknown>>
+			? [Awaited<A>, ...MapDecodeFunctionParams<B>]
+			: [Awaited<A>]
+		: [];
 
 /**
  * The issues type of a map decoder.
@@ -111,12 +135,12 @@ export type MapDecodeIssues<T extends Array<Decoder<unknown>>> = T extends [
  */
 export type MapDecodeResponse<
 	T extends MapDecodeFunction<unknown, Array<Decoder<unknown>>>,
-> = ReturnType<T>;
-
-/**
- * The map function for a decoder.
- */
-export type MapFunction<T, U> = (value: T) => U;
+> =
+	T extends MapDecodeFunction<unknown, infer B>
+		? TupleHasPromise<B> extends true
+			? Promise<ReturnType<T>>
+			: ReturnType<T>
+		: never;
 
 /**
  * The issues type of an object decoder.
@@ -136,9 +160,14 @@ export type ObjectDecodeIssues<
 /**
  * The response type of an object decoder.
  */
-export type ObjectDecodeResponse<T extends Record<string, Decoder<unknown>>> = {
-	[key in keyof T]: T[key] extends Decoder<infer A> ? A : never;
-};
+export type ObjectDecodeResponse<T extends Record<string, Decoder<unknown>>> =
+	RecordHasPromise<T> extends true
+		? Promise<{
+				[key in keyof T]: T[key] extends Decoder<infer A> ? Awaited<A> : never;
+			}>
+		: {
+				[key in keyof T]: T[key] extends Decoder<infer A> ? A : never;
+			};
 
 /**
  * The decoders type of an object.
@@ -158,14 +187,10 @@ export type TupleDecodeIssues<
 /**
  * The response type of a tuple decoder.
  */
-export type TupleDecodeResponse<T extends Array<Decoder<unknown>>> = T extends [
-	Decoder<infer A>,
-	...infer B,
-]
-	? B extends Array<Decoder<unknown>>
-		? [A, ...TupleDecodeResponse<B>]
-		: [A]
-	: [];
+export type TupleDecodeResponse<T extends Array<Decoder<unknown>>> =
+	TupleHasPromise<T> extends true
+		? Promise<TupleDecodeResponseAwaitedHelper<T>>
+		: TupleDecodeResponseHelper<T>;
 
 /**
  * The type of a tuple decoder.
@@ -191,18 +216,27 @@ export type UnionDecodeIssues<T> = T extends [
 /**
  * The response type of a union decoder.
  */
-export type UnionDecodeResponse<T> = T extends [Decoder<infer A>, ...infer B]
-	? B extends Array<Decoder<unknown>>
-		? A | UnionDecodeResponse<B>
-		: A
-	: never;
-
+export type UnionDecodeResponse<T> =
+	UnionHasPromise<T> extends true
+		? Promise<UnionDecodeResponseAwaitedHelper<T>>
+		: UnionDecodeResponseHelper<T>;
 /**
  * The type of a union decoder.
  */
 export type UnionDecoders<T> = UnionToTuple<
 	T extends infer A ? Decoder<A> : never
 >;
+
+/**
+ * The helper type to check if a record has a promise.
+ */
+type RecordHasPromise<T extends Record<string, unknown>> = T extends {
+	[key in keyof T]: T[key] extends Decoder<infer A, infer B>
+		? Decoder<Awaited<A>, B>
+		: never;
+}
+	? false
+	: true;
 
 /**
  * The helper type for the issues type of a tuple decoder.
@@ -218,6 +252,72 @@ type TupleDecodeIssueHelper<
 			>
 		: { readonly [key in Counter["length"]]?: A }
 	: Record<never, never>;
+
+/**
+ * The response type of a tuple decoder.
+ */
+type TupleDecodeResponseAwaitedHelper<T extends Array<Decoder<unknown>>> =
+	T extends [Decoder<infer A>, ...infer B]
+		? B extends Array<Decoder<unknown>>
+			? [Awaited<A>, ...TupleDecodeResponseAwaitedHelper<B>]
+			: [Awaited<A>]
+		: [];
+
+/**
+ * The response type of a tuple decoder.
+ */
+type TupleDecodeResponseHelper<T extends Array<Decoder<unknown>>> = T extends [
+	Decoder<infer A>,
+	...infer B,
+]
+	? B extends Array<Decoder<unknown>>
+		? [A, ...TupleDecodeResponseHelper<B>]
+		: [A]
+	: [];
+
+/**
+ * The helper type to check if a tuple has a promise.
+ */
+type TupleHasPromise<T extends Array<Decoder<unknown>>> = T extends [
+	Decoder<infer A>,
+	...infer B,
+]
+	? A extends Awaited<A>
+		? B extends Array<Decoder<unknown>>
+			? TupleHasPromise<B>
+			: false
+		: true
+	: false;
+
+/**
+ * The helper type to check if a union has a promise.
+ */
+type UnionDecodeResponseAwaitedHelper<T> = T extends [
+	Decoder<infer A>,
+	...infer B,
+]
+	? B extends Array<Decoder<unknown>>
+		? Awaited<A> | UnionDecodeResponseAwaitedHelper<B>
+		: Awaited<A>
+	: never;
+
+/**
+ * The response type of a union decoder.
+ */
+type UnionDecodeResponseHelper<T> = T extends [Decoder<infer A>, ...infer B]
+	? B extends Array<Decoder<unknown>>
+		? A | UnionDecodeResponseHelper<B>
+		: A
+	: never;
+
+/**
+ * The helper type to check if a union has a promise.
+ */
+type UnionHasPromise<T> = T extends [Decoder<infer A>, ...infer B]
+	? A extends Awaited<A>
+		? UnionHasPromise<B>
+		: true
+	: false;
 
 declare const labelSymbol: unique symbol;
 

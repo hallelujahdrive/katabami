@@ -10,7 +10,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeValue(true);
 
-				const expectedResult = { ok: true, value: true };
+				const expectedResult = { ok: true, value: true } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -18,7 +18,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue("foo");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -28,7 +31,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString("true");
 
-				const expectedResult = { ok: true, value: true };
+				const expectedResult = { ok: true, value: true } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -36,7 +39,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue("foo");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -50,7 +56,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeValue("foo");
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -58,7 +64,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue("bar");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -68,7 +77,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString('"foo"');
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -76,7 +85,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeString('"bar"');
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -97,7 +109,10 @@ describe("decoder", () => {
 						foo: "foo",
 					});
 
-					const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
+					const expectedResult = {
+						ok: true,
+						value: { bar: 1, foo: "foo" },
+					} as const;
 
 					expect(result).toStrictEqual(expectedResult);
 				});
@@ -108,7 +123,10 @@ describe("decoder", () => {
 						foo: "foo",
 					});
 
-					const expectedResult = { error: expect.any(DecodeError), ok: false };
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
 
 					expect(result).toStrictEqual(expectedResult);
 				});
@@ -118,7 +136,10 @@ describe("decoder", () => {
 				test("success", () => {
 					const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
-					const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
+					const expectedResult = {
+						ok: true,
+						value: { bar: 1, foo: "foo" },
+					} as const;
 
 					expect(result).toStrictEqual(expectedResult);
 				});
@@ -126,7 +147,10 @@ describe("decoder", () => {
 				test("fail", () => {
 					const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
-					const expectedResult = { error: expect.any(DecodeError), ok: false };
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
 
 					expect(result).toStrictEqual(expectedResult);
 				});
@@ -149,7 +173,10 @@ describe("decoder", () => {
 					},
 				});
 
-				const expectedResult = { ok: true, value: { bar: { foo: "foo" } } };
+				const expectedResult = {
+					ok: true,
+					value: { bar: { foo: "foo" } },
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -160,7 +187,10 @@ describe("decoder", () => {
 					foo: "foo",
 				});
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -170,7 +200,10 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString('{"bar":{"foo":"foo"}}');
 
-				const expectedResult = { ok: true, value: { bar: { foo: "foo" } } };
+				const expectedResult = {
+					ok: true,
+					value: { bar: { foo: "foo" } },
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -178,7 +211,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -192,7 +228,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeValue("foo");
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -200,7 +236,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue(true);
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -210,7 +249,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString('"foo"');
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -218,7 +257,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeString("true");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -232,7 +274,10 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeValue(["foo", 1]);
 
-				const expectedResult = { ok: true, value: ["foo", 1] };
+				const expectedResult = { ok: true, value: ["foo", 1] } satisfies {
+					ok: true;
+					value: ["foo", number];
+				};
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -240,7 +285,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue([true, 1]);
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -250,7 +298,10 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString('["foo",1]');
 
-				const expectedResult = { ok: true, value: ["foo", 1] };
+				const expectedResult = { ok: true, value: ["foo", 1] } satisfies {
+					ok: true;
+					value: ["foo", number];
+				};
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -258,7 +309,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeString("[true,1]");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -272,7 +326,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeValue("foo");
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -280,7 +334,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeValue(true);
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -290,7 +347,7 @@ describe("decoder", () => {
 			test("success", () => {
 				const result = decoder.decodeString('"foo"');
 
-				const expectedResult = { ok: true, value: "foo" };
+				const expectedResult = { ok: true, value: "foo" } as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});
@@ -298,7 +355,10 @@ describe("decoder", () => {
 			test("fail", () => {
 				const result = decoder.decodeString("true");
 
-				const expectedResult = { error: expect.any(DecodeError), ok: false };
+				const expectedResult = {
+					error: expect.any(DecodeError),
+					ok: false,
+				} as const;
 
 				expect(result).toStrictEqual(expectedResult);
 			});

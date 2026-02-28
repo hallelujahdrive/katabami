@@ -2,17 +2,17 @@ import type { ParseKeys } from "i18next";
 import type {
 	ArrayDecodeIssues,
 	ArrayDecodeResponse,
+	Awaitable,
 	CatchFunction,
-	DecodeFunction,
 	Decoder,
 	Err,
 	Issue,
 	Issues,
 	KatabamiConfig,
 	MapDecodeFunction,
+	MapDecodeFunctionParams,
 	MapDecodeIssues,
 	MapDecodeResponse,
-	MapFunction,
 	MessageResources,
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
@@ -33,12 +33,25 @@ import { defaultConfig } from "./config.js";
 import { DecodeError } from "./error.js";
 import { issue } from "./issue.js";
 
+/**
+ * The decode function for a decoder.
+ */
+type DecodeFunction<T, Is extends Issues = Issues<TypeOf<T>>> = (
+	value: unknown,
+) => Awaitable<Result<T, Is>>;
+
+/**
+ * The helper type to make all properties of an object required.
+ */
 type DeepRequired<T> = {
 	[K in keyof T]-?: NonNullable<T[K]> extends Record<string, unknown>
 		? DeepRequired<NonNullable<T[K]>>
 		: NonNullable<T[K]>;
 };
 
+/**
+ * The store for the configuration.
+ */
 class ConfigStore {
 	public get messages(): DeepRequired<MessageResources> {
 		return this.config.messages;
@@ -156,7 +169,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @param {MapFunction<T, U>} mapFunc
 	 * @returns {Decoder<U, I>}
 	 */
-	public andMap<U>(mapFunc: MapFunction<T, U>): Decoder<U, I> {
+	public andMap<U>(mapFunc: (value: T) => U): Decoder<U, I> {
 		return new _Decoder(this.katabami, (value) => {
 			const result = this._decode(value);
 			if (!result.ok) return result;
@@ -169,17 +182,17 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * Applies another decoder to the decoded value.
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
-	 * @param {Decoder<U, I | J>} decoder
-	 * @returns {Decoder<U, I | J>}
+	 * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
+	 * @returns {Decoder<Awaitable<U>, I | J>}
 	 */
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
-		decoder: Decoder<U, J>,
+		nextFunc: (value: T) => Awaitable<Decoder<U, J>>,
 	): Decoder<U, I | J> {
-		return new _Decoder(this.katabami, (value) => {
+		return new _Decoder(this.katabami, async (value) => {
 			const result = this._decode(value);
 			if (!result.ok) return result as Result<U, I | J>;
 
-			return decoder.decodeValue(result.value);
+			return (await nextFunc(result.value)).decodeValue(result.value);
 		});
 	}
 
@@ -236,9 +249,9 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @returns {Result<T, I>} The decoded value or an error with issues.
 	 * @private
 	 */
-	private _decode(value: unknown): Result<T, I> {
+	private async _decode(value: unknown): Promise<Awaitable<Result<T, I>>> {
 		// Decode the value.
-		const result = this.decodeFunc.call(this.katabami, value);
+		const result = await this.decodeFunc.call(this.katabami, value);
 
 		// If the result is ok or no cacheFunc is set, return the result as is.
 		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
@@ -506,7 +519,7 @@ const decodeMapFunc =
 		if (result.ok) {
 			return {
 				ok: true,
-				value: mapFunc(...(result.entries as TupleDecodeResponse<U>)),
+				value: mapFunc(...(result.entries as MapDecodeFunctionParams<U>)),
 			};
 		} else {
 			return result as Err<MapDecodeIssues<U>>;

@@ -1,6 +1,11 @@
 import type { Primitive } from "./primitive.js";
 
 /**
+ * A type that is either a promise or a value.
+ */
+export type Awaitable<T> = Promise<T> | T;
+
+/**
  * Check if a type is a union.
  */
 export type IsUnion<T, U = T> = T extends T
