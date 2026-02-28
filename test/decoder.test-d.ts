@@ -20,7 +20,7 @@ describe("Decoder", () => {
 
 		test("promise", () => {
 			const _decoder = katabami.string().andMap(async (value) => {
-				await new Promise((resolve) => setTimeout(resolve, 1000));
+				await new Promise((resolve) => setTimeout(resolve, 100));
 
 				return Number(value);
 			});
@@ -46,7 +46,7 @@ describe("Decoder", () => {
 
 		test("promise", () => {
 			const _decoder = katabami.value().andThen(async () => {
-				await new Promise((resolve) => setTimeout(resolve, 1000));
+				await new Promise((resolve) => setTimeout(resolve, 100));
 
 				return katabami.integer();
 			});
@@ -71,7 +71,7 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = katabami.array(
 				katabami.float().andThen(async () => {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
 					return katabami.integer();
 				}),
@@ -118,7 +118,7 @@ describe("Decoder", () => {
 				(foo, bar) => ({ ...foo, ...bar }),
 				katabami.object({
 					foo: katabami.float().andThen(async () => {
-						await new Promise((resolve) => setTimeout(resolve, 1000));
+						await new Promise((resolve) => setTimeout(resolve, 100));
 						return katabami.float();
 					}),
 				}),
@@ -136,7 +136,7 @@ describe("Decoder", () => {
 		test("has promise map function", () => {
 			const _decoder = katabami.map(
 				async (foo, bar) => {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					await new Promise((resolve) => setTimeout(resolve, 100));
 					return { ...foo, ...bar };
 				},
 				katabami.object({ foo: katabami.float() }),
@@ -180,7 +180,7 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = katabami.object({
 				num: katabami.float().andThen(async () => {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
 					return katabami.integer();
 				}),
@@ -236,7 +236,7 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = katabami.tuple(
 				katabami.constant("foo").andThen(async (value) => {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
 					return katabami.succeed(value);
 				}),
@@ -271,7 +271,7 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = katabami.union(
 				katabami.constant("bar").andThen(async (value) => {
-					await new Promise((resolve) => setTimeout(resolve, 1000));
+					await new Promise((resolve) => setTimeout(resolve, 100));
 
 					return katabami.succeed(value);
 				}),
