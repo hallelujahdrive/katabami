@@ -20,9 +20,7 @@ describe("Decoder", () => {
 
 		test("promise", () => {
 			const _decoder = katabami.string().andMap(async (value) => {
-				await new Promise((resolve) => setTimeout(resolve, 100));
-
-				return Number(value);
+				return new Promise<number>((resolve) => resolve(Number(value)));
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
@@ -45,10 +43,10 @@ describe("Decoder", () => {
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.value().andThen(async () => {
-				await new Promise((resolve) => setTimeout(resolve, 100));
-
-				return katabami.integer();
+			const _decoder = katabami.value().andThen(() => {
+				return new Promise<Decoder<number>>((resolve) =>
+					resolve(katabami.integer()),
+				);
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
@@ -71,9 +69,9 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = katabami.array(
 				katabami.float().andThen(async () => {
-					await new Promise((resolve) => setTimeout(resolve, 100));
-
-					return katabami.integer();
+					return new Promise<Decoder<number>>((resolve) =>
+						resolve(katabami.integer()),
+					);
 				}),
 			);
 
