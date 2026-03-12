@@ -663,6 +663,31 @@ const decodeFailedFunc = <
 	};
 };
 
+const decodeLazyFunc = <T, I extends Issues = Issues>(
+	lazyFunc: () => Awaitable<Decoder<T, I>>,
+): DecodeFunction<T, I> => {
+	return function (this: Katabami, value) {
+		const decoder = lazyFunc();
+		if (decoder instanceof Promise) {
+			return decoder.then((decoder) => {
+				if (decoder instanceof Promise) {
+					return decoder.then((decoder) => decoder.decodeValue(value));
+				}
+				return decoder.decodeValue(value);
+			});
+		}
+		return decoder.decodeValue(value);
+	};
+};
+
+/**
+ * Helper function to decode a map.
+ * @template T - The type of the map value.
+ * @template {Decoder<unknown>} U - The type of the decoders.
+ * @param {MapDecodeFunction<T, U>} mapFunc - The function to map the decoded value.
+ * @param {...Decoder<unknown>} decoders - The decoders to decode the value.
+ * @returns {DecodeFunction<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>>} A decoder that decodes a map.
+ */
 const decodeMapFunc =
 	<T, U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>>(
 		mapFunc: MapDecodeFunction<T, U>,
@@ -918,10 +943,10 @@ const decodeTupleFunc = <
 			};
 
 		const results = decoders.map<[number, Awaitable<Result<unknown, Issues>>]>(
-			(decoder: Decoder<unknown>, i: number) => {
-				console.log("Decode", decoder.decodeValue(value[i]));
-				return [i, decoder.decodeValue(value[i])];
-			},
+			(decoder: Decoder<unknown>, i: number) => [
+				i,
+				decoder.decodeValue(value[i]),
+			],
 		);
 
 		if (results.some(([_, result]) => result instanceof Promise)) {
@@ -1190,6 +1215,39 @@ export function integer(): Decoder<
 	>
 > {
 	return integerDecoder;
+}
+
+/**
+ * Create a decoder that lazily decodes the value.
+ * @template T - The type of the value.
+ * @template {Issues} I The type of the issues.
+ * @param {() => Decoder<T, I>} lazyFunc The function to lazily decode the value.
+ * @returns {Decoder<T, I>} A decoder that lazily decodes the value.
+ */
+export function lazy<T, I extends Issues = Issues>(
+	lazyFunc: () => Decoder<T, I>,
+): Decoder<T, I>;
+/**
+ * Create a decoder that lazily decodes the value.
+ * @template T - The type of the value.
+ * @template {Issues} I The type of the issues.
+ * @param {() => Promise<Decoder<T, I>>} lazyFunc The function to lazily decode the value.
+ * @returns {Decoder<Promise<T>, I>} A decoder that lazily decodes the value.
+ */
+export function lazy<T, I extends Issues = Issues>(
+	lazyFunc: () => Promise<Decoder<T, I>>,
+): Decoder<Promise<T>, I>;
+/**
+ * Create a decoder that lazily decodes the value.
+ * @template T - The type of the value.
+ * @template {Issues} I The type of the issues.
+ * @param {() => Awaitable<Decoder<T, I>>} lazyFunc The function to lazily decode the value.
+ * @returns {Decoder<T, I>} A decoder that lazily decodes the value.
+ */
+export function lazy<T, I extends Issues = Issues>(
+	lazyFunc: () => Awaitable<Decoder<T, I>>,
+): Decoder<T, I> {
+	return new _Decoder<T, I>(undefined, decodeLazyFunc(lazyFunc));
 }
 
 export function map<

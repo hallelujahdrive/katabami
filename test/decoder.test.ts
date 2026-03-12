@@ -101,6 +101,107 @@ describe("decoder", () => {
 		});
 	});
 
+	describe("andThen", () => {
+		describe("sync", () => {
+			const decoder = katabami.float().andThen(() => katabami.integer());
+
+			describe("decode value", () => {
+				test("success", () => {
+					const result = decoder.decodeValue(1);
+
+					const expectedResult = { ok: true, value: 1 } as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeValue(1.5);
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+
+			describe("decode string", () => {
+				test("success", () => {
+					const result = decoder.decodeString("1");
+
+					const expectedResult = { ok: true, value: 1 } as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeString("1.5");
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+		});
+
+		describe("async", () => {
+			const decoder = katabami
+				.float()
+				.andThen(
+					() =>
+						new Promise<Decoder<number>>((resolve) =>
+							resolve(katabami.integer()),
+						),
+				);
+
+			describe("decode value", () => {
+				test("success", async () => {
+					const result = await decoder.decodeValue(1);
+
+					const expectedResult = { ok: true, value: 1 } as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", async () => {
+					const result = await decoder.decodeValue(1.5);
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+
+			describe("decode string", () => {
+				test("success", async () => {
+					const result = await decoder.decodeString("1");
+
+					const expectedResult = { ok: true, value: 1 } as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", async () => {
+					const result = await decoder.decodeString("1.5");
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+		});
+	});
+
 	describe("array", () => {
 		describe("sync", () => {
 			const decoder = katabami.array(katabami.string());
