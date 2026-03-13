@@ -208,35 +208,6 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	}
 
 	/**
-	 * @template U
-	 * @param {MapFunction<T, U>} mapFunc
-	 * @returns {Decoder<U, I>}
-	 */
-	public andMap<U>(mapFunc: (value: Awaited<T>) => U): Decoder<U, I> {
-		return new _Decoder(this.katabami, (value) => {
-			const res = this._decode(value);
-			if (res instanceof Promise) {
-				return res.then(async (res) => {
-					if (!res.ok) return res;
-
-					const resolved = await (res.value as Awaitable<Awaited<T>>);
-					return { ok: true, value: mapFunc(resolved) };
-				});
-			}
-
-			if (!res.ok) return res;
-
-			if (res.value instanceof Promise) {
-				return res.value.then((value) => {
-					return { ok: true, value: mapFunc(value) };
-				});
-			}
-
-			return { ok: true, value: mapFunc(res.value as Awaited<T>) };
-		});
-	}
-
-	/**
 	 * Applies another decoder to the decoded value.
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
@@ -246,11 +217,14 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
 		nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
 	): Decoder<U, I | J> {
-		return new _Decoder(
+		return new _Decoder<U, I | J>(
 			this.katabami,
-			this.andThenFunc(
-				nextFunc as (value: Awaited<T> | T) => Promise<Decoder<U, J>>,
-			),
+			andThenFunc.call(
+				this,
+				nextFunc as unknown as (
+					value: unknown,
+				) => Awaitable<Decoder<unknown, Issues>>,
+			) as DecodeFunction<U, I | J>,
 		) as Decoder<U, I | J> & Decoder<Promise<U>, I | J>;
 	}
 
@@ -348,6 +322,23 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	}
 
 	/**
+	 * @template U
+	 * @param {MapFunction<T, U>} _mapFunc
+	 * @returns {Decoder<U, I>}
+	 */
+	public map<U>(
+		_mapFunc: (value: Awaited<T>) => Awaitable<U>,
+	): Decoder<Awaitable<U>, I> {
+		return new _Decoder<U, I>(
+			this.katabami,
+			mapFunc.call(
+				this,
+				_mapFunc as (value: unknown) => unknown,
+			) as DecodeFunction<U, I>,
+		);
+	}
+
+	/**
 	 * Internal decode function.
 	 * @param {unknown} value The value to decode.
 	 * @returns {Awaitable<Result<T, I>>} The decoded value or an error with issues.
@@ -366,52 +357,108 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
 		return this.cacheFunc(result.error.issues);
 	}
+}
 
-	/**
-	 * Applies another decoder to the decoded value.
-	 * @template U
-	 * @template {Issues<TypeOf<U>>} J
-	 * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
-	 * @returns {Decoder<Awaitable<U>, I | J>}
-	 */
-	private andThenFunc<U, J extends Issues = Issues<TypeOf<U>>>(
-		nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
-	): (value: unknown) => Awaitable<Result<U, I | J>> {
-		return (value) => {
-			const res = this._decode(value);
+/**
+ * Applies another decoder to the decoded value.
+ * @template T
+ * @template U
+ * @template {Issues<TypeOf<T>>} I
+ * @template {Issues<TypeOf<U>>} J
+ * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
+ * @returns {Decoder<Awaitable<U>, I | J>}
+ */
+function andThenFunc<
+	T,
+	U,
+	I extends Issues = Issues<TypeOf<T>>,
+	J extends Issues = Issues<TypeOf<U>>,
+>(
+	this: _Decoder<T, I>,
+	nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
+): (value: unknown) => Awaitable<Result<U, I | J>> {
+	return (value) => {
+		const res = this.decodeValue(value);
 
-			if (res instanceof Promise) {
-				return res.then((res) => {
-					if (!res.ok) return res as Result<U, I | J>;
+		if (res instanceof Promise) {
+			return res.then((res) => {
+				if (!res.ok) return res as Result<U, I | J>;
 
-					return this.andThenHelper(nextFunc(res.value), res);
-				});
-			}
-
-			if (!res.ok) return res as Result<U, I | J>;
-
-			return this.andThenHelper(nextFunc(res.value), res);
-		};
-	}
-
-	/**
-	 * Applies another decoder to the decoded value.
-	 * @template U
-	 * @template {Issues<TypeOf<U>>} J
-	 * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
-	 * @returns {Decoder<Awaitable<U>, I | J>}
-	 */
-	private andThenHelper<U, J extends Issues = Issues<TypeOf<U>>>(
-		nextDecoder: Awaitable<Decoder<U, J>>,
-		res: Result<T, I> & { ok: true },
-	): Awaitable<Result<U, I | J>> {
-		if (nextDecoder instanceof Promise) {
-			return nextDecoder.then((nextDecoder) => {
-				return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
+				return andThenHelper.call(this, nextFunc(res.value), res) as Awaitable<
+					Result<U, I | J>
+				>;
 			});
 		}
-		return nextDecoder.decodeValue(res.value);
+
+		if (!res.ok) return res as Result<U, I | J>;
+
+		return andThenHelper.call(this, nextFunc(res.value), res) as Awaitable<
+			Result<U, I | J>
+		>;
+	};
+}
+
+/**
+ * Applies another decoder to the decoded value.
+ * @template T
+ * @template U
+ * @template {Issues<TypeOf<T>>} I
+ * @template {Issues<TypeOf<U>>} J
+ * @param {Awaitable<Decoder<U, J>>} nextDecoder
+ * @param {Result<T, I> & { ok: true }} res
+ * @returns {Awaitable<Result<U, I | J>>}
+ */
+function andThenHelper<
+	T,
+	U,
+	I extends Issues = Issues<TypeOf<T>>,
+	J extends Issues = Issues<TypeOf<U>>,
+>(
+	this: _Decoder<T, I>,
+	nextDecoder: Awaitable<Decoder<U, J>>,
+	res: Result<T, I> & { ok: true },
+): Awaitable<Result<U, I | J>> {
+	if (nextDecoder instanceof Promise) {
+		return nextDecoder.then((nextDecoder) => {
+			return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
+		});
 	}
+	return nextDecoder.decodeValue(res.value);
+}
+
+function mapFunc<T, U, I extends Issues = Issues<TypeOf<T>>>(
+	this: _Decoder<T, I>,
+	_mapFunc: (value: Awaited<T>) => Awaitable<U>,
+): (value: unknown) => Awaitable<Result<U, I>> {
+	return (value: unknown) => {
+		const res = this.decodeValue(value);
+		if (res instanceof Promise) {
+			return res.then(async (res) => {
+				if (!res.ok) return res;
+
+				const resolved = await res.value;
+				return { ok: true, value: await _mapFunc(resolved) };
+			});
+		}
+
+		if (!res.ok) return res;
+
+		if (res.value instanceof Promise) {
+			return res.value.then(async (value) => {
+				return { ok: true, value: await _mapFunc(value) };
+			});
+		}
+
+		const _value = _mapFunc(res.value as Awaited<T>);
+
+		if (_value instanceof Promise) {
+			return _value.then(async (value) => {
+				return { ok: true, value };
+			});
+		}
+
+		return { ok: true, value: _value };
+	};
 }
 
 /**

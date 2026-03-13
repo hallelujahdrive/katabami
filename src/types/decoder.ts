@@ -35,15 +35,6 @@ export type CatchFunction<T, I extends Issues, J extends Issues> = (
  */
 export interface Decoder<T, I extends Issues = Issues> {
 	/**
-	 * Apply a mapping function to the decoded value.
-	 *
-	 * @template U The type of the mapped value.
-	 * @param {MapFunction<T, U>} mapFunc The mapping function.
-	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
-	 */
-	andMap<U>(mapFunc: (value: Awaited<T>) => U): Decoder<U, I>;
-
-	/**
 	 * Applies another decoder to the decoded value (sync nextFunc).
 	 *
 	 * @template U The type of the decoded value.
@@ -103,6 +94,24 @@ export interface Decoder<T, I extends Issues = Issues> {
 	decodeValue(
 		value: unknown,
 	): T extends Promise<unknown> ? Promise<Result<Awaited<T>, I>> : Result<T, I>;
+
+	/**
+	 * Apply a mapping function to the decoded value.
+	 *
+	 * @template U The type of the mapped value.
+	 * @param {(value: Awaited<T>) => U} mapFunc The mapping function.
+	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
+	 */
+	map<U>(mapFunc: (value: Awaited<T>) => U): Decoder<U, I>;
+
+	/**
+	 * Apply a mapping function to the decoded value.
+	 *
+	 * @template U The type of the mapped value.
+	 * @param {(value: Awaited<T>) => Promise<U>} mapFunc The mapping function.
+	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
+	 */
+	map<U>(mapFunc: (value: Awaited<T>) => Promise<U>): Decoder<Promise<U>, I>;
 }
 
 /**
