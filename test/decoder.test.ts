@@ -251,7 +251,128 @@ describe("decoder", () => {
 		describe("async", () => {
 			const decoder = katabami
 				.object({
-					bar: katabami.integer(),
+					bar: katabami.int(),
+					foo: katabami.string(),
+				})
+				.andThen((value) => {
+					return new Promise<Decoder<typeof value, never>>((resolve) =>
+						resolve(katabami.succeed(value)),
+					);
+				});
+
+			describe("decode value", () => {
+				test("success", async () => {
+					const result = await decoder.decodeValue({
+						bar: 1,
+						foo: "foo",
+					});
+
+					const expectedResult = {
+						ok: true,
+						value: { bar: 1, foo: "foo" },
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", async () => {
+					const result = await decoder.decodeValue({
+						bar: "1",
+						foo: "foo",
+					});
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+
+			describe("decode string", () => {
+				test("success", async () => {
+					const result = await decoder.decodeString('{"bar":1,"foo":"foo"}');
+
+					const expectedResult = {
+						ok: true,
+						value: { bar: 1, foo: "foo" },
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", async () => {
+					const result = await decoder.decodeString('{"bar":"1","foo":"foo"}');
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+		});
+	});
+
+	describe("index", () => {
+		describe("sync", () => {
+			const decoder = katabami.index(1, katabami.string());
+
+			describe("decode value", () => {
+				test("success", () => {
+					const result = decoder.decodeValue(["foo", "bar"]);
+
+					const expectedResult = {
+						ok: true,
+						value: "bar",
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeValue(["foo"]);
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+
+			describe("decode string", () => {
+				test("success", () => {
+					const result = decoder.decodeString('["foo","bar"]');
+
+					const expectedResult = {
+						ok: true,
+						value: "bar",
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeString('["foo"]');
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+			});
+		});
+
+		describe("async", () => {
+			const decoder = katabami
+				.object({
+					bar: katabami.int(),
 					foo: katabami.string(),
 				})
 				.andThen((value) => {
@@ -321,7 +442,7 @@ describe("decoder", () => {
 			const decoder = katabami.map(
 				(foo, bar) => ({ bar, foo }),
 				katabami.field("foo", katabami.string()),
-				katabami.field("bar", katabami.integer()),
+				katabami.field("bar", katabami.int()),
 			);
 
 			describe("decode value", () => {
@@ -372,7 +493,7 @@ describe("decoder", () => {
 				const decoder = katabami.map(
 					(foo, bar) => ({ bar, foo }),
 					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.integer()).andThen((value) => {
+					katabami.field("bar", katabami.int()).andThen((value) => {
 						return new Promise<Decoder<number, never>>((resolve) =>
 							resolve(katabami.succeed(value)),
 						);
@@ -431,7 +552,7 @@ describe("decoder", () => {
 							resolve({ bar, foo }),
 						),
 					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.integer()),
+					katabami.field("bar", katabami.int()),
 				);
 
 				describe("decode value", () => {
@@ -485,7 +606,7 @@ describe("decoder", () => {
 		describe("flattened object", () => {
 			describe("sync", () => {
 				const decoder = katabami.object({
-					bar: katabami.integer(),
+					bar: katabami.int(),
 					foo: katabami.string(),
 				});
 
@@ -547,7 +668,7 @@ describe("decoder", () => {
 			describe("async", () => {
 				const decoder = katabami
 					.object({
-						bar: katabami.integer(),
+						bar: katabami.int(),
 						foo: katabami.string(),
 					})
 					.andThen((value) => {
@@ -797,7 +918,7 @@ describe("decoder", () => {
 
 	describe("tuple", () => {
 		describe("sync", () => {
-			const decoder = katabami.tuple(katabami.string(), katabami.integer());
+			const decoder = katabami.tuple(katabami.string(), katabami.int());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -851,7 +972,7 @@ describe("decoder", () => {
 		describe("async", () => {
 			const decoder = katabami.tuple(
 				katabami.string(),
-				katabami.integer().andThen((value) => {
+				katabami.int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
 						resolve(katabami.succeed(value)),
 					);
@@ -910,7 +1031,7 @@ describe("decoder", () => {
 
 	describe("union", () => {
 		describe("sync", () => {
-			const decoder = katabami.union(katabami.string(), katabami.integer());
+			const decoder = katabami.union(katabami.string(), katabami.int());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -958,7 +1079,7 @@ describe("decoder", () => {
 		describe("async", () => {
 			const decoder = katabami.union(
 				katabami.string(),
-				katabami.integer().andThen((value) => {
+				katabami.int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
 						resolve(katabami.succeed(value)),
 					);
@@ -1012,7 +1133,7 @@ describe("decoder", () => {
 	describe("decoder method", () => {
 		describe("andThen", () => {
 			describe("sync", () => {
-				const decoder = katabami.float().andThen(() => katabami.integer());
+				const decoder = katabami.float().andThen(() => katabami.int());
 
 				describe("decode value", () => {
 					test("success", () => {
@@ -1063,7 +1184,7 @@ describe("decoder", () => {
 					.andThen(
 						() =>
 							new Promise<Decoder<number>>((resolve) =>
-								resolve(katabami.integer()),
+								resolve(katabami.int()),
 							),
 					);
 

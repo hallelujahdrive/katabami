@@ -127,6 +127,18 @@ export type FieldDecodeResponse<T extends Decoder<unknown>> =
 	T extends Decoder<infer A> ? A : never;
 
 /**
+ * The issues type of an index decoder.
+ */
+export type IndexDecodeIssues<T extends Decoder<unknown>, I extends Issue> =
+	T extends Decoder<unknown, infer A> ? A | I : never;
+
+/**
+ * The issues type of an index decoder.
+ */
+export type IndexDecodeResponse<T extends Decoder<unknown>> =
+	T extends Decoder<infer A> ? A : never;
+
+/**
  * The inferred type of a decoder.
  */
 export type Infer<T extends Decoder<unknown>> =

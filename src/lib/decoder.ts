@@ -8,6 +8,8 @@ import type {
 	Err,
 	FieldDecodeIssues,
 	FieldDecodeResponse,
+	IndexDecodeIssues,
+	IndexDecodeResponse,
 	Issue,
 	Issues,
 	KatabamiConfig,
@@ -748,6 +750,56 @@ const decodeFieldFunc = <T, U extends Decoder<T> = Decoder<T>>(
 	};
 };
 
+const decodeIndexFunc = <T, U extends Decoder<T> = Decoder<T>>(
+	index: number,
+	decoder: U,
+): DecodeFunction<
+	IndexDecodeResponse<U>,
+	IndexDecodeIssues<
+		U,
+		| Issue<"index:outOfBounds", string, { index: number }>
+		| Issue<"index:type", string, { expected: string; received: string }>
+	>
+> => {
+	return function (this: Katabami, value) {
+		if (!Array.isArray(value))
+			return {
+				error: new DecodeError(
+					"Array expected",
+					issue("index:type", this.configStore.messages.issue.unexpectedValue, {
+						expected: "array",
+						received: typeOf(value),
+					}),
+				),
+				ok: false,
+			};
+
+		if (index < 0 || index >= value.length)
+			return {
+				error: new DecodeError(
+					"Index out of bounds",
+					issue(
+						"index:outOfBounds",
+						this.configStore.messages.issue.unexpectedValue,
+						{ index },
+					),
+				),
+				ok: false,
+			};
+
+		return decoder.decodeValue(value[index]) as Awaitable<
+			Result<
+				IndexDecodeResponse<U>,
+				IndexDecodeIssues<
+					U,
+					| Issue<"index:outOfBounds", string, { index: number }>
+					| Issue<"index:type", string, { expected: string; received: string }>
+				>
+			>
+		>;
+	};
+};
+
 /**
  * Helper function to decode a lazy decoder.
  * @template T - The type of the value.
@@ -1349,11 +1401,40 @@ export function float(): Decoder<
 }
 
 /**
+ * Creates a decoder that decodes an index.
+ * @template T - The type of the value.
+ * @template {Decoder<T>} U - The decoder to use.
+ * @param {number} index - The index to decode.
+ * @param {Decoder<T>} decoder - The decoder to use.
+ * @returns {Decoder<T, IndexDecodeIssues<U, Issue<"index:outOfBounds", string, { index: number }> | Issue<"index:type", string, { expected: string; received: string }>>>} A decoder that decodes an index.
+ */
+export function index<T, U extends Decoder<T> = Decoder<T>>(
+	index: number,
+	decoder: U,
+): Decoder<
+	T,
+	IndexDecodeIssues<
+		U,
+		| Issue<"index:outOfBounds", string, { index: number }>
+		| Issue<"index:type", string, { expected: string; received: string }>
+	>
+> {
+	return new _Decoder<
+		T,
+		IndexDecodeIssues<
+			U,
+			| Issue<"index:outOfBounds", string, { index: number }>
+			| Issue<"index:type", string, { expected: string; received: string }>
+		>
+	>(undefined, decodeIndexFunc(index, decoder));
+}
+
+/**
  * A decoder for integers.
  *
  * @returns {Decoder<number, Issues<"integer", Issue<"integer", string, { expected: string; received: string }>>>} A decoder for integers.
  */
-export function integer(): Decoder<
+export function int(): Decoder<
 	number,
 	Issues<
 		"integer",

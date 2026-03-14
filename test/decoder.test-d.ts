@@ -20,7 +20,7 @@ describe("Decoder", () => {
 			const decoder = katabami.array(
 				katabami.float().andThen(async () => {
 					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.integer()),
+						resolve(katabami.int()),
 					);
 				}),
 			);
@@ -131,7 +131,7 @@ describe("Decoder", () => {
 				num: katabami.float().andThen(async () => {
 					await new Promise((resolve) => setTimeout(resolve, 100));
 
-					return katabami.integer();
+					return katabami.int();
 				}),
 				optionalStr: katabami.optional(katabami.string()),
 			});
@@ -254,15 +254,13 @@ describe("Decoder", () => {
 
 		describe("andThen", () => {
 			test("fixed", () => {
-				const decoder = katabami
-					.value()
-					.andThen<number>(() => katabami.integer());
+				const decoder = katabami.value().andThen<number>(() => katabami.int());
 
 				expectTypeOf<Infer<typeof decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("complement", () => {
-				const decoder = katabami.value().andThen(() => katabami.integer());
+				const decoder = katabami.value().andThen(() => katabami.int());
 
 				expectTypeOf<Infer<typeof decoder>>().toEqualTypeOf<number>();
 			});
@@ -270,7 +268,7 @@ describe("Decoder", () => {
 			test("promise", () => {
 				const decoder = katabami.value().andThen(() => {
 					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.integer()),
+						resolve(katabami.int()),
 					);
 				});
 

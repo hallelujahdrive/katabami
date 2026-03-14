@@ -34,7 +34,7 @@ type GetVars<T extends Result<unknown, Issues>> = [T] extends [
 
 describe("DecodeError", () => {
 	describe("array", () => {
-		const decoder = katabami.array(katabami.integer());
+		const decoder = katabami.array(katabami.int());
 
 		test("issue message", () => {
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
@@ -68,8 +68,8 @@ describe("DecodeError", () => {
 		}>();
 	});
 
-	test("integer", () => {
-		const decoder = katabami.integer();
+	test("int", () => {
+		const decoder = katabami.int();
 
 		expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
 			expected: string;
@@ -98,7 +98,7 @@ describe("DecodeError", () => {
 	describe("object", () => {
 		describe("flattened", () => {
 			const decoder = katabami.object({
-				bar: katabami.integer(),
+				bar: katabami.int(),
 				foo: katabami.string(),
 			});
 
@@ -142,7 +142,7 @@ describe("DecodeError", () => {
 	});
 
 	describe("tuple", () => {
-		const decoder = katabami.tuple(katabami.integer(), katabami.string());
+		const decoder = katabami.tuple(katabami.int(), katabami.string());
 
 		test("issue message", () => {
 			expectTypeOf<GetVars<DecodeResult<typeof decoder>>>().toEqualTypeOf<{
