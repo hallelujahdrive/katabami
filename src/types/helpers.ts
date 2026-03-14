@@ -15,6 +15,11 @@ export type IsUnion<T, U = T> = T extends T
 	: never;
 
 /**
+ * The resolved type of an awaitable.
+ */
+export type Resolved<T> = T extends Promise<infer U> ? U : T;
+
+/**
  * Get the type of a type.
  */
 export type TypeOf<T, U = T> =

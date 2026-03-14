@@ -4,6 +4,7 @@ import type {
 	ArrayDecodeResponse,
 	Awaitable,
 	CatchFunction,
+	DecodeResult,
 	Decoder,
 	Err,
 	FieldDecodeIssues,
@@ -22,7 +23,9 @@ import type {
 	ObjectDecodeResponse,
 	ObjectDecoders,
 	Ok,
+	OptionalDecodeResponse,
 	Primitive,
+	Resolved,
 	Result,
 	TupleDecodeIssues,
 	TupleDecodeResponse,
@@ -36,24 +39,6 @@ import { isRecord } from "../utils/index.js";
 import { defaultConfig } from "./config.js";
 import { DecodeError } from "./error.js";
 import { issue } from "./issue.js";
-
-/**
- * Checks if an array has a promise.
- * @param {unknown[]} value - The array to check.
- * @returns {boolean} - True if the array has a promise, false otherwise.
- */
-const hasAsyncDecoder = (decoders: Array<Decoder<unknown>>): boolean => {
-	return decoders.some(isAsyncDecoder);
-};
-
-/**
- * Checks if a decoder is async.
- * @param {Decoder<unknown>} decoder - The decoder to check.
- * @returns {boolean} - True if the decoder is async, false otherwise.
- */
-const isAsyncDecoder = (decoder: Decoder<unknown>): boolean => {
-	return (decoder as _Decoder<unknown>).isAsync;
-};
 
 /**
  * The decode function for a decoder.
@@ -168,8 +153,6 @@ export function value<T = unknown>(): Decoder<T, never> {
 class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	implements Decoder<T, I>
 {
-	public readonly isAsync: boolean;
-
 	/**
 	 * The instance of the Katabami class.
 	 * @type {Katabami}
@@ -207,19 +190,17 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 		private readonly cacheFunc?: CatchFunction<T, Issues, I>,
 	) {
 		this.katabami = katabami ?? getKatabami();
-
-		this.isAsync = this.decodeFunc.constructor.name === "AsyncFunction";
 	}
 
 	/**
 	 * Applies another decoder to the decoded value.
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
-	 * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
-	 * @returns {Decoder<Awaitable<U>, I | J>}
+	 * @param {(value: Resolved<T>) => Awaitable<Decoder<Resolved<U>, J>>} nextFunc
+	 * @returns {Decoder<U, I | J>}
 	 */
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
-		nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
+		nextFunc: (value: Resolved<T>) => Awaitable<Decoder<U, J>>,
 	): Decoder<U, I | J> {
 		return new _Decoder<U, I | J>(
 			this.katabami,
@@ -229,7 +210,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 					value: unknown,
 				) => Awaitable<Decoder<unknown, Issues>>,
 			) as DecodeFunction<U, I | J>,
-		) as Decoder<U, I | J> & Decoder<Promise<U>, I | J>;
+		);
 	}
 
 	/**
@@ -252,15 +233,11 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * Decodes a string as T.
 	 * When T is Promise, returns Promise; otherwise returns Result.
 	 * @param {string} value The string to decode as T.
-	 * @returns {T extends Promise<unknown> ? Promise<Result<Awaited<T>, I | ...>> : Result<T, I | ...>} The decoded value or an error with issues.
+	 * @returns {DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>>} The decoded value or an error with issues.
 	 */
 	public decodeString(
 		value: string,
-	): T extends Promise<unknown>
-		? Promise<
-				Result<Awaited<T>, I | Issues<"parseJson", Issue<"parseJson", never>>>
-			>
-		: Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>> {
+	): DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>> {
 		try {
 			const _value = JSON.parse(value);
 
@@ -272,57 +249,39 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 					issue("parseJson", "issue.failedToDecode"),
 				),
 				ok: false,
-			} as unknown as T extends Promise<unknown>
-				? Promise<
-						Result<
-							Awaited<T>,
-							I | Issues<"parseJson", Issue<"parseJson", never>>
-						>
-					>
-				: Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
+			} as unknown as DecodeResult<
+				T,
+				I | Issues<"parseJson", Issue<"parseJson", never>>
+			>;
 		}
 	}
 
 	/**
 	 * Decodes an unknown value as T.
-	 * When T is Promise, returns Promise<Result<Awaited<T>, I>>; otherwise returns Result<T, I>.
+	 * When T is Promise, returns Promise<Result<Resolved<T>, I>>; otherwise returns Result<T, I>.
 	 * @param {unknown} value
-	 * @returns {T extends Promise<unknown> ? Promise<Result<Awaited<T>, I>> : Result<T, I>}
+	 * @returns {DecodeResult<T, I>} The decoded value or an error with issues.
 	 */
-	public decodeValue(
-		value: unknown,
-	): T extends Promise<unknown>
-		? Promise<Result<Awaited<T>, I>>
-		: Result<T, I> {
+	public decodeValue(value: unknown): DecodeResult<T, I> {
 		const res = this._decode(value);
 
 		if (res instanceof Promise) {
 			return res.then((res) => {
+				if (!res.ok) return res;
 				if (res.value instanceof Promise) {
-					return res.value.then((value) => {
-						return { ok: true, value };
-					}) as T extends Promise<unknown>
-						? Promise<Result<Awaited<T>, I>>
-						: Result<T, I>;
+					return res.value.then((value) => ({ ok: true, value }));
 				}
-
-				return res;
-			}) as T extends Promise<unknown>
-				? Promise<Result<Awaited<T>, I>>
-				: Result<T, I>;
+				return res as Result<Resolved<T>, I>;
+			}) as DecodeResult<T, I>;
 		}
 
 		if (res.value instanceof Promise) {
 			return res.value.then((value) => {
 				return { ok: true, value };
-			}) as T extends Promise<unknown>
-				? Promise<Result<Awaited<T>, I>>
-				: Result<T, I>;
+			}) as DecodeResult<T, I>;
 		}
 
-		return res as T extends Promise<unknown>
-			? Promise<Result<Awaited<T>, I>>
-			: Result<T, I>;
+		return res as DecodeResult<T, I>;
 	}
 
 	/**
@@ -330,9 +289,7 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
 	 * @param {MapFunction<T, U>} _mapFunc
 	 * @returns {Decoder<U, I>}
 	 */
-	public map<U>(
-		_mapFunc: (value: Awaited<T>) => Awaitable<U>,
-	): Decoder<Awaitable<U>, I> {
+	public map<U>(_mapFunc: (value: Resolved<T>) => U): Decoder<U, I> {
 		return new _Decoder<U, I>(
 			this.katabami,
 			mapFunc.call(
@@ -369,8 +326,8 @@ class _Decoder<T, I extends Issues = Issues<TypeOf<T>>>
  * @template U
  * @template {Issues<TypeOf<T>>} I
  * @template {Issues<TypeOf<U>>} J
- * @param {(value: T) => Awaitable<Decoder<U, J>>} nextFunc
- * @returns {Decoder<Awaitable<U>, I | J>}
+ * @param {(value: Resolved<T>) => Awaitable<Decoder<U, J>>} nextFunc
+ * @returns {Decoder<U, I | J>}
  */
 function andThenFunc<
 	T,
@@ -379,7 +336,7 @@ function andThenFunc<
 	J extends Issues = Issues<TypeOf<U>>,
 >(
 	this: _Decoder<T, I>,
-	nextFunc: (value: Awaited<T> | T) => Awaitable<Decoder<U, J>>,
+	nextFunc: (value: Resolved<T>) => Awaitable<Decoder<U, J>>,
 ): (value: unknown) => Awaitable<Result<U, I | J>> {
 	return (value) => {
 		const res = this.decodeValue(value);
@@ -396,9 +353,11 @@ function andThenFunc<
 
 		if (!res.ok) return res as Result<U, I | J>;
 
-		return andThenHelper.call(this, nextFunc(res.value), res) as Awaitable<
-			Result<U, I | J>
-		>;
+		return andThenHelper.call(
+			this,
+			nextFunc(res.value as Resolved<T>),
+			res as Ok<Resolved<T>>,
+		) as Awaitable<Result<U, I | J>>;
 	};
 }
 
@@ -420,19 +379,19 @@ function andThenHelper<
 >(
 	this: _Decoder<T, I>,
 	nextDecoder: Awaitable<Decoder<U, J>>,
-	res: Result<T, I> & { ok: true },
+	res: Ok<Resolved<T>>,
 ): Awaitable<Result<U, I | J>> {
 	if (nextDecoder instanceof Promise) {
 		return nextDecoder.then((nextDecoder) => {
 			return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
 		});
 	}
-	return nextDecoder.decodeValue(res.value);
+	return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
 }
 
 function mapFunc<T, U, I extends Issues = Issues<TypeOf<T>>>(
 	this: _Decoder<T, I>,
-	_mapFunc: (value: Awaited<T>) => Awaitable<U>,
+	_mapFunc: (value: Resolved<T>) => Awaitable<U>,
 ): (value: unknown) => Awaitable<Result<U, I>> {
 	return (value: unknown) => {
 		const res = this.decodeValue(value);
@@ -453,7 +412,7 @@ function mapFunc<T, U, I extends Issues = Issues<TypeOf<T>>>(
 			});
 		}
 
-		const _value = _mapFunc(res.value as Awaited<T>);
+		const _value = _mapFunc(res.value as Resolved<T>);
 
 		if (_value instanceof Promise) {
 			return _value.then(async (value) => {
@@ -820,7 +779,7 @@ const decodeLazyFunc = <T, I extends Issues = Issues>(
 				return decoder.decodeValue(value);
 			});
 		}
-		return decoder.decodeValue(value);
+		return decoder.decodeValue(value) as Awaitable<Result<T, I>>;
 	};
 };
 
@@ -1151,36 +1110,6 @@ const decodeTupleFunc = <
  * @returns {DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>>} A decoder that decodes a union.
  * @returns
  */
-const decodeUnionSyncFunc = <
-	T,
-	U extends Array<Decoder<unknown>> | UnionDecoders<T>,
->(
-	decoders: U,
-): DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>> =>
-	function (this: Katabami, value) {
-		const entries: Issues[] = [];
-		for (const decoder of decoders as Array<Decoder<unknown>>) {
-			const result = decoder.decodeValue(value);
-
-			if (result.ok) return result as Ok<UnionDecodeResponse<U>>;
-
-			entries.push(result.error.issues);
-		}
-
-		return {
-			error: new DecodeError("Union expected", entries as UnionDecodeIssues<U>),
-			ok: false,
-		};
-	};
-
-/**
- * Creates a decoder that decodes a union.
- * @template T - The type of the union.
- * @template U - The type of the decoders.
- * @param {U} decoders - The decoders for the union.
- * @returns {DecodeFunction<UnionDecodeResponse<U>, UnionDecodeIssues<U>>} A decoder that decodes a union.
- * @returns
- */
 const decodeUnionFunc = <
 	T,
 	U extends Array<Decoder<unknown>> | UnionDecoders<T>,
@@ -1255,10 +1184,7 @@ const decodeUnionFunc = <
 		}
 
 		if (results.ok)
-			return results.value as Result<
-				UnionDecodeResponse<U>,
-				UnionDecodeIssues<U>
-			>;
+			return results as Result<UnionDecodeResponse<U>, UnionDecodeIssues<U>>;
 
 		return {
 			error: new DecodeError(
@@ -1525,15 +1451,21 @@ export function object<
  * @template T The type of the value.
  * @template {Issues<TypeOf<T>>} I The type of the issues.
  * @param {Decoder<T, I>} decoder The decoder to make optional.
- * @returns {Decoder<T | undefined, I>} A decoder that accepts either the original value or undefined.
+ * @returns {Decoder<OptionalDecodeResponse<T>, I>} A decoder that accepts either the original value or undefined.
  */
 export function optional<T, I extends Issues = Issues>(
 	decoder: Decoder<T, I>,
-): Decoder<T | undefined, I> {
+): Decoder<OptionalDecodeResponse<T>, I> {
 	return new _Decoder(undefined, (value) => {
-		if (value == null) return { ok: true, value: undefined as T | undefined };
+		if (value == null)
+			return { ok: true, value: undefined } as Result<
+				OptionalDecodeResponse<T>,
+				I
+			>;
 
-		return decoder.decodeValue(value);
+		return decoder.decodeValue(value) as Awaitable<
+			Result<OptionalDecodeResponse<T>, I>
+		>;
 	});
 }
 
@@ -1615,9 +1547,7 @@ export function union<
 >(...decoders: U): Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>> {
 	return new _Decoder<UnionDecodeResponse<U>, UnionDecodeIssues<U>>(
 		undefined,
-		hasAsyncDecoder(decoders as Array<Decoder<unknown>>)
-			? decodeUnionFunc<T, U>(decoders)
-			: decodeUnionSyncFunc<T, U>(decoders),
+		decodeUnionFunc<T, U>(decoders),
 	);
 }
 
