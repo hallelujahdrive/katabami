@@ -6,6 +6,8 @@ import type {
 	CatchFunction,
 	Decoder,
 	Err,
+	FieldDecodeIssues,
+	FieldDecodeResponse,
 	Issue,
 	Issues,
 	KatabamiConfig,
@@ -710,6 +712,49 @@ const decodeFailedFunc = <
 	};
 };
 
+/**
+ * Helper function to decode a field.
+ * @template T - The type of the value.
+ * @template {Decoder<T>} U - The decoder to use.
+ * @param {string} key - The key of the field.
+ * @param {Decoder<T>} decoder - The decoder to use.
+ * @returns {DecodeFunction<T, FieldDecodeIssues<U, Issue<"field", string, { key: string }>>>} A decoder that decodes a field.
+ */
+const decodeFieldFunc = <T, U extends Decoder<T> = Decoder<T>>(
+	key: string,
+	decoder: U,
+): DecodeFunction<
+	FieldDecodeResponse<U>,
+	FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+> => {
+	return function (this: Katabami, value) {
+		if (!isRecord(value) || !(key in value))
+			return {
+				error: new DecodeError(
+					"Field expected",
+					issue("field", this.configStore.messages.issue.unexpectedValue, {
+						expected: key,
+					}) as FieldDecodeIssues<U, Issue<"field", string, { key: string }>>,
+				),
+				ok: false,
+			};
+
+		return decoder.decodeValue(value[key]) as Awaitable<
+			Result<
+				FieldDecodeResponse<U>,
+				FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+			>
+		>;
+	};
+};
+
+/**
+ * Helper function to decode a lazy decoder.
+ * @template T - The type of the value.
+ * @template {Issues} I The type of the issues.
+ * @param {() => Awaitable<Decoder<T, I>>} lazyFunc - The lazy function to decode the value.
+ * @returns {Awaitable<Result<T, I>>} The decoded value or an error with issues.
+ */
 const decodeLazyFunc = <T, I extends Issues = Issues>(
 	lazyFunc: () => Awaitable<Decoder<T, I>>,
 ): DecodeFunction<T, I> => {
@@ -735,21 +780,47 @@ const decodeLazyFunc = <T, I extends Issues = Issues>(
  * @param {...Decoder<unknown>} decoders - The decoders to decode the value.
  * @returns {DecodeFunction<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>>} A decoder that decodes a map.
  */
-const decodeMapFunc =
-	<T, U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>>(
-		mapFunc: MapDecodeFunction<T, U>,
-		...decoders: U
-	): DecodeFunction<
-		MapDecodeResponse<MapDecodeFunction<T, U>>,
-		MapDecodeIssues<U>
-	> =>
-	async (value) => {
-		const entries: unknown[] = [];
-		for (const decoder of decoders) {
-			const result = await decoder.decodeValue(value);
-			if (!result.ok) return result as Err<MapDecodeIssues<U>>;
-			entries.push(result.value);
+const decodeMapFunc = <
+	T,
+	U extends Array<Decoder<unknown>> = Array<Decoder<unknown>>,
+>(
+	mapFunc: MapDecodeFunction<T, U>,
+	...decoders: U
+): DecodeFunction<
+	MapDecodeResponse<MapDecodeFunction<T, U>>,
+	MapDecodeIssues<U>
+> =>
+	function (this: Katabami, value) {
+		const results = decoders.map((decoder) => decoder.decodeValue(value));
+
+		if (results.some((result) => result instanceof Promise)) {
+			return Promise.all(results).then(
+				(
+					resolvedResults: Array<Result<unknown, Issues>>,
+				): Result<
+					MapDecodeResponse<MapDecodeFunction<T, U>>,
+					MapDecodeIssues<U>
+				> => {
+					const failed = resolvedResults.find((r) => !r.ok);
+					if (failed) return failed as Err<MapDecodeIssues<U>>;
+					const entries = resolvedResults.map(({ value }) => value);
+					return {
+						ok: true,
+						value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
+					} as Result<
+						MapDecodeResponse<MapDecodeFunction<T, U>>,
+						MapDecodeIssues<U>
+					>;
+				},
+			);
 		}
+
+		for (const result of results as Array<Result<unknown, Issues>>) {
+			if (!result.ok) return result as Err<MapDecodeIssues<U>>;
+		}
+
+		const entries = (results as Array<Ok<unknown>>).map(({ value }) => value);
+
 		return {
 			ok: true,
 			value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
@@ -807,7 +878,14 @@ const decodeObjectHelper = <
 	return {
 		ok: true,
 		value: Object.fromEntries(
-			results.map(([key, result]) => [key, result.value]),
+			results.reduce<Array<[string, unknown]>>((accumulator, [key, result]) => {
+				// remove undefined values, keep null values
+				if (typeof result.value === "undefined") return accumulator;
+
+				accumulator.push([key, result.value]);
+
+				return accumulator;
+			}, []),
 		) as ObjectDecodeResponse<U>,
 	};
 };
@@ -1232,6 +1310,27 @@ export function failed<T extends Issues>(
 	issues?: T,
 ): Decoder<never, T> {
 	return new _Decoder<never, T>(undefined, decodeFailedFunc(message, issues));
+}
+
+/**
+ * Create a decoder that decodes a field.
+ * @template T - The type of the value.
+ * @template {Decoder<T>} U - The decoder to use.
+ * @param {string} key - The name of the field.
+ * @param {Decoder<T>} decoder - The decoder to use.
+ * @returns {Decoder<T, FieldDecodeIssues<U, Issue<"field", string, { key: string }>>>} A decoder that decodes a field.
+ */
+export function field<T, U extends Decoder<T> = Decoder<T>>(
+	key: string,
+	decoder: U,
+): Decoder<
+	FieldDecodeResponse<U>,
+	FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+> {
+	return new _Decoder<
+		FieldDecodeResponse<U>,
+		FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+	>(undefined, decodeFieldFunc(key, decoder));
 }
 
 /**
