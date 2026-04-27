@@ -1,6 +1,5 @@
 import type { Resolved, UnionToTuple } from "./helpers.js";
 import type { Primitive } from "./primitive.js";
-import type { Result } from "./result.js";
 
 /**
  * The issues type of an array decoder.
@@ -113,6 +112,15 @@ export type DecodeResult<T, I extends Issues> =
 	T extends Promise<unknown> ? Promise<Result<Resolved<T>, I>> : Result<T, I>;
 
 /**
+ * Err type
+ */
+export type Err<I extends Issues = Issues> = {
+	error: DecodeErrorInterface<I>;
+	ok: false;
+	value?: never;
+};
+
+/**
  * The issues type of a field decoder.
  */
 export type FieldDecodeIssues<T extends Decoder<unknown>, I extends Issue> =
@@ -218,10 +226,20 @@ export type ObjectDecoders<T extends Record<string, unknown>> = {
 };
 
 /**
+ * Ok type
+ */
+export type Ok<T> = { error?: never; ok: true; value: T };
+
+/**
  * The response type of an optional decoder.
  */
 export type OptionalDecodeResponse<T> =
 	T extends Promise<unknown> ? Promise<Resolved<T> | undefined> : T | undefined;
+
+/**
+ * Result type
+ */
+export type Result<T, I extends Issues = Issues> = Err<I> | Ok<T>;
 
 /**
  * The issues type of a tuple decoder.
@@ -390,9 +408,15 @@ export interface Issue<
 	 */
 	readonly message: Msg;
 	/**
+	 * The string representation of the issue.
+	 * @returns {string} The string representation of the issue.
+	 */
+	toString(): string;
+	/**
 	 * The type of the issue.
 	 */
 	readonly type: T;
+
 	/**
 	 * Gets the variables of the issue.
 	 * @returns {Vers} The variables of the issue.
