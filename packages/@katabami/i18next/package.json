@@ -1,0 +1,18 @@
+{
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"dependencies": {
+		"katabami": "workspace:*"
+	},
+	"description": "i18next integration for Katabami",
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"name": "@katabami/i18next",
+	"peerDependencies": {
+		"i18next": ">=25.0.0 <27.0.0"
+	},
+	"type": "module",
+	"version": "0.0.0"
+}

@@ -5,22 +5,21 @@
 	},
 	"description": "Katabami is a JSON decoding library",
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.0",
+		"@biomejs/biome": "2.5.0",
 		"@types/bun": "^1.3.14",
-		"@typescript-eslint/parser": "^8.61.0",
+		"@typescript-eslint/parser": "8.61.0",
 		"cspell": "^9.8.0",
 		"dpdm": "^4.2.0",
-		"eslint": "^10.5.0",
-		"eslint-plugin-perfectionist": "^5.9.0",
-		"husky": "^9.1.7",
-		"i18next": "^25.10.10",
-		"lint-staged": "^16.4.0",
+		"eslint": "10.5.0",
+		"eslint-plugin-perfectionist": "5.9.0",
+		"husky": "9.1.7",
+		"i18next": "^26.3.1",
+		"lint-staged": "17.0.7",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.8"
 	},
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
 	"license": "WTFPL",
-	"main": "index.js",
 	"name": "katabami",
 	"private": true,
 	"repository": {
@@ -41,5 +40,8 @@
 		"types:check": "tsc --noEmit --pretty"
 	},
 	"type": "module",
-	"version": "0.0.0"
+	"version": "0.0.0",
+	"workspaces": [
+		"packages/*"
+	]
 }

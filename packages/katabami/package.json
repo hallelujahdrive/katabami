@@ -1,0 +1,12 @@
+{
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"description": "Katabami is a JSON decoding library",
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"name": "katabami",
+	"type": "module",
+	"version": "0.0.0"
+}
