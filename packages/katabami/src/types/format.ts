@@ -1,12 +1,14 @@
+import type { Issue } from "./decoder";
+
 /**
- * The configuration for Katabami.
+ * The formatter function.
  */
-export type KatabamiConfig = {
-	/**
-	 * The message resources for Katabami.
-	 */
-	messages?: MessageResources;
-};
+export type Formatter = (issue: Issue) => string;
+
+/**
+ * The issue message keys.
+ */
+export type IssueMessageKeys = `issue.${keyof MessageResources["issue"]}`;
 
 /**
  * The message resources for Katabami.
@@ -15,72 +17,85 @@ export type MessageResources = {
 	/**
 	 * The issue message resources for Katabami.
 	 */
-	issue?: {
+	issue: {
 		/**
 		 * The message for the issue when the decoding fails.
 		 */
-		failedToDecode?: string;
+		failedToDecode: string;
+		/**
+		 * The message for the issue when the index is out of bounds.
+		 */
+		outOfBounds: string;
 		/**
 		 * The message for the issue when the value is unexpected.
 		 */
-		unexpectedValue?: string;
+		unexpectedType: string;
+		/**
+		 * The message for the issue when the value is unexpected.
+		 */
+		unexpectedValue: string;
 	};
 
 	/**
 	 * The type names resources for Katabami.
 	 */
-	type?: {
+	type: {
 		/**
 		 * The name for the type when the value is an array.
 		 */
-		array?: string;
+		array: string;
 		/**
 		 * The name for the type when the value is a bigint.
 		 */
-		bigint?: string;
+		bigint: string;
 		/**
 		 * The name for the type when the value is a boolean.
 		 */
-		boolean?: string;
+		boolean: string;
 		/**
 		 * The name for the type when the value is a decimal.
 		 */
-		decimal?: string;
+		decimal: string;
 		/**
 		 * The name for the type when the value is a float.
 		 */
-		float?: string;
+		float: string;
 		/**
 		 * The name for the type when the value is a function.
 		 */
-		function?: string;
+		function: string;
 		/**
 		 * The name for the type when the value is an integer.
 		 */
-		integer?: string;
+		integer: string;
 		/**
 		 * The name for the type when the value is null.
 		 */
-		null?: string;
+		null: string;
 		/**
 		 * The name for the type when the value is a number.
 		 */
-		number?: string;
+		number: string;
 		/**
 		 * The name for the type when the value is an object.
 		 */
-		object?: string;
+		object: string;
 		/**
 		 * The name for the type when the value is a string.
 		 */
-		string?: string;
+		string: string;
 		/**
 		 * The name for the type when the value is a symbol.
 		 */
-		symbol?: string;
+		symbol: string;
 		/**
 		 * The name for the type when the value is undefined.
 		 */
-		undefined?: string;
+		undefined: string;
 	};
 };
+
+/**
+ * The type message keys.
+ */
+export type TypeKeys = `type.${keyof MessageResources["type"]}`;

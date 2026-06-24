@@ -1,6 +1,6 @@
 import "i18next";
 
-import type en from "../lib/i18n/locales/en.json";
+import type en from "../i18n/locales/en.json";
 
 declare module "i18next" {
 	interface CustomPluginOptions {

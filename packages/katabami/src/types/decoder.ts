@@ -1,3 +1,4 @@
+import type { Formatter, IssueMessageKeys, TypeKeys } from "./format.js";
 import type { Resolved, UnionToTuple } from "./helpers.js";
 import type { Primitive } from "./primitive.js";
 
@@ -108,8 +109,11 @@ export interface Decoder<T, I extends Issues = Issues> {
 /**
  * The result type of a decode function.
  */
-export type DecodeResult<T, I extends Issues> =
-	T extends Promise<unknown> ? Promise<Result<Resolved<T>, I>> : Result<T, I>;
+export type DecodeResult<T, I extends Issues> = [T] extends [never]
+	? Result<never, I>
+	: T extends Promise<unknown>
+		? Promise<Result<Resolved<T>, I>>
+		: Result<T, I>;
 
 /**
  * Err type
@@ -398,20 +402,21 @@ export interface DecodeErrorInterface<T extends Issues> extends Error {
  */
 export interface Issue<
 	T extends IssueType = IssueType,
-	Msg extends string = string,
-	Vers extends Record<string, Primitive> | undefined =
+	Msg extends string = IssueMessageKeys | (string & {}),
+	Vers extends Record<string, Primitive | TypeKeys> | undefined =
 		| Record<string, Primitive>
 		| undefined,
 > {
 	/**
+	 * Formats the issue message.
+	 * @param {Formatter} formatter - The formatter to use.
+	 * @returns {string} The formatted issue message.
+	 */
+	format(formatter?: Formatter): string;
+	/**
 	 * The message of the issue.
 	 */
 	readonly message: Msg;
-	/**
-	 * The string representation of the issue.
-	 * @returns {string} The string representation of the issue.
-	 */
-	toString(): string;
 	/**
 	 * The type of the issue.
 	 */

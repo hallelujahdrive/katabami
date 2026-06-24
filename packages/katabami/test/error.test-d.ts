@@ -55,7 +55,7 @@ describe("DecodeError", () => {
 		const _decoder = katabami.boolean();
 
 		expectTypeOf<GetVars<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
-			expected: string;
+			expected: "type.boolean";
 			received: string;
 		}>();
 	});
@@ -73,7 +73,7 @@ describe("DecodeError", () => {
 		const _decoder = katabami.int();
 
 		expectTypeOf<GetVars<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
-			expected: string;
+			expected: "type.integer" | "type.number";
 			received: string;
 		}>();
 	});
@@ -82,7 +82,7 @@ describe("DecodeError", () => {
 		const _decoder = katabami.float();
 
 		expectTypeOf<GetVars<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
-			expected: string;
+			expected: "type.number";
 			received: string;
 		}>();
 	});
@@ -91,7 +91,7 @@ describe("DecodeError", () => {
 		const _decoder = katabami.string();
 
 		expectTypeOf<GetVars<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
-			expected: string;
+			expected: "type.string";
 			received: string;
 		}>();
 	});

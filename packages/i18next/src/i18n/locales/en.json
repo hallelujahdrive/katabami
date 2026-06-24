@@ -1,6 +1,6 @@
 {
 	"issue": {
-		"aExpectedIsExpectedButTheValueIsAReceived": "A {{expected}} is expected, but the value is a {{received}}.",
+		"aExpectedIsExpectedButTheValueIsAReceived": "{{expected}} is expected, but the value is a {{received}}.",
 		"failedToDecode": "Failed to decode."
 	},
 	"type": {
