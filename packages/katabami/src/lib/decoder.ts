@@ -331,23 +331,6 @@ const typeOf = (value: unknown): TypeKeys => {
 };
 
 /**
- * Quotes a value if it is a string.
- * @param {boolean | number | string} value - The value to quote.
- * @returns {boolean | number | string} - The quoted value.
- */
-const quoteValue = (
-	value: boolean | number | string,
-): boolean | number | string => {
-	// If the value is a string, quote it.
-	if (typeof value === "string") {
-		return `"${value}"`;
-	}
-
-	// Otherwise, return the original value.
-	return value;
-};
-
-/**
  * A decoder that always fails with the given message and issues.
  * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
@@ -561,7 +544,7 @@ const decodeConstantFunc =
 				"Constant expected",
 				createIssues("constant", "issue.unexpectedValue", {
 					expected,
-					received: quoteValue(value as Primitive),
+					received: value as Primitive,
 				}),
 			),
 			ok: false,

@@ -400,4 +400,21 @@ describe("issues", () => {
 			});
 		});
 	});
+
+	describe("Decoder methods", () => {
+		test("andThen", () => {
+			const decoder = katabami.string().andThen(() => katabami.constant("foo"));
+
+			const result = decoder.decodeValue("bar");
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Expected "foo", but received "bar".',
+			);
+		});
+	});
 });

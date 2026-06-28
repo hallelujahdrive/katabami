@@ -2,6 +2,7 @@ import { describe, expectTypeOf, test } from "vitest";
 
 import {
 	type Decoder,
+	type Issue,
 	type Issues,
 	type IssueType,
 	katabami,
@@ -9,7 +10,9 @@ import {
 	type Primitive,
 	type Resolved,
 	type Result,
+	type TupleDecodeIssues,
 	type TypeKeys,
+	type UnionDecodeIssues,
 } from "../src/index.js";
 
 type DecodeResult<T extends Decoder<unknown, Issues>> = Resolved<
@@ -19,16 +22,20 @@ type DecodeResult<T extends Decoder<unknown, Issues>> = Resolved<
 type ExtractIssue<I extends Issues> =
 	I extends Issues<IssueType, infer Issue>
 		? Issue
-		: I extends ObjectDecodeIssues<
-					Record<string, Decoder<unknown>>,
-					infer Issue
-				>
+		: I extends UnionDecodeIssues<infer _, infer Issue>
 			? Issue
-			: I extends infer U
-				? U extends Issues
-					? ExtractIssue<U>
-					: never
-				: never;
+			: I extends TupleDecodeIssues<infer _, infer Issue>
+				? Issue
+				: I extends ObjectDecodeIssues<
+							Record<string, Decoder<unknown>>,
+							infer Issue
+						>
+					? Issue
+					: I extends infer U
+						? U extends Issues
+							? ExtractIssue<U>
+							: never
+						: never;
 
 type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
 	Result<unknown, infer Is>,
@@ -36,14 +43,30 @@ type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
 	? GetIssuesObject<Is>
 	: never;
 
-type GetIssuesObject<I extends Issues> =
-	I extends Record<string, Issues>
-		? { [k in keyof Omit<I, symbol>]: GetIssuesObject<I[k]> }
-		: I;
+type GetIssuesFromIssueTuple<T> = {
+	readonly [K in keyof T as K extends `${number}`
+		? K
+		: never]: T[K] extends Issues ? GetIssuesObject<T[K]> : never;
+};
 
-type GetVars<T extends Decoder<unknown, Issues>> = NonNullable<
-	ExtractIssue<T extends Decoder<unknown, infer I> ? I : never>["vars"]
->;
+type GetIssuesObject<I extends Issues> =
+	I extends UnionDecodeIssues<infer _, infer __>
+		? GetIssuesFromIssueTuple<I>
+		: I extends Record<string, Issues>
+			? { [k in keyof Omit<I, symbol>]: GetIssuesObject<I[k]> }
+			: I;
+
+type GetVars<T extends Decoder<unknown, Issues>> =
+	IssueVars<
+		ExtractIssue<T extends Decoder<unknown, infer I> ? I : never>
+	> extends infer Vars
+		? [Vars] extends [undefined]
+			? undefined
+			: NonNullable<Vars>
+		: never;
+
+type IssueVars<I> =
+	I extends Issue<IssueType, string, infer Vars> ? Vars : never;
 
 describe("DecodeError", () => {
 	describe("array", () => {
@@ -106,6 +129,32 @@ describe("DecodeError", () => {
 			expected: "type.string";
 			received: string;
 		}>();
+	});
+
+	describe("map", () => {
+		const _decoder = katabami.map(
+			(foo, bar) => ({ ...foo, ...bar }),
+			katabami.object({ foo: katabami.float() }),
+			katabami.object({ bar: katabami.string() }),
+		);
+
+		test("issue message", () => {
+			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+				expected: "type.object";
+				received: TypeKeys;
+			}>();
+		});
+
+		test("map decode issues", () => {
+			expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
+				| {
+						readonly bar?: Record<never, never>;
+				  }
+				| {
+						readonly foo?: Record<never, never>;
+				  }
+			>();
+		});
 	});
 
 	describe("object", () => {
@@ -178,29 +227,18 @@ describe("DecodeError", () => {
 		});
 	});
 
-	describe("map", () => {
-		const _decoder = katabami.map(
-			(foo, bar) => ({ ...foo, ...bar }),
-			katabami.object({ foo: katabami.float() }),
-			katabami.object({ bar: katabami.string() }),
-		);
+	describe("union", () => {
+		const _decoder = katabami.union(katabami.int(), katabami.string());
 
 		test("issue message", () => {
-			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-				expected: "type.object";
-				received: TypeKeys;
-			}>();
+			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<undefined>();
 		});
 
-		test("map decode issues", () => {
-			expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
-				| {
-						readonly bar?: Record<never, never>;
-				  }
-				| {
-						readonly foo?: Record<never, never>;
-				  }
-			>();
+		test("union decode issues", () => {
+			expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
+				readonly 0: Record<never, never>;
+				readonly 1: Record<never, never>;
+			}>();
 		});
 	});
 });

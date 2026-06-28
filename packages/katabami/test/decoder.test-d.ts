@@ -242,8 +242,8 @@ describe("Decoder", () => {
 	describe("union", () => {
 		test("fixed", () => {
 			const _decoder = katabami.union<"bar" | "foo">(
-				katabami.constant("foo"),
 				katabami.constant("bar"),
+				katabami.constant("foo"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
@@ -323,30 +323,6 @@ describe("Decoder", () => {
 	});
 
 	describe("decoder method", () => {
-		describe("map", () => {
-			test("fixed", () => {
-				const _decoder = katabami
-					.string()
-					.map<number>((value) => Number(value));
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
-			});
-
-			test("complement", () => {
-				const _decoder = katabami.string().map((value) => Number(value));
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
-			});
-
-			test("promise", () => {
-				const _decoder = katabami.string().map((value) => {
-					return new Promise<number>((resolve) => resolve(Number(value)));
-				});
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
-			});
-		});
-
 		describe("andThen", () => {
 			test("fixed", () => {
 				const _decoder = katabami.value().andThen<number>(() => katabami.int());
@@ -365,6 +341,30 @@ describe("Decoder", () => {
 					return new Promise<Decoder<number>>((resolve) =>
 						resolve(katabami.int()),
 					);
+				});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
+			});
+		});
+
+		describe("map", () => {
+			test("fixed", () => {
+				const _decoder = katabami
+					.string()
+					.map<number>((value) => Number(value));
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.string().map((value) => Number(value));
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+			});
+
+			test("promise", () => {
+				const _decoder = katabami.string().map((value) => {
+					return new Promise<number>((resolve) => resolve(Number(value)));
 				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
