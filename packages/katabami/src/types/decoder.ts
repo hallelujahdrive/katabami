@@ -273,14 +273,10 @@ export type TupleDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
 /**
  * The issues type of a union decoder.
  */
-export type UnionDecodeIssues<T> = T extends [
-	Decoder<unknown, infer A>,
-	...infer B,
-]
-	? B extends Array<Decoder<unknown>>
-		? A | UnionDecodeIssues<B>
-		: A
-	: never;
+export type UnionDecodeIssues<T, I extends Issue> = _Issues<
+	UnionDecodeIssuesHelper<T>,
+	I
+>;
 
 /**
  * The response type of a union decoder.
@@ -289,13 +285,13 @@ export type UnionDecodeResponse<T> =
 	UnionHasPromise<T> extends true
 		? Promise<UnionDecodeResponseResolvedHelper<T>>
 		: UnionDecodeResponseHelper<T>;
+
 /**
  * The type of a union decoder.
  */
 export type UnionDecoders<T> = UnionToTuple<
 	T extends infer A ? Decoder<A> : never
 >;
-
 /**
  * The helper type to check if a record has a promise.
  */
@@ -357,6 +353,43 @@ type TupleHasPromise<T extends Array<Decoder<unknown>>> = T extends [
 			? TupleHasPromise<B>
 			: false
 	: false;
+
+/**
+ * The helper type to flatten nested union issues.
+ */
+type UnionDecodeIssueExpanded<T extends Issues> =
+	T extends UnionDecodeIssues<infer D, Issue<"union", infer _>>
+		? UnionDecodeIssuesFlattenTuple<UnionDecodeIssuesHelper<D>>
+		: [T];
+
+/**
+ * The helper type to flatten a tuple of issues.
+ */
+type UnionDecodeIssuesFlattenTuple<T extends readonly unknown[]> =
+	T extends readonly [infer A, ...infer B]
+		? A extends Issues
+			? [
+					...UnionDecodeIssueExpanded<A>,
+					...UnionDecodeIssuesFlattenTuple<
+						B extends readonly unknown[] ? B : readonly []
+					>,
+				]
+			: UnionDecodeIssuesFlattenTuple<
+					B extends readonly unknown[] ? B : readonly []
+				>
+		: [];
+
+/**
+ * The helper type for the issues type of a union decoder.
+ */
+type UnionDecodeIssuesHelper<T> = T extends [
+	Decoder<unknown, infer A>,
+	...infer B,
+]
+	? B extends Array<Decoder<unknown>>
+		? [...UnionDecodeIssueExpanded<A>, ...UnionDecodeIssuesHelper<B>]
+		: UnionDecodeIssueExpanded<A>
+	: [];
 
 /**
  * The response type of a union decoder.

@@ -1,6 +1,14 @@
 import { describe, expectTypeOf, test } from "vitest";
 
-import { type Decoder, type Infer, katabami } from "../src/index.js";
+import {
+	type Decoder,
+	type Infer,
+	type Issue,
+	type Issues,
+	katabami,
+	type Primitive,
+	type UnionDecodeIssues,
+} from "../src/index.js";
 
 describe("Decoder", () => {
 	describe("array", () => {
@@ -263,6 +271,54 @@ describe("Decoder", () => {
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Promise<"bar" | "foo">
 			>();
+		});
+
+		test("nested union flattens issues", () => {
+			type UnionIssue = Issue<"union", "issue.invalidUnion", undefined>;
+			type ConstantIssue<Expected extends string> = Issues<
+				"constant",
+				Issue<
+					"constant",
+					"issue.unexpectedValue",
+					{ expected: Expected; received: Primitive }
+				>
+			>;
+
+			type NestedUnionIssues = UnionDecodeIssues<
+				[
+					Decoder<"foo", ConstantIssue<"foo">>,
+					Decoder<
+						"bar" | "baz",
+						UnionDecodeIssues<
+							[
+								Decoder<"bar", ConstantIssue<"bar">>,
+								Decoder<"baz", ConstantIssue<"baz">>,
+							],
+							UnionIssue
+						>
+					>,
+				],
+				UnionIssue
+			>;
+
+			type FlatUnionIssues = UnionDecodeIssues<
+				[
+					Decoder<"foo", ConstantIssue<"foo">>,
+					Decoder<"bar", ConstantIssue<"bar">>,
+					Decoder<"baz", ConstantIssue<"baz">>,
+				],
+				UnionIssue
+			>;
+
+			type NestedExtendsFlat = NestedUnionIssues extends FlatUnionIssues
+				? true
+				: false;
+			type FlatExtendsNested = FlatUnionIssues extends NestedUnionIssues
+				? true
+				: false;
+
+			expectTypeOf<NestedExtendsFlat>().toEqualTypeOf<true>();
+			expectTypeOf<FlatExtendsNested>().toEqualTypeOf<true>();
 		});
 	});
 

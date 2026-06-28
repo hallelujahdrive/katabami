@@ -23,6 +23,22 @@ export type MessageResources = {
 		 */
 		failedToDecode: string;
 		/**
+		 * The message for the issue when one or more array elements are invalid.
+		 */
+		invalidArrayElements: string;
+		/**
+		 * The message for the issue when the length of the array is invalid.
+		 */
+		invalidArrayLength: string;
+		/**
+		 * The message for the issue when one or more object properties fail validation.
+		 */
+		invalidObject: string;
+		/**
+		 * The message for the issue when none of the union members match.
+		 */
+		invalidUnion: string;
+		/**
 		 * The message for the issue when the index is out of bounds.
 		 */
 		outOfBounds: string;

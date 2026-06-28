@@ -14,7 +14,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type string, but boolean value is expected.",
+				"Expected boolean, but received string.",
 			);
 		});
 	});
@@ -31,7 +31,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'The value is 1, but "foo" value is expected.',
+				'Expected "foo", but received 1.',
 			);
 		});
 	});
@@ -65,7 +65,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type string, but float value is expected.",
+				"Expected float, but received string.",
 			);
 		});
 	});
@@ -82,7 +82,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type number, but array value is expected.",
+				"Expected array, but received number.",
 			);
 		});
 
@@ -95,7 +95,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The index 0 is out of bounds.",
+				"Index 0 is out of bounds.",
 			);
 		});
 	});
@@ -112,7 +112,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type string, but number value is expected.",
+				"Expected number, but received string.",
 			);
 		});
 
@@ -125,7 +125,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type float, but integer value is expected.",
+				"Expected integer, but received float.",
 			);
 		});
 	});
@@ -137,6 +137,32 @@ describe("issues", () => {
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("invalid object", () => {
+			const result = decoder.decodeValue({ foo: 1 });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+
+			expect(
+				getIssueMessage(result.error?.issues?.foo)?.format(),
+			).toStrictEqual("Expected string, but received number.");
 		});
 	});
 
@@ -152,7 +178,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"The value is of type number, but string value is expected.",
+				"Expected string, but received number.",
 			);
 		});
 	});
@@ -162,6 +188,106 @@ describe("issues", () => {
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected array, but received number.",
+			);
+		});
+
+		test("invalid array length", () => {
+			const result = decoder.decodeValue([1]);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected array length 2, but received 1.",
+			);
+		});
+
+		test("unexpected element type", () => {
+			const result = decoder.decodeValue([undefined, 1]);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"One or more array elements failed validation.",
+			);
+
+			expect(
+				getIssueMessage(result.error?.issues?.[0])?.format(),
+			).toStrictEqual("Expected string, but received undefined.");
+
+			expect(
+				getIssueMessage(result.error?.issues?.[1])?.format(),
+			).toStrictEqual(undefined);
+		});
+	});
+
+	describe("union decoder", () => {
+		const decoder = katabami.union(katabami.string(), katabami.int());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(true);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"None of the union members matched.",
+			);
+
+			expect(getIssueMessage(result.error?.issues[0])?.format()).toStrictEqual(
+				"Expected string, but received boolean.",
+			);
+
+			expect(getIssueMessage(result.error?.issues[1])?.format()).toStrictEqual(
+				"Expected number, but received boolean.",
+			);
+		});
+
+		describe("nested union", () => {
+			const decoder = katabami.union(
+				katabami.constant("foo"),
+				katabami.union(katabami.constant("bar"), katabami.constant("baz")),
+			);
+
+			test("unexpected type", () => {
+				const result = decoder.decodeValue(1);
+
+				expect(result).toStrictEqual({
+					error: expect.any(DecodeError),
+					ok: false,
+				});
+
+				expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+					"None of the union members matched.",
+				);
+
+				expect(
+					getIssueMessage(result.error?.issues[0])?.format(),
+				).toStrictEqual('Expected "foo", but received 1.');
+
+				expect(
+					getIssueMessage(result.error?.issues[1])?.format(),
+				).toStrictEqual('Expected "bar", but received 1.');
+
+				expect(
+					getIssueMessage(result.error?.issues[2])?.format(),
+				).toStrictEqual('Expected "baz", but received 1.');
+			});
 		});
 	});
 });

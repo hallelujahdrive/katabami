@@ -21,11 +21,15 @@ const formats: Record<string, (value: Primitive) => Primitive> = {
 export const defaultMessageResources = {
 	issue: {
 		failedToDecode: "Failed to decode.",
-		outOfBounds: "The index {{index}} is out of bounds.",
-		unexpectedType:
-			"The value is of type {{received}}, but {{expected}} value is expected.",
+		invalidArrayElements: "One or more array elements failed validation.",
+		invalidArrayLength:
+			"Expected array length {{expected}}, but received {{received}}.",
+		invalidObject: "One or more object properties failed validation.",
+		invalidUnion: "None of the union members matched.",
+		outOfBounds: "Index {{index}} is out of bounds.",
+		unexpectedType: "Expected {{expected}}, but received {{received}}.",
 		unexpectedValue:
-			"The value is {{received, quoteString}}, but {{expected, quoteString}} value is expected.",
+			"Expected {{expected, quoteString}}, but received {{received, quoteString}}.",
 	},
 	type: {
 		array: "array",
