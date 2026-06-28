@@ -21,23 +21,26 @@ type DecodeResult<T extends Decoder<unknown, Issues>> = Resolved<
 	ReturnType<T["decodeValue"]>
 >;
 
-type ExtractIssue<I extends Issues> =
-	I extends Issues<IssueType, infer Issue>
+type DecodeStringResult<T extends Decoder<unknown, Issues>> = Resolved<
+	ReturnType<T["decodeString"]>
+>;
+
+type ExtractIssue<I> = I extends infer U
+	? U extends UnionDecodeIssues<infer _, infer Issue>
 		? Issue
-		: I extends UnionDecodeIssues<infer _, infer Issue>
+		: U extends TupleDecodeIssues<infer _, infer Issue>
 			? Issue
-			: I extends TupleDecodeIssues<infer _, infer Issue>
+			: U extends ObjectDecodeIssues<
+						Record<string, Decoder<unknown>>,
+						infer Issue
+					>
 				? Issue
-				: I extends ObjectDecodeIssues<
-							Record<string, Decoder<unknown>>,
-							infer Issue
-						>
+				: U extends Issues<IssueType, infer Issue>
 					? Issue
-					: I extends infer U
-						? U extends Issues
-							? ExtractIssue<U>
-							: never
-						: never;
+					: U extends Issue<infer _, infer __, infer ___>
+						? U
+						: never
+	: never;
 
 type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
 	Result<unknown, infer Is>,
@@ -51,14 +54,15 @@ type GetIssuesFromIssueTuple<T> = {
 		: never]: T[K] extends Issues ? GetIssuesObject<T[K]> : never;
 };
 
-type GetIssuesObject<I extends Issues> =
-	I extends UnionDecodeIssues<infer _, infer __>
-		? GetIssuesFromIssueTuple<I>
-		: I extends Record<string, Issues>
-			? { [k in keyof Omit<I, symbol>]: GetIssuesObject<I[k]> }
-			: I;
+type GetIssuesObject<I> = I extends infer U
+	? U extends UnionDecodeIssues<infer _, infer __>
+		? GetIssuesFromIssueTuple<U>
+		: U extends Record<string, Issues>
+			? { [k in keyof Omit<U, symbol>]: GetIssuesObject<U[k]> }
+			: U
+	: never;
 
-type GetVars<T extends Decoder<unknown, Issues>> =
+type GetVars<T extends Decoder<unknown>> =
 	IssueVars<
 		ExtractIssue<T extends Decoder<unknown, infer I> ? I : never>
 	> extends infer Vars
@@ -68,7 +72,7 @@ type GetVars<T extends Decoder<unknown, Issues>> =
 		: never;
 
 type IssueVars<I> =
-	I extends Issue<IssueType, string, infer Vars> ? Vars : never;
+	I extends Issue<infer _, infer __, infer Vars> ? Vars : never;
 
 describe("DecodeError", () => {
 	describe("array", () => {
@@ -108,6 +112,58 @@ describe("DecodeError", () => {
 
 	test("int", () => {
 		const _decoder = katabami.int();
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.integer" | "type.number";
+			received: string;
+		}>();
+
+		expectTypeOf<{
+			expected: "type.integer";
+			received: "type.float";
+		}>().toExtend<GetVars<typeof _decoder>>();
+	});
+
+	test("failed", () => {
+		const _decoder = katabami.failed();
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<undefined>();
+
+		expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
+			Record<never, never>
+		>();
+	});
+
+	test("field", () => {
+		const _decoder = katabami.field("foo", katabami.string());
+
+		expectTypeOf<{ key: string }>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<{
+			expected: "type.object";
+			received: TypeKeys;
+		}>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<{
+			expected: "type.string";
+			received: string;
+		}>().toExtend<GetVars<typeof _decoder>>();
+	});
+
+	test("index", () => {
+		const _decoder = katabami.index(0, katabami.string());
+
+		expectTypeOf<{ index: number }>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<{
+			expected: string;
+			received: string;
+		}>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<{
+			expected: "type.string";
+			received: string;
+		}>().toExtend<GetVars<typeof _decoder>>();
+	});
+
+	test("optional", () => {
+		const _decoder = katabami.optional(katabami.int());
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
@@ -242,6 +298,68 @@ describe("DecodeError", () => {
 				readonly 1: Record<never, never>;
 			}>();
 		});
+
+		describe("nested", () => {
+			const _decoder = katabami.union(
+				katabami.constant("foo"),
+				katabami.union(katabami.constant("bar"), katabami.constant("baz")),
+			);
+
+			test("issue message", () => {
+				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<undefined>();
+			});
+
+			test("union decode issues", () => {
+				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<{
+					readonly 0: Record<never, never>;
+					readonly 1: Record<never, never>;
+					readonly 2: Record<never, never>;
+				}>();
+			});
+		});
+	});
+
+	describe("parseJson", () => {
+		test("issue message", () => {
+			const _decoder = katabami.int();
+
+			expectTypeOf<{
+				expected: "type.integer" | "type.number";
+				received: string;
+			}>().toExtend<
+				IssueVars<
+					ExtractIssue<
+						typeof _decoder extends Decoder<unknown, infer I>
+							?
+									| I
+									| Issues<
+											"parseJson",
+											Issue<"parseJson", "issue.failedToDecode", never>
+									  >
+							: never
+					>
+				>
+			>();
+
+			expectTypeOf<
+				Issue<"parseJson", "issue.failedToDecode", never>
+			>().toExtend<
+				ExtractIssue<
+					typeof _decoder extends Decoder<unknown, infer I>
+						?
+								| I
+								| Issues<
+										"parseJson",
+										Issue<"parseJson", "issue.failedToDecode", never>
+								  >
+						: never
+				>
+			>();
+
+			expectTypeOf<
+				GetIssues<DecodeStringResult<typeof _decoder>>
+			>().toEqualTypeOf<Record<never, never>>();
+		});
 	});
 
 	describe("Decoder methods", () => {
@@ -255,6 +373,20 @@ describe("DecodeError", () => {
 					| { expected: "foo"; received: Primitive }
 					| { expected: "type.string"; received: string }
 				>();
+
+				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
+					Record<never, never>
+				>();
+			});
+
+			test("nested decode issues", () => {
+				const _decoder = katabami
+					.object({ foo: katabami.string() })
+					.andThen(() => katabami.int());
+
+				expectTypeOf<{
+					readonly foo?: Record<never, never>;
+				}>().toExtend<GetIssues<DecodeResult<typeof _decoder>>>();
 			});
 		});
 
@@ -286,6 +418,10 @@ describe("DecodeError", () => {
 					expected: "type.integer" | "type.number";
 					received: string;
 				}>();
+
+				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
+					Record<never, never>
+				>();
 			});
 		});
 	});
