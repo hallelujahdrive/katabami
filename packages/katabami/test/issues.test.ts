@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { DecodeError, getIssueMessage, katabami } from "../src/index.js";
+import {
+	createIssues,
+	DecodeError,
+	getIssueMessage,
+	katabami,
+} from "../src/index.js";
 
 describe("issues", () => {
 	describe("array decoder", () => {
@@ -414,6 +419,44 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
 				'Expected "foo", but received "bar".',
+			);
+		});
+
+		test("catch", () => {
+			const decoder = katabami.string().catch(() => {
+				return {
+					error: new DecodeError(
+						"Custom error",
+						createIssues("custom", "Custom issue"),
+					),
+					ok: false,
+				};
+			});
+
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Custom issue",
+			);
+		});
+
+		test("map", () => {
+			const decoder = katabami.string().map((value) => value.toUpperCase());
+
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected string, but received number.",
 			);
 		});
 	});

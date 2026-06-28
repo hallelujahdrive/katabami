@@ -1337,7 +1337,7 @@ export function index<T, U extends Decoder<T> = Decoder<T>>(
 	index: number,
 	decoder: U,
 ): Decoder<
-	T,
+	IndexDecodeResponse<U>,
 	IndexDecodeIssues<
 		U,
 		| Issue<"index:outOfBounds", string, { index: number }>
@@ -1345,7 +1345,7 @@ export function index<T, U extends Decoder<T> = Decoder<T>>(
 	>
 > {
 	return new _Decoder<
-		T,
+		IndexDecodeResponse<U>,
 		IndexDecodeIssues<
 			U,
 			| Issue<"index:outOfBounds", string, { index: number }>

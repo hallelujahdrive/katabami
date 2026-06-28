@@ -71,12 +71,12 @@ export function createIssues<
 export function createIssues<
 	T extends IssueType,
 	Msg extends string = IssueMessageKeys | (string & {}),
-	Vars extends Record<string, Primitive | TypeKeys> = Record<never, never>,
+	Vars extends Record<string, Primitive | TypeKeys> | undefined = undefined,
 >(type: T, message: Msg, vars?: Vars): Issues<T, Issue<T, Msg, Vars>>;
 export function createIssues<
 	T extends IssueType,
 	Msg extends string = IssueMessageKeys | (string & {}),
-	Vars extends Record<string, Primitive | TypeKeys> = Record<never, never>,
+	Vars extends Record<string, Primitive | TypeKeys> | undefined = undefined,
 >(
 	type: T,
 	message: Msg,

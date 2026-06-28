@@ -1,6 +1,8 @@
 import { describe, expectTypeOf, test } from "vitest";
 
 import {
+	createIssues,
+	DecodeError,
 	type Decoder,
 	type Issue,
 	type Issues,
@@ -239,6 +241,52 @@ describe("DecodeError", () => {
 				readonly 0: Record<never, never>;
 				readonly 1: Record<never, never>;
 			}>();
+		});
+	});
+
+	describe("Decoder methods", () => {
+		describe("andThen", () => {
+			test("issue message", () => {
+				const _decoder = katabami
+					.string()
+					.andThen(() => katabami.constant("foo"));
+
+				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+					| { expected: "foo"; received: Primitive }
+					| { expected: "type.string"; received: string }
+				>();
+			});
+		});
+
+		describe("catch", () => {
+			test("issue message", () => {
+				const _decoder = katabami.int().catch(() => {
+					return {
+						error: new DecodeError(
+							"Custom error",
+							createIssues("custom", "Custom issue"),
+						),
+						ok: false as const,
+					};
+				});
+
+				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<undefined>();
+
+				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
+					Record<never, never>
+				>();
+			});
+		});
+
+		describe("map", () => {
+			test("issue message", () => {
+				const _decoder = katabami.int().map((value) => value.toString());
+
+				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+					expected: "type.integer" | "type.number";
+					received: string;
+				}>();
+			});
 		});
 	});
 });

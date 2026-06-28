@@ -1,6 +1,8 @@
 import { describe, expectTypeOf, test } from "vitest";
 
 import {
+	createIssues,
+	DecodeError,
 	type Decoder,
 	type Infer,
 	type Issue,
@@ -36,6 +38,186 @@ describe("Decoder", () => {
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Promise<Array<number>>
 			>();
+		});
+	});
+
+	describe("boolean", () => {
+		test("fixed", () => {
+			const _decoder = katabami.boolean();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<boolean>();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.boolean().andThen((value) => {
+				return new Promise<Decoder<boolean>>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<boolean>>();
+		});
+	});
+
+	describe("constant", () => {
+		test("sync", () => {
+			const _decoder = katabami.constant("foo");
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"foo">();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.constant("foo").andThen((value) => {
+				return new Promise<Decoder<"foo">>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<"foo">>();
+		});
+	});
+
+	describe("failed", () => {
+		test("sync", () => {
+			const _decoder = katabami.failed();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<never>();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.failed().andThen((value) => {
+				return new Promise<Decoder<never>>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<never>>();
+		});
+	});
+
+	describe("field", () => {
+		describe("sync", () => {
+			test("fixed", () => {
+				const _decoder = katabami.field<string>("foo", katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.field("foo", katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+		});
+
+		describe("async", () => {
+			test("fixed", () => {
+				const _decoder = katabami
+					.field<string>("foo", katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami
+					.field("foo", katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+		});
+	});
+
+	describe("float", () => {
+		test("sync", () => {
+			const _decoder = katabami.float();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.float().andThen((value) => {
+				return new Promise<Decoder<number>>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
+		});
+	});
+
+	describe("index", () => {
+		describe("sync", () => {
+			test("fixed", () => {
+				const _decoder = katabami.index<string>(0, katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.index(0, katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+		});
+
+		describe("async", () => {
+			test("fixed", () => {
+				const _decoder = katabami
+					.index<string>(0, katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami
+					.index(0, katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+		});
+	});
+
+	describe("int", () => {
+		test("fixed", () => {
+			const _decoder = katabami.int();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+		});
+
+		test("complement", () => {
+			const _decoder = katabami.int();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.int().andThen((value) => {
+				return new Promise<Decoder<number>>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
 		});
 	});
 
@@ -204,6 +386,24 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("string", () => {
+		test("sync", () => {
+			const _decoder = katabami.string();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+		});
+
+		test("promise", () => {
+			const _decoder = katabami.string().andThen((value) => {
+				return new Promise<Decoder<string>>((resolve) =>
+					resolve(katabami.succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+		});
+	});
+
 	describe("tuple", () => {
 		test("fixed", () => {
 			const _decoder = katabami.tuple<["foo", "bar"]>(
@@ -344,6 +544,40 @@ describe("Decoder", () => {
 				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
+			});
+		});
+
+		describe("catch", () => {
+			test("fixed", () => {
+				const _decoder = katabami
+					.int()
+					.catch<Issues<"custom", Issue<"custom", "Custom issue", undefined>>>(
+						() => {
+							return {
+								error: new DecodeError(
+									"Custom error",
+									createIssues("custom", "Custom issue"),
+								),
+								ok: false,
+							};
+						},
+					);
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.int().catch(() => {
+					return {
+						error: new DecodeError(
+							"Custom error",
+							createIssues("custom", "Custom issue"),
+						),
+						ok: false,
+					};
+				});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 		});
 
