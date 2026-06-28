@@ -26,6 +26,7 @@ export const defaultMessageResources = {
 			"Expected array length {{expected}}, but received {{received}}.",
 		invalidObject: "One or more object properties failed validation.",
 		invalidUnion: "None of the union members matched.",
+		missingField: 'Expected field "{{key}}", but received undefined.',
 		outOfBounds: "Index {{index}} is out of bounds.",
 		unexpectedType: "Expected {{expected}}, but received {{received}}.",
 		unexpectedValue:

@@ -574,31 +574,77 @@ const decodeConstantFunc =
  * @template {Decoder<T>} U - The decoder to use.
  * @param {string} key - The key of the field.
  * @param {Decoder<T>} decoder - The decoder to use.
- * @returns {DecodeFunction<T, FieldDecodeIssues<U, Issue<"field", string, { key: string }>>>} A decoder that decodes a field.
+ * @returns {DecodeFunction<T, FieldDecodeIssues<U, Issue<"field", "issue.missingField", { key: string }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
  */
 const decodeFieldFunc = <T, U extends Decoder<T> = Decoder<T>>(
 	key: string,
 	decoder: U,
 ): DecodeFunction<
 	FieldDecodeResponse<U>,
-	FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+	FieldDecodeIssues<
+		U,
+		| Issue<"field", "issue.missingField", { key: string }>
+		| Issue<
+				"field",
+				"issue.unexpectedType",
+				{ expected: "type.object"; received: TypeKeys }
+		  >
+	>
 > => {
 	return (value) => {
-		if (!isRecord(value) || !(key in value))
+		if (!isRecord(value))
 			return {
 				error: new DecodeError(
 					"Field expected",
-					createIssues("field", "issue.unexpectedValue", {
-						expected: key,
-					}) as FieldDecodeIssues<U, Issue<"field", string, { key: string }>>,
+					createIssues("field", "issue.unexpectedType", {
+						expected: "type.object",
+						received: typeOf(value),
+					}) as FieldDecodeIssues<
+						U,
+						Issue<
+							"field",
+							"issue.unexpectedType",
+							{ expected: "type.object"; received: TypeKeys }
+						>
+					>,
 				),
 				ok: false,
 			};
 
-		return decoder.decodeValue(value[key]) as Awaitable<
+		// if the issue is an unexpected type and the received type is undefined, return a missing field issue
+		return decoder
+			.catch((issue) => {
+				const issueMessage = getIssueMessage(issue);
+
+				if (
+					issueMessage?.message === "issue.unexpectedType" &&
+					issueMessage.vars?.received === "type.undefined"
+				) {
+					return {
+						error: new DecodeError(
+							"Field expected",
+							createIssues("field", "issue.missingField", { key }),
+						),
+						ok: false,
+					};
+				}
+
+				return {
+					error: new DecodeError("Field expected", issue),
+					ok: false,
+				};
+			})
+			.decodeValue(value[key]) as Awaitable<
 			Result<
 				FieldDecodeResponse<U>,
-				FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+				FieldDecodeIssues<
+					U,
+					Issue<
+						"field",
+						"issue.unexpectedType",
+						{ expected: "type.object"; received: TypeKeys }
+					>
+				>
 			>
 		>;
 	};
@@ -1022,10 +1068,7 @@ const decodeTupleFunc =
  * @param {Issues[]} issues - The issues from each decoder.
  * @returns {Result<UnionDecodeResponse<U>, UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>>} The error result.
  */
-const decodeUnionHelper = <
-	T,
-	U extends Array<Decoder<unknown>> | UnionDecoders<T>,
->(
+const decodeUnionHelper = <U extends Array<Decoder<unknown>>>(
 	issues: Issues[],
 ): Result<
 	UnionDecodeResponse<U>,
@@ -1060,7 +1103,7 @@ const decodeUnionHelper = <
  * @returns
  */
 const decodeUnionFunc =
-	<T, U extends Array<Decoder<unknown>> | UnionDecoders<T>>(
+	<U extends Array<Decoder<unknown>>>(
 		decoders: U,
 	): DecodeFunction<
 		UnionDecodeResponse<U>,
@@ -1154,7 +1197,7 @@ const decodeUnionFunc =
 						>
 					>;
 
-				return decodeUnionHelper<T, U>(results.issues);
+				return decodeUnionHelper<U>(results.issues);
 			});
 		}
 
@@ -1164,7 +1207,7 @@ const decodeUnionFunc =
 				UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>
 			>;
 
-		return decodeUnionHelper<T, U>(results.issues);
+		return decodeUnionHelper<U>(results.issues);
 	};
 
 /**
@@ -1249,18 +1292,34 @@ export function failed(): Decoder<
  * @template {Decoder<T>} U - The decoder to use.
  * @param {string} key - The name of the field.
  * @param {Decoder<T>} decoder - The decoder to use.
- * @returns {Decoder<T, FieldDecodeIssues<U, Issue<"field", string, { key: string }>>>} A decoder that decodes a field.
+ * @returns {Decoder<T, FieldDecodeIssues<U, Issue<"field", "issue.missingField", { key: string }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
  */
 export function field<T, U extends Decoder<T> = Decoder<T>>(
 	key: string,
 	decoder: U,
 ): Decoder<
 	FieldDecodeResponse<U>,
-	FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+	FieldDecodeIssues<
+		U,
+		| Issue<"field", "issue.missingField", { key: string }>
+		| Issue<
+				"field",
+				"issue.unexpectedType",
+				{ expected: "type.object"; received: TypeKeys }
+		  >
+	>
 > {
 	return new _Decoder<
 		FieldDecodeResponse<U>,
-		FieldDecodeIssues<U, Issue<"field", string, { key: string }>>
+		FieldDecodeIssues<
+			U,
+			| Issue<"field", "issue.missingField", { key: string }>
+			| Issue<
+					"field",
+					"issue.unexpectedType",
+					{ expected: "type.object"; received: TypeKeys }
+			  >
+		>
 	>(decodeFieldFunc(key, decoder));
 }
 
@@ -1522,7 +1581,7 @@ export function tuple<
  * Create a decoder that accepts any of the given decoders.
  *
  * @template T The type of the value.
- * @template {Array<Decoder<unknown>> | UnionDecoders<T>} U The type of the decoders.
+ * @template U The type of the decoders.
  * @param {U} decoders The decoders to use.
  * @returns {Decoder<UnionDecodeResponse<U>>} A decoder that accepts any of the given decoders.
  */
@@ -1538,7 +1597,7 @@ export function union<
 	return new _Decoder<
 		UnionDecodeResponse<U>,
 		UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>
-	>(decodeUnionFunc<T, U>(decoders));
+	>(decodeUnionFunc(decoders));
 }
 
 /**

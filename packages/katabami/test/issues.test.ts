@@ -2,6 +2,36 @@ import { describe, expect, test } from "vitest";
 import { DecodeError, getIssueMessage, katabami } from "../src/index.js";
 
 describe("issues", () => {
+	describe("array decoder", () => {
+		const decoder = katabami.array(katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Expected "array", but received "number".',
+			);
+		});
+
+		test("unexpected value", () => {
+			const result = decoder.decodeValue([1]);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(
+				getIssueMessage(result.error?.issues?.[0])?.format(),
+			).toStrictEqual("Expected string, but received number.");
+		});
+	});
+
 	describe("boolean decoder", () => {
 		const decoder = katabami.boolean();
 
@@ -50,6 +80,52 @@ describe("issues", () => {
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
 				"Failed to decode.",
 			);
+		});
+	});
+
+	describe("field decoder", () => {
+		const decoder = katabami.field("foo", katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("missing field", () => {
+			const result = decoder.decodeValue({});
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Expected field "foo", but received undefined.',
+			);
+		});
+
+		describe("optional field", () => {
+			const decoder = katabami.field(
+				"foo",
+				katabami.optional(katabami.string()),
+			);
+
+			test("missing field", () => {
+				const result = decoder.decodeValue({});
+
+				expect(result).toStrictEqual({
+					ok: true,
+					value: undefined,
+				});
+			});
 		});
 	});
 
@@ -126,6 +202,40 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
 				"Expected integer, but received float.",
+			);
+		});
+	});
+
+	describe("map decoder", () => {
+		const decoder = katabami.map(
+			(foo, bar) => ({ bar, foo }),
+			katabami.field("foo", katabami.string()),
+			katabami.field("bar", katabami.string()),
+		);
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("missing field", () => {
+			const result = decoder.decodeValue({});
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Expected field "foo", but received undefined.',
 			);
 		});
 	});

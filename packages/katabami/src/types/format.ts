@@ -39,6 +39,10 @@ export type MessageResources = {
 		 */
 		invalidUnion: string;
 		/**
+		 * The message for the issue when the field is missing.
+		 */
+		missingField: string;
+		/**
 		 * The message for the issue when the index is out of bounds.
 		 */
 		outOfBounds: string;

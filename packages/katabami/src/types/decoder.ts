@@ -287,11 +287,18 @@ export type UnionDecodeResponse<T> =
 		: UnionDecodeResponseHelper<T>;
 
 /**
- * The type of a union decoder.
+ * The type of a union decoder in canonical order.
  */
-export type UnionDecoders<T> = UnionToTuple<
-	T extends infer A ? Decoder<A> : never
->;
+export type UnionDecoders<T> = _UnionDecoders<UnionToTuple<T>>;
+
+/**
+ * Maps a tuple of value types to a tuple of decoders.
+ */
+type _UnionDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
+	? B extends unknown[]
+		? [Decoder<A>, ..._UnionDecoders<B>]
+		: [Decoder<A>]
+	: [];
 /**
  * The helper type to check if a record has a promise.
  */
