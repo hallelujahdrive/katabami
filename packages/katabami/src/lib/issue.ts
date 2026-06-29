@@ -14,7 +14,7 @@ import { defaultFormatter } from "./format.js";
  */
 const weakMap = new WeakMap<object, Issue>();
 
-class _IssueMessage<
+class IssueMessage<
 	T extends IssueType,
 	Msg extends string = string,
 	Vars extends Record<string, Primitive> | undefined =
@@ -85,7 +85,7 @@ export function createIssues<
 ): Issues<T, Issue<T, Msg, Vars>> {
 	const _issues = issues ?? ({} as Issues<T, Issue<T, Msg, Vars>>);
 
-	const issueMessage = new _IssueMessage(type, message, vars);
+	const issueMessage = new IssueMessage(type, message, vars);
 
 	weakMap.set(_issues, issueMessage);
 

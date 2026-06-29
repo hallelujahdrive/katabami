@@ -1,5 +1,5 @@
 import type { PostProcessorModule } from "i18next";
-import { replaceArticle } from "../../utils/index.js";
+import { replaceArticle } from "../../../katabami/src/utils/index.js";
 
 /**
  * A post processor that replaces "a" with "an" and "an" with "a" in the value.

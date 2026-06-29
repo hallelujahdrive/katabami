@@ -1,6 +1,7 @@
 import type { Formatter, IssueMessageKeys, TypeKeys } from "./format.js";
 import type { Resolved, UnionToTuple } from "./helpers.js";
 import type { Primitive } from "./primitive.js";
+import type { DecoderSchema } from "./schema.js";
 
 /**
  * The issues type of an array decoder.
@@ -33,7 +34,11 @@ export type CatchFunction<T, I extends Issues, J extends Issues> = (
 /**
  * Decoder interface.
  */
-export interface Decoder<T, I extends Issues = Issues> {
+export interface Decoder<
+	T,
+	I extends Issues = Issues,
+	S extends boolean = false,
+> {
 	/**
 	 * Applies another decoder to the decoded value (sync nextFunc).
 	 *
@@ -44,7 +49,7 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 */
 	andThen<U, J extends Issues = Issues>(
 		nextFunc: (value: Resolved<T>) => Decoder<U, J>,
-	): Decoder<U, I | J>;
+	): Decoder<U, I | J, S>;
 
 	/**
 	 * Applies another decoder to the decoded value (async nextFunc).
@@ -56,7 +61,7 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 */
 	andThen<U, J extends Issues = Issues>(
 		nextFunc: (value: Resolved<T>) => Promise<Decoder<U, J>>,
-	): Decoder<Promise<Resolved<U>>, I | J>;
+	): Decoder<Promise<Resolved<U>>, I | J, S>;
 
 	/**
 	 * Catches and transforms issues during decoding.
@@ -65,7 +70,7 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @param {CatchFunction<T, I, J>} catchFunc - The function to handle and transform issues.
 	 * @returns {Decoder<T, J>} A new decoder with transformed issues.
 	 */
-	catch<J extends Issues>(catchFunc: CatchFunction<T, I, J>): Decoder<T, J>;
+	catch<J extends Issues>(catchFunc: CatchFunction<T, I, J>): Decoder<T, J, S>;
 
 	/**
 	 * Decode a string as T.
@@ -83,9 +88,15 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * When T is Promise, returns Promise<Result<Resolved<T>, I>>; otherwise returns Result<T, I>.
 	 *
 	 * @param {unknown} value The value to decode as T.
-	 * @returns {T extends Promise<unknown> ? Promise<Result<Resolved<T>, I>> : Result<T, I>} The decoded value or an error with issues.
+	 * @returns {DecodeResult<T, I>} The decoded value or an error with issues.
 	 */
 	decodeValue(value: unknown): DecodeResult<T, I>;
+
+	/**
+	 * Returns the minimal schema describing the values this decoder accepts.
+	 * When schema resolution is async, returns Promise; otherwise returns DecoderSchema.
+	 */
+	getSchema(): SchemaResult<S>;
 
 	/**
 	 * Apply a mapping function to the decoded value.
@@ -94,7 +105,7 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @param {(value: Resolved<T>) => U} mapFunc The mapping function.
 	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
 	 */
-	map<U>(mapFunc: (value: Resolved<T>) => U): Decoder<U, I>;
+	map<U>(mapFunc: (value: Resolved<T>) => U): Decoder<U, I, S>;
 
 	/**
 	 * Apply a mapping function to the decoded value.
@@ -103,7 +114,9 @@ export interface Decoder<T, I extends Issues = Issues> {
 	 * @param {(value: Resolved<T>) => Promise<U>} mapFunc The mapping function.
 	 * @returns {Decoder<U>} A new decoder that applies the mapping function to the decoded value.
 	 */
-	map<U>(mapFunc: (value: Resolved<T>) => Promise<U>): Decoder<Promise<U>, I>;
+	map<U>(
+		mapFunc: (value: Resolved<T>) => Promise<U>,
+	): Decoder<Promise<U>, I, S>;
 }
 
 /**
@@ -151,8 +164,8 @@ export type IndexDecodeResponse<T extends Decoder<unknown>> =
 /**
  * The inferred type of a decoder.
  */
-export type Infer<T extends Decoder<unknown>> =
-	T extends Decoder<infer A> ? A : "";
+export type Infer<T extends Decoder<unknown, Issues, boolean>> =
+	T extends Decoder<infer A, Issues, boolean> ? A : "";
 
 /**
  * The type of a map decode function.
@@ -240,10 +253,32 @@ export type Ok<T> = { error?: never; ok: true; value: T };
 export type OptionalDecodeResponse<T> =
 	T extends Promise<unknown> ? Promise<Resolved<T> | undefined> : T | undefined;
 
+export type RecordSchemaHasPromise<T extends Record<string, unknown>> =
+	T extends {
+		[key in keyof T]: T[key] extends Decoder<unknown, infer I, infer _>
+			? Decoder<unknown, I, false>
+			: never;
+	}
+		? false
+		: true;
+
 /**
  * Result type
  */
 export type Result<T, I extends Issues = Issues> = Err<I> | Ok<T>;
+
+/**
+ * Whether a decoder resolves its schema asynchronously.
+ */
+export type SchemaAsyncOf<D extends Decoder<unknown, Issues, boolean>> =
+	D extends Decoder<unknown, Issues, infer S> ? S : false;
+
+/**
+ * The result type of a getSchema function.
+ */
+export type SchemaResult<S extends boolean = false> = S extends true
+	? Promise<DecoderSchema>
+	: DecoderSchema;
 
 /**
  * The issues type of a tuple decoder.
@@ -270,6 +305,15 @@ export type TupleDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
 		: [Decoder<A>]
 	: [];
 
+export type TupleSchemaHasPromise<T extends Array<Decoder<unknown>>> =
+	T extends {
+		[key in keyof T]: T[key] extends Decoder<unknown, infer I, infer _>
+			? Decoder<unknown, I, false>
+			: never;
+	}
+		? false
+		: true;
+
 /**
  * The issues type of a union decoder.
  */
@@ -285,7 +329,6 @@ export type UnionDecodeResponse<T> =
 	UnionHasPromise<T> extends true
 		? Promise<UnionDecodeResponseResolvedHelper<T>>
 		: UnionDecodeResponseHelper<T>;
-
 /**
  * The type of a union decoder in canonical order.
  */
@@ -299,6 +342,7 @@ type _UnionDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
 		? [Decoder<A>, ..._UnionDecoders<B>]
 		: [Decoder<A>]
 	: [];
+
 /**
  * The helper type to check if a record has a promise.
  */

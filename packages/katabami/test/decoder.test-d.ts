@@ -442,8 +442,8 @@ describe("Decoder", () => {
 	describe("union", () => {
 		test("fixed", () => {
 			const _decoder = katabami.union<"bar" | "foo">(
-				katabami.constant("bar"),
 				katabami.constant("foo"),
+				katabami.constant("bar"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
