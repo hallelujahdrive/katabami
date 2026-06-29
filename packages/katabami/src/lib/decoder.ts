@@ -120,6 +120,11 @@ const mapAwaitable = <T, U>(
 	return mapper(value);
 };
 
+const flatMapAwaitable = <T, U>(
+	value: Awaitable<T>,
+	mapper: (value: T) => Awaitable<U>,
+): Awaitable<U> => mapAwaitable(value, mapper) as Awaitable<U>;
+
 const allAwaitable = <T>(values: readonly Awaitable<T>[]): Awaitable<T[]> => {
 	if (values.some((value) => value instanceof Promise)) {
 		return Promise.all(values);
@@ -127,6 +132,15 @@ const allAwaitable = <T>(values: readonly Awaitable<T>[]): Awaitable<T[]> => {
 
 	return values as T[];
 };
+
+const resolveAwaitablePairs = <K, T>(
+	pairs: readonly (readonly [K, Awaitable<T>])[],
+): Awaitable<Array<[K, T]>> =>
+	allAwaitable(
+		pairs.map(([key, value]) =>
+			mapAwaitable(value, (resolved) => [key, resolved] as [K, T]),
+		),
+	);
 
 const staticSchemaDescriptor =
 	(schema: DecoderSchema): SchemaDescriptor =>
@@ -191,15 +205,8 @@ const indexSchemaDescriptor =
 
 const lazySchemaDescriptor =
 	(lazyFunc: () => Awaitable<SchemaDecoder>): SchemaDescriptor =>
-	() => {
-		const decoder = lazyFunc();
-
-		if (decoder instanceof Promise) {
-			return decoder.then((resolvedDecoder) => resolvedDecoder.getSchema());
-		}
-
-		return decoder.getSchema();
-	};
+	() =>
+		flatMapAwaitable(lazyFunc(), (decoder) => decoder.getSchema());
 
 /**
  * Creates a decoder that always succeeds with the given value.
@@ -305,23 +312,14 @@ class Decoder<
 	public decodeValue(value: unknown): DecodeResult<T, I> {
 		const res = this._decode(value);
 
-		if (res instanceof Promise) {
-			return res.then((res) => {
-				if (!res.ok) return res;
-				if (res.value instanceof Promise) {
-					return res.value.then((value) => ({ ok: true, value }));
-				}
-				return res as Result<Resolved<T>, I>;
-			}) as DecodeResult<T, I>;
-		}
+		return mapAwaitable(res, (res) => {
+			if (!res.ok) return res;
 
-		if (res.value instanceof Promise) {
-			return res.value.then((value) => {
-				return { ok: true, value };
-			}) as DecodeResult<T, I>;
-		}
-
-		return res as DecodeResult<T, I>;
+			return mapAwaitable(res.value, (value) => ({
+				ok: true,
+				value,
+			})) as Result<Resolved<T>, I>;
+		}) as DecodeResult<T, I>;
 	}
 
 	/**
@@ -356,15 +354,10 @@ class Decoder<
 	private _decode(value: unknown): Awaitable<Result<T, I>> {
 		const result = this.decodeFunc(value);
 
-		if (result instanceof Promise) {
-			return result.then((r) => {
-				if (r.ok || !this.cacheFunc) return r as Result<T, I>;
-				return this.cacheFunc(r.error.issues);
-			});
-		}
-
-		if (result.ok || !this.cacheFunc) return result as Result<T, I>;
-		return this.cacheFunc(result.error.issues);
+		return mapAwaitable(result, (r) => {
+			if (r.ok || !this.cacheFunc) return r as Result<T, I>;
+			return this.cacheFunc(r.error.issues);
+		});
 	}
 }
 
@@ -389,23 +382,15 @@ function andThenFunc<
 	return (value) => {
 		const res = this.decodeValue(value);
 
-		if (res instanceof Promise) {
-			return res.then((res) => {
-				if (!res.ok) return res as Result<U, I | J>;
+		return mapAwaitable(res as Awaitable<Result<Resolved<T>, I>>, (res) => {
+			if (!res.ok) return res as Result<U, I | J>;
 
-				return andThenHelper.call(this, nextFunc(res.value), res) as Awaitable<
-					Result<U, I | J>
-				>;
-			});
-		}
-
-		if (!res.ok) return res as Result<U, I | J>;
-
-		return andThenHelper.call(
-			this,
-			nextFunc(res.value as Resolved<T>),
-			res as Ok<Resolved<T>>,
-		) as Awaitable<Result<U, I | J>>;
+			return andThenHelper.call(
+				this,
+				nextFunc(res.value as Resolved<T>),
+				res as Ok<Resolved<T>>,
+			) as Awaitable<Result<U, I | J>>;
+		}) as Awaitable<Result<U, I | J>>;
 	};
 }
 
@@ -429,12 +414,9 @@ function andThenHelper<
 	nextDecoder: Awaitable<IDecoder<U, J>>,
 	res: Ok<Resolved<T>>,
 ): Awaitable<Result<U, I | J>> {
-	if (nextDecoder instanceof Promise) {
-		return nextDecoder.then((nextDecoder) => {
-			return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
-		});
-	}
-	return nextDecoder.decodeValue(res.value) as Result<U, I | J>;
+	return mapAwaitable(nextDecoder, (nextDecoder) =>
+		nextDecoder.decodeValue(res.value),
+	) as Result<U, I | J>;
 }
 
 function mapFunc<T, U, I extends Issues = Issues<TypeOf<T>>>(
@@ -443,32 +425,17 @@ function mapFunc<T, U, I extends Issues = Issues<TypeOf<T>>>(
 ): (value: unknown) => Awaitable<Result<U, I>> {
 	return (value: unknown) => {
 		const res = this.decodeValue(value);
-		if (res instanceof Promise) {
-			return res.then(async (res) => {
-				if (!res.ok) return res;
 
-				const resolved = await res.value;
-				return { ok: true, value: await _mapFunc(resolved) };
-			});
-		}
+		return flatMapAwaitable(res as Awaitable<Result<Resolved<T>, I>>, (res) => {
+			if (!res.ok) return res;
 
-		if (!res.ok) return res;
-
-		if (res.value instanceof Promise) {
-			return res.value.then(async (value) => {
-				return { ok: true, value: await _mapFunc(value) };
-			});
-		}
-
-		const _value = _mapFunc(res.value as Resolved<T>);
-
-		if (_value instanceof Promise) {
-			return _value.then(async (value) => {
-				return { ok: true, value };
-			});
-		}
-
-		return { ok: true, value: _value };
+			return flatMapAwaitable(res.value as Awaitable<Resolved<T>>, (resolved) =>
+				flatMapAwaitable(_mapFunc(resolved), (value) => ({
+					ok: true,
+					value,
+				})),
+			);
+		});
 	};
 }
 
@@ -631,16 +598,8 @@ const decodeArrayFunc =
 			(value, i) => [i, decoder.decodeValue(value)],
 		);
 
-		if (results.some(([_, result]) => result instanceof Promise)) {
-			return Promise.all(
-				results.map(async ([i, result]) => [i, await result]),
-			).then((results) =>
-				decodeArrayHelper(results as Array<[number, Result<unknown, Issues>]>),
-			);
-		}
-
-		return decodeArrayHelper(
-			results as Array<[number, Result<unknown, Issues>]>,
+		return mapAwaitable(resolveAwaitablePairs(results), (resolved) =>
+			decodeArrayHelper(resolved),
 		);
 	};
 
@@ -889,18 +848,10 @@ const decodeIndexFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
 const decodeLazyFunc = <T, I extends Issues = Issues>(
 	lazyFunc: () => Awaitable<IDecoder<T, I>>,
 ): DecodeFunction<T, I> => {
-	return (value) => {
-		const decoder = lazyFunc();
-		if (decoder instanceof Promise) {
-			return decoder.then((decoder) => {
-				if (decoder instanceof Promise) {
-					return decoder.then((decoder) => decoder.decodeValue(value));
-				}
-				return decoder.decodeValue(value);
-			});
-		}
-		return decoder.decodeValue(value) as Awaitable<Result<T, I>>;
-	};
+	return (value) =>
+		mapAwaitable(lazyFunc(), (decoder) =>
+			decoder.decodeValue(value),
+		) as Awaitable<Result<T, I>>;
 };
 
 /**
@@ -922,38 +873,19 @@ const decodeMapFunc =
 	(value) => {
 		const results = decoders.map((decoder) => decoder.decodeValue(value));
 
-		if (results.some((result) => result instanceof Promise)) {
-			return Promise.all(results).then(
-				(
-					resolvedResults: Array<Result<unknown, Issues>>,
-				): Result<
-					MapDecodeResponse<MapDecodeFunction<T, U>>,
-					MapDecodeIssues<U>
-				> => {
-					const failed = resolvedResults.find((r) => !r.ok);
-					if (failed) return failed as Err<MapDecodeIssues<U>>;
-					const entries = resolvedResults.map(({ value }) => value);
-					return {
-						ok: true,
-						value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
-					} as Result<
-						MapDecodeResponse<MapDecodeFunction<T, U>>,
-						MapDecodeIssues<U>
-					>;
-				},
-			);
-		}
+		return mapAwaitable(allAwaitable(results), (resolvedResults) => {
+			const failed = resolvedResults.find((r) => !r.ok);
+			if (failed) return failed as Err<MapDecodeIssues<U>>;
 
-		for (const result of results as Array<Result<unknown, Issues>>) {
-			if (!result.ok) return result as Err<MapDecodeIssues<U>>;
-		}
-
-		const entries = (results as Array<Ok<unknown>>).map(({ value }) => value);
-
-		return {
-			ok: true,
-			value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
-		} as Result<MapDecodeResponse<MapDecodeFunction<T, U>>, MapDecodeIssues<U>>;
+			const entries = resolvedResults.map(({ value }) => value);
+			return {
+				ok: true,
+				value: mapFunc(...(entries as MapDecodeFunctionParams<U>)),
+			} as Result<
+				MapDecodeResponse<MapDecodeFunction<T, U>>,
+				MapDecodeIssues<U>
+			>;
+		});
 	};
 
 /**
@@ -1057,16 +989,8 @@ const decodeObjectFunc =
 			return [key, decoder.decodeValue(value[key])];
 		});
 
-		if (results.some(([_, result]) => result instanceof Promise)) {
-			return Promise.all(
-				results.map(async ([i, result]) => [i, await result]),
-			).then((results) =>
-				decodeObjectHelper(results as Array<[string, Result<unknown, Issues>]>),
-			);
-		}
-
-		return decodeObjectHelper(
-			results as Array<[string, Result<unknown, Issues>]>,
+		return mapAwaitable(resolveAwaitablePairs(results), (resolved) =>
+			decodeObjectHelper(resolved),
 		);
 	};
 
@@ -1203,20 +1127,28 @@ const decodeTupleFunc =
 			],
 		);
 
-		if (results.some(([_, result]) => result instanceof Promise)) {
-			return Promise.all(
-				results.map(async ([i, result]) => [i, await result]),
-			).then((results) => {
-				return decodeTupleHelper(
-					results as Array<[number, Result<unknown, Issues>]>,
-				);
-			});
-		}
-
-		return decodeTupleHelper(
-			results as Array<[number, Result<unknown, Issues>]>,
+		return mapAwaitable(resolveAwaitablePairs(results), (resolved) =>
+			decodeTupleHelper(resolved),
 		);
 	};
+
+const mergeUnionDecodeResult = (
+	accumulator: { issues: Issues[]; ok: false },
+	result: Result<unknown, Issues>,
+): { issues: Issues[]; ok: false } | { ok: true; value: unknown } => {
+	if (result.ok) return result;
+
+	if (
+		getIssueMessage(result.error.issues)?.type === "union" &&
+		Array.isArray(result.error.issues)
+	) {
+		accumulator.issues.push(...result.error.issues);
+	} else {
+		accumulator.issues.push(result.error.issues);
+	}
+
+	return accumulator;
+};
 
 /**
  * Helper function to decode a union failure.
@@ -1270,101 +1202,26 @@ const decodeUnionFunc =
 		const results = (decoders as Array<IDecoder<unknown>>).reduce<
 			Awaitable<{ issues: Issues[]; ok: false } | { ok: true; value: unknown }>
 		>(
-			(accumulator, decoder) => {
-				if (accumulator instanceof Promise) {
-					return accumulator.then((accumulator) => {
-						if (accumulator.ok) return accumulator;
+			(accumulator, decoder) =>
+				flatMapAwaitable(accumulator, (accumulator) => {
+					if (accumulator.ok) return accumulator;
 
-						const result = decoder.decodeValue(value);
-
-						if (result instanceof Promise) {
-							return result.then((result) => {
-								if (result.ok) return result;
-
-								if (
-									getIssueMessage(result.error.issues)?.type === "union" &&
-									Array.isArray(result.error.issues)
-								) {
-									accumulator.issues.push(...result.error.issues);
-								} else {
-									accumulator.issues.push(result.error.issues);
-								}
-
-								return accumulator;
-							});
-						}
-
-						if (result.ok) return result;
-
-						if (
-							getIssueMessage(result.error.issues)?.type === "union" &&
-							Array.isArray(result.error.issues)
-						) {
-							accumulator.issues.push(...result.error.issues);
-						} else {
-							accumulator.issues.push(result.error.issues);
-						}
-						return accumulator;
-					});
-				}
-
-				if (accumulator.ok) return accumulator;
-
-				const result = decoder.decodeValue(value);
-
-				if (result instanceof Promise) {
-					return result.then((result) => {
-						if (result.ok) return result;
-
-						if (
-							getIssueMessage(result.error.issues)?.type === "union" &&
-							Array.isArray(result.error.issues)
-						) {
-							accumulator.issues.push(...result.error.issues);
-						} else {
-							accumulator.issues.push(result.error.issues);
-						}
-						return accumulator;
-					});
-				}
-
-				if (result.ok) return result;
-
-				if (
-					getIssueMessage(result.error.issues)?.type === "union" &&
-					Array.isArray(result.error.issues)
-				) {
-					accumulator.issues.push(...result.error.issues);
-				} else {
-					accumulator.issues.push(result.error.issues);
-				}
-				return accumulator;
-			},
+					return mapAwaitable(decoder.decodeValue(value), (result) =>
+						mergeUnionDecodeResult(accumulator, result),
+					);
+				}),
 			{ issues: [], ok: false },
 		);
 
-		if (results instanceof Promise) {
-			return results.then((results) => {
-				if (results.ok)
-					return results as Result<
-						UnionDecodeResponse<U>,
-						UnionDecodeIssues<
-							U,
-							Issue<"union", "issue.invalidUnion", undefined>
-						>
-					>;
+		return mapAwaitable(results, (results) => {
+			if (results.ok)
+				return results as Result<
+					UnionDecodeResponse<U>,
+					UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>
+				>;
 
-				return decodeUnionHelper<U>(results.issues);
-			});
-		}
-
-		if (results.ok)
-			return results as Result<
-				UnionDecodeResponse<U>,
-				UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>
-			>;
-
-		return decodeUnionHelper<U>(results.issues);
+			return decodeUnionHelper<U>(results.issues);
+		});
 	};
 
 /**
