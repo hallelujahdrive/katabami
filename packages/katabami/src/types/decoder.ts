@@ -1,7 +1,7 @@
-import type { Formatter, IssueMessageKeys, TypeKeys } from "./format.js";
 import type { Resolved, UnionToTuple } from "./helpers.js";
-import type { Primitive } from "./primitive.js";
+import type { _Issues, Issue, Issues } from "./issue.js";
 import type { DecoderSchema } from "./schema.js";
+import type { StandardSchemaV1 } from "./standardSchema.js";
 
 /**
  * The issues type of an array decoder.
@@ -32,13 +32,20 @@ export type CatchFunction<T, I extends Issues, J extends Issues> = (
 ) => Result<T, J>;
 
 /**
+ * The interface for the decode error.
+ */
+export interface DecodeErrorInterface<T extends Issues> extends Error {
+	issues: T;
+}
+
+/**
  * Decoder interface.
  */
 export interface Decoder<
 	T,
 	I extends Issues = Issues,
 	S extends boolean = false,
-> {
+> extends StandardSchemaV1<T> {
 	/**
 	 * Applies another decoder to the decoded value (sync nextFunc).
 	 *
@@ -471,93 +478,3 @@ type UnionHasPromise<T> = T extends [Decoder<infer A>, ...infer B]
 		? true
 		: UnionHasPromise<B>
 	: false;
-
-declare const labelSymbol: unique symbol;
-
-/**
- * The interface for the decode error.
- */
-export interface DecodeErrorInterface<T extends Issues> extends Error {
-	issues: T;
-}
-
-/**
- * The issue type.
- */
-export interface Issue<
-	T extends IssueType = IssueType,
-	Msg extends string = IssueMessageKeys | (string & {}),
-	Vers extends Record<string, Primitive | TypeKeys> | undefined =
-		| Record<string, Primitive>
-		| undefined,
-> {
-	/**
-	 * Formats the issue message.
-	 * @param {Formatter} formatter - The formatter to use.
-	 * @returns {string} The formatted issue message.
-	 */
-	format(formatter?: Formatter): string;
-	/**
-	 * The message of the issue.
-	 */
-	readonly message: Msg;
-	/**
-	 * The type of the issue.
-	 */
-	readonly type: T;
-
-	/**
-	 * Gets the variables of the issue.
-	 * @returns {Vers} The variables of the issue.
-	 */
-	readonly vars: Vers;
-}
-
-/**
- * The issues type.
- */
-export type Issues<
-	T extends IssueType = IssueType,
-	I extends Issue = Issue,
-> = _Issues<
-	T extends "union"
-		? readonly IssuesObject[]
-		: T extends "array" | "object"
-			? IssuesObject
-			: Record<never, never>,
-	I
->;
-
-/**
- * Issue types
- */
-export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
-
-type _Issues<T, I extends Issue> = T &
-	([I] extends [never]
-		? Record<never, never>
-		: {
-				readonly [labelSymbol]?: I;
-			});
-
-/**
- * Common issue types
- */
-type CommonIssueType =
-	| "array"
-	| "boolean"
-	| "constant"
-	| "float"
-	| "integer"
-	| "object"
-	| "string"
-	| "union";
-
-/**
- * Custom issue types
- */
-type CustomIssueType = never;
-
-interface IssuesObject {
-	readonly [key: string]: IssuesObject | readonly IssuesObject[] | undefined;
-}

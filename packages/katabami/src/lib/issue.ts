@@ -1,12 +1,7 @@
-import type {
-	Formatter,
-	Issue,
-	IssueMessageKeys,
-	Issues,
-	IssueType,
-	Primitive,
-	TypeKeys,
-} from "../types/index.js";
+import type { IssueMessageKeys, TypeKeys } from "../types/format.js";
+import type { Formatter, Issue, Issues, IssueType } from "../types/issue.js";
+import type { Primitive } from "../types/primitive.js";
+import type { StandardSchemaV1 } from "../types/standardSchema.js";
 import { defaultFormatter } from "./format.js";
 
 /**
@@ -93,6 +88,19 @@ export function createIssues<
 }
 
 /**
+ * Flattens the issues into an array of Standard Schema issues.
+ * @param {Issues} issues - The issues to flatten.
+ * @param {Formatter} [formatter] - The formatter to use.
+ * @returns {ReadonlyArray<StandardSchemaV1.Issue>} The flattened issues.
+ */
+export function flattenIssues(
+	issues: Issues,
+	formatter?: Formatter,
+): ReadonlyArray<StandardSchemaV1.Issue> {
+	return flattenIssuesHelper(issues, undefined, formatter);
+}
+
+/**
  * Gets the issue message for the issues.
  * @template T - The type of the issues.
  * @param {T | undefined} issues - The issues to get the issue message for.
@@ -109,4 +117,35 @@ export function getIssueMessage<T extends Issues>(
 	return weakMap.get(issues) as T extends Issues<IssueType, infer I>
 		? I | undefined
 		: undefined;
+}
+
+function flattenIssuesHelper(
+	issues: Issues,
+	path?: ReadonlyArray<number | string>,
+	formatter?: Formatter,
+): ReadonlyArray<StandardSchemaV1.Issue> {
+	const flattenedIssues: StandardSchemaV1.Issue[] = [];
+
+	const message = getIssueMessage(issues)?.format(formatter);
+	if (message != null) {
+		flattenedIssues.push({
+			message,
+			path: path ?? [],
+		});
+	}
+
+	if (Array.isArray(issues)) {
+		for (const issue of issues) {
+			flattenedIssues.push(...flattenIssuesHelper(issue, path, formatter));
+		}
+	}
+
+	for (const [key, value] of Object.entries(issues)) {
+		if (value == null) continue;
+		flattenedIssues.push(
+			...flattenIssuesHelper(value, [...(path ?? []), key], formatter),
+		);
+	}
+
+	return flattenedIssues;
 }

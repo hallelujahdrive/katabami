@@ -1,10 +1,3 @@
-import type { Issue } from "./decoder";
-
-/**
- * The formatter function.
- */
-export type Formatter = (issue: Issue) => string;
-
 /**
  * The issue message keys.
  */

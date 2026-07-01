@@ -11,8 +11,6 @@ import type {
 	Decoder as IDecoder,
 	IndexDecodeIssues,
 	IndexDecodeResponse,
-	Issue,
-	Issues,
 	MapDecodeFunction,
 	MapDecodeFunctionParams,
 	MapDecodeIssues,
@@ -38,9 +36,11 @@ import type {
 	UnionDecodeResponse,
 	UnionDecoders,
 } from "../types/index.js";
+import type { Issue, Issues } from "../types/issue.js";
+import type { StandardSchemaV1 } from "../types/standardSchema.js";
 import { isRecord } from "../utils/index.js";
 import { DecodeError } from "./error.js";
-import { createIssues, getIssueMessage } from "./issue.js";
+import { createIssues, flattenIssues, getIssueMessage } from "./issue.js";
 
 /**
  * The decode function for a decoder.
@@ -118,6 +118,33 @@ const mapAwaitable = <T, U>(
 	}
 
 	return mapper(value);
+};
+
+const returnsPromise = (fn: (value: never) => unknown): boolean => {
+	try {
+		return fn(undefined as never) instanceof Promise;
+	} catch {
+		return false;
+	}
+};
+
+const isDecoderAsync = (decoder: unknown): boolean =>
+	decoder instanceof Decoder && decoder.isAsync;
+
+const anyDecoderAsync = (decoders: readonly IDecoder<unknown>[]): boolean =>
+	decoders.some(isDecoderAsync);
+
+const recordDecoderAsync = (
+	decoders: Record<string, IDecoder<unknown>>,
+): boolean => Object.values(decoders).some(isDecoderAsync);
+
+const toDecodeResult = <T, I extends Issues>(
+	result: Awaitable<Result<T, I>>,
+	isAsync: boolean,
+): Awaitable<Result<T, I>> => {
+	if (!isAsync || result instanceof Promise) return result;
+
+	return Promise.resolve(result);
 };
 
 const flatMapAwaitable = <T, U>(
@@ -226,6 +253,36 @@ class Decoder<
 	S extends boolean = false,
 > implements IDecoder<T, I, S>
 {
+	readonly isAsync: boolean;
+
+	/**
+	 * The Standard Schema properties.
+	 * @returns {StandardSchemaV1.Props<T>} The Standard Schema properties.
+	 */
+	get "~standard"(): StandardSchemaV1.Props<T> {
+		return {
+			validate: (value, options) => {
+				return flatMapAwaitable(this._decode(value), (res) => {
+					if (!res.ok) {
+						return {
+							issues: flattenIssues(
+								res.error.issues,
+								options?.libraryOptions?.formatter,
+							),
+						};
+					}
+
+					return flatMapAwaitable(
+						res.value as Awaitable<Resolved<T>>,
+						(value) => ({ value }),
+					);
+				}) as Promise<StandardSchemaV1.Result<T>> | StandardSchemaV1.Result<T>;
+			},
+			vendor: "katabami",
+			version: 1,
+		};
+	}
+
 	/**
 	 * @constructor
 	 * @param {DecodeFunction<T, I>} decodeFunc - The decode function.
@@ -236,7 +293,10 @@ class Decoder<
 		private readonly decodeFunc: DecodeFunction<T, Issues>,
 		private readonly cacheFunc: CatchFunction<T, Issues, I> | undefined,
 		private readonly schemaDescriptor: SchemaDescriptor,
-	) {}
+		isAsync = false,
+	) {
+		this.isAsync = isAsync;
+	}
 
 	/**
 	 * Applies another decoder to the decoded value.
@@ -257,6 +317,8 @@ class Decoder<
 			) as DecodeFunction<U, I | J>,
 			undefined,
 			this.schemaDescriptor,
+			this.isAsync ||
+				returnsPromise(nextFunc as unknown as (value: never) => unknown),
 		);
 	}
 
@@ -273,6 +335,7 @@ class Decoder<
 			this.decodeFunc,
 			catchFunc as CatchFunction<T, Issues, K>,
 			this.schemaDescriptor,
+			this.isAsync,
 		) as unknown as IDecoder<T, K, S>;
 	}
 
@@ -290,16 +353,16 @@ class Decoder<
 
 			return this.decodeValue(_value);
 		} catch {
-			return {
-				error: new DecodeError(
-					"Failed to decode string",
-					createIssues("parseJson", "issue.failedToDecode"),
-				),
-				ok: false,
-			} as unknown as DecodeResult<
-				T,
-				I | Issues<"parseJson", Issue<"parseJson", never>>
-			>;
+			return toDecodeResult(
+				{
+					error: new DecodeError(
+						"Failed to decode string",
+						createIssues("parseJson", "issue.failedToDecode"),
+					),
+					ok: false,
+				},
+				this.isAsync,
+			) as DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
 		}
 	}
 
@@ -312,14 +375,17 @@ class Decoder<
 	public decodeValue(value: unknown): DecodeResult<T, I> {
 		const res = this._decode(value);
 
-		return mapAwaitable(res, (res) => {
-			if (!res.ok) return res;
+		return toDecodeResult(
+			mapAwaitable(res, (res) => {
+				if (!res.ok) return res;
 
-			return mapAwaitable(res.value, (value) => ({
-				ok: true,
-				value,
-			})) as Result<Resolved<T>, I>;
-		}) as DecodeResult<T, I>;
+				return mapAwaitable(res.value, (value) => ({
+					ok: true,
+					value,
+				})) as Result<Resolved<T>, I>;
+			}),
+			this.isAsync,
+		) as DecodeResult<T, I>;
 	}
 
 	/**
@@ -342,6 +408,8 @@ class Decoder<
 			) as DecodeFunction<U, I>,
 			undefined,
 			this.schemaDescriptor,
+			this.isAsync ||
+				returnsPromise(_mapFunc as unknown as (value: never) => unknown),
 		);
 	}
 
@@ -1247,7 +1315,12 @@ export function array<T, U extends IDecoder<T> = IDecoder<T>>(
 			Issue<"array", string, { expected: string; received: string }>
 		>,
 		SchemaAsyncOf<U>
-	>(decodeArrayFunc(decoder), undefined, arraySchemaDescriptor(decoder));
+	>(
+		decodeArrayFunc(decoder),
+		undefined,
+		arraySchemaDescriptor(decoder),
+		isDecoderAsync(decoder),
+	);
 }
 
 /**
@@ -1346,6 +1419,7 @@ export function field<T, U extends IDecoder<T> = IDecoder<T>>(
 		decodeFieldFunc(key, decoder),
 		undefined,
 		fieldSchemaDescriptor(key, decoder),
+		isDecoderAsync(decoder),
 	);
 }
 
@@ -1400,6 +1474,7 @@ export function index<T, U extends IDecoder<T> = IDecoder<T>>(
 		decodeIndexFunc(index, decoder),
 		undefined,
 		indexSchemaDescriptor(index, decoder),
+		isDecoderAsync(decoder),
 	);
 }
 
@@ -1456,6 +1531,7 @@ export function lazy<T, I extends Issues = Issues>(
 		decodeLazyFunc(lazyFunc),
 		undefined,
 		lazySchemaDescriptor(lazyFunc),
+		returnsPromise(lazyFunc as (value: never) => unknown),
 	) as IDecoder<T, I, SchemaAsyncOf<IDecoder<T, I>> | true>;
 }
 
@@ -1478,6 +1554,8 @@ export function map<
 		decodeMapFunc(mapFunc, ...decoders),
 		undefined,
 		mapSchemaDescriptor(decoders),
+		anyDecoderAsync(decoders) ||
+			returnsPromise(mapFunc as unknown as (value: never) => unknown),
 	);
 }
 
@@ -1519,7 +1597,12 @@ export function object<
 			  >
 		>,
 		RecordSchemaHasPromise<U> extends true ? true : false
-	>(decodeObjectFunc(decoders), undefined, objectSchemaDescriptor(decoders));
+	>(
+		decodeObjectFunc(decoders),
+		undefined,
+		objectSchemaDescriptor(decoders),
+		recordDecoderAsync(decoders),
+	);
 }
 
 /**
@@ -1549,6 +1632,7 @@ export function optional<
 		},
 		undefined,
 		optionalSchemaDescriptor(decoder),
+		isDecoderAsync(decoder),
 	);
 }
 
@@ -1634,7 +1718,12 @@ export function tuple<
 			  >
 		>,
 		TupleSchemaHasPromise<U> extends true ? true : false
-	>(decodeTupleFunc(decoders), undefined, tupleSchemaDescriptor(decoders));
+	>(
+		decodeTupleFunc(decoders),
+		undefined,
+		tupleSchemaDescriptor(decoders),
+		anyDecoderAsync(decoders),
+	);
 }
 /**
  * Create a decoder that accepts any of the given decoders.
@@ -1658,7 +1747,12 @@ export function union<
 		UnionDecodeResponse<U>,
 		UnionDecodeIssues<U, Issue<"union", "issue.invalidUnion", undefined>>,
 		TupleSchemaHasPromise<U> extends true ? true : false
-	>(decodeUnionFunc(decoders), undefined, unionSchemaDescriptor(decoders));
+	>(
+		decodeUnionFunc(decoders),
+		undefined,
+		unionSchemaDescriptor(decoders),
+		anyDecoderAsync(decoders),
+	);
 }
 
 /**

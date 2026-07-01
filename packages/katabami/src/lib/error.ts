@@ -1,4 +1,5 @@
-import type { DecodeErrorInterface, Issues } from "../types/index.js";
+import type { DecodeErrorInterface } from "../types/decoder.js";
+import type { Issues } from "../types/issue.js";
 
 export class DecodeError<T extends Issues>
 	extends Error

@@ -61,43 +61,43 @@ describe("decoder", () => {
 
 			describe("decode value", () => {
 				test("success", async () => {
-					const result = await decoder.decodeValue(["foo", "bar"]);
+					const result = decoder.decodeValue(["foo", "bar"]);
 
 					const expectedResult = { ok: true, value: ["foo", "bar"] };
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeValue([true, 1]);
+					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 
 			describe("decode string", () => {
 				test("success", async () => {
-					const result = await decoder.decodeString('["foo","bar"]');
+					const result = decoder.decodeString('["foo","bar"]');
 
 					const expectedResult = { ok: true, value: ["foo", "bar"] };
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeString("[true,1]");
+					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 		});
@@ -262,7 +262,7 @@ describe("decoder", () => {
 
 			describe("decode value", () => {
 				test("success", async () => {
-					const result = await decoder.decodeValue({
+					const result = decoder.decodeValue({
 						bar: 1,
 						foo: "foo",
 					});
@@ -272,11 +272,11 @@ describe("decoder", () => {
 						value: { bar: 1, foo: "foo" },
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeValue({
+					const result = decoder.decodeValue({
 						bar: "1",
 						foo: "foo",
 					});
@@ -286,20 +286,20 @@ describe("decoder", () => {
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 
 			describe("decode string", () => {
 				test("success", async () => {
-					const result = await decoder.decodeString('{"bar":1,"foo":"foo"}');
+					const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 					const expectedResult = {
 						ok: true,
 						value: { bar: 1, foo: "foo" },
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
@@ -383,7 +383,7 @@ describe("decoder", () => {
 
 			describe("decode value", () => {
 				test("success", async () => {
-					const result = await decoder.decodeValue({
+					const result = decoder.decodeValue({
 						bar: 1,
 						foo: "foo",
 					});
@@ -393,11 +393,11 @@ describe("decoder", () => {
 						value: { bar: 1, foo: "foo" },
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeValue({
+					const result = decoder.decodeValue({
 						bar: "1",
 						foo: "foo",
 					});
@@ -407,31 +407,31 @@ describe("decoder", () => {
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 
 			describe("decode string", () => {
 				test("success", async () => {
-					const result = await decoder.decodeString('{"bar":1,"foo":"foo"}');
+					const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 					const expectedResult = {
 						ok: true,
 						value: { bar: 1, foo: "foo" },
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeString('{"bar":"1","foo":"foo"}');
+					const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 		});
@@ -502,45 +502,43 @@ describe("decoder", () => {
 
 				describe("decode value", () => {
 					test("success", async () => {
-						const result = await decoder.decodeValue({ bar: 1, foo: "foo" });
+						const result = decoder.decodeValue({ bar: 1, foo: "foo" });
 
 						const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeValue({ bar: "1", foo: "foo" });
+						const result = decoder.decodeValue({ bar: "1", foo: "foo" });
 
 						const expectedResult = {
 							error: expect.any(DecodeError),
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 
 				describe("decode string", () => {
 					test("success", async () => {
-						const result = await decoder.decodeString('{"bar":1,"foo":"foo"}');
+						const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 						const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeString(
-							'{"bar":"1","foo":"foo"}',
-						);
+						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
 							error: expect.any(DecodeError),
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 			});
@@ -557,22 +555,22 @@ describe("decoder", () => {
 
 				describe("decode value", () => {
 					test("success", async () => {
-						const result = await decoder.decodeValue({ bar: 1, foo: "foo" });
+						const result = decoder.decodeValue({ bar: 1, foo: "foo" });
 
 						const expectedResult = { ok: true, value: { bar: 1, foo: "foo" } };
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeValue({ bar: "1", foo: "foo" });
+						const result = decoder.decodeValue({ bar: "1", foo: "foo" });
 
 						const expectedResult = {
 							error: expect.any(DecodeError),
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 
@@ -679,7 +677,7 @@ describe("decoder", () => {
 
 				describe("decode value", () => {
 					test("success", async () => {
-						const result = await decoder.decodeValue({
+						const result = decoder.decodeValue({
 							bar: 1,
 							foo: "foo",
 						});
@@ -689,11 +687,11 @@ describe("decoder", () => {
 							value: { bar: 1, foo: "foo" },
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeValue({
+						const result = decoder.decodeValue({
 							bar: "1",
 							foo: "foo",
 						});
@@ -703,20 +701,20 @@ describe("decoder", () => {
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 
 				describe("decode string", () => {
 					test("success", async () => {
-						const result = await decoder.decodeString('{"bar":1,"foo":"foo"}');
+						const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 						const expectedResult = {
 							ok: true,
 							value: { bar: 1, foo: "foo" },
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
@@ -812,7 +810,7 @@ describe("decoder", () => {
 
 				describe("decode value", () => {
 					test("success", async () => {
-						const result = await decoder.decodeValue({
+						const result = decoder.decodeValue({
 							bar: {
 								foo: "foo",
 							},
@@ -823,11 +821,11 @@ describe("decoder", () => {
 							value: { bar: { foo: "foo" } },
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeValue({
+						const result = decoder.decodeValue({
 							bar: "1",
 							foo: "foo",
 						});
@@ -837,33 +835,31 @@ describe("decoder", () => {
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 
 				describe("decode string", () => {
 					test("success", async () => {
-						const result = await decoder.decodeString('{"bar":{"foo":"foo"}}');
+						const result = decoder.decodeString('{"bar":{"foo":"foo"}}');
 
 						const expectedResult = {
 							ok: true,
 							value: { bar: { foo: "foo" } },
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeString(
-							'{"bar":"1","foo":"foo"}',
-						);
+						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
 							error: expect.any(DecodeError),
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 			});
@@ -981,49 +977,49 @@ describe("decoder", () => {
 
 			describe("decode value", () => {
 				test("success", async () => {
-					const result = await decoder.decodeValue(["foo", 1]);
+					const result = decoder.decodeValue(["foo", 1]);
 
 					const expectedResult = { ok: true, value: ["foo", 1] } satisfies {
 						ok: true;
 						value: ["foo", number];
 					};
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeValue([true, 1]);
+					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 
 			describe("decode string", () => {
 				test("success", async () => {
-					const result = await decoder.decodeString('["foo",1]');
+					const result = decoder.decodeString('["foo",1]');
 
 					const expectedResult = { ok: true, value: ["foo", 1] } satisfies {
 						ok: true;
 						value: ["foo", number];
 					};
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeString("[true,1]");
+					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 		});
@@ -1088,43 +1084,43 @@ describe("decoder", () => {
 
 			describe("decode value", () => {
 				test("success", async () => {
-					const result = await decoder.decodeValue("foo");
+					const result = decoder.decodeValue("foo");
 
 					const expectedResult = { ok: true, value: "foo" } as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeValue(true);
+					const result = decoder.decodeValue(true);
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 
 			describe("decode string", () => {
 				test("success", async () => {
-					const result = await decoder.decodeString('"foo"');
+					const result = decoder.decodeString('"foo"');
 
 					const expectedResult = { ok: true, value: "foo" } as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 
 				test("fail", async () => {
-					const result = await decoder.decodeString("true");
+					const result = decoder.decodeString("true");
 
 					const expectedResult = {
 						error: expect.any(DecodeError),
 						ok: false,
 					} as const;
 
-					expect(result).toStrictEqual(expectedResult);
+					await expect(result).resolves.toStrictEqual(expectedResult);
 				});
 			});
 		});
@@ -1288,22 +1284,22 @@ describe("decoder", () => {
 
 				describe("decode value", () => {
 					test("success", async () => {
-						const result = await decoder.decodeValue("1");
+						const result = decoder.decodeValue("1");
 
 						const expectedResult = { ok: true, value: 1 } as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 
 					test("fail", async () => {
-						const result = await decoder.decodeValue(1);
+						const result = decoder.decodeValue(1);
 
 						const expectedResult = {
 							error: expect.any(DecodeError),
 							ok: false,
 						} as const;
 
-						expect(result).toStrictEqual(expectedResult);
+						await expect(result).resolves.toStrictEqual(expectedResult);
 					});
 				});
 
