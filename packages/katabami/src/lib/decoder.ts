@@ -626,7 +626,7 @@ const valueDecoder = new Decoder<unknown, never>(
  * @template T - The type of the array elements.
  * @template {IDecoder<T>} U - The decoder to use.
  * @param {U} decoder - The decoder to use.
- * @returns {DecodeFunction<Array<T>, ArrayDecodeIssues<U, Issue<"array", "issue.unexpectedValue", { expected: "type.array"; received: TypeKeys }>>>} A decoder that decodes an array.
+ * @returns {DecodeFunction<Array<T>, ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined>>>} A decoder that decodes an array.
  */
 const decodeArrayFunc =
 	<T, U extends IDecoder<T>>(
@@ -635,11 +635,12 @@ const decodeArrayFunc =
 		ArrayDecodeResponse<U>,
 		ArrayDecodeIssues<
 			U,
-			Issue<
-				"array",
-				"issue.unexpectedValue",
-				{ expected: "type.array"; received: TypeKeys }
-			>
+			| Issue<"array", "issue.invalidArrayElements", undefined>
+			| Issue<
+					"array",
+					"issue.unexpectedValue",
+					{ expected: "type.array"; received: TypeKeys }
+			  >
 		>
 	> =>
 	(value) => {
@@ -676,30 +677,24 @@ const decodeArrayFunc =
  * @template T - The type of the array elements.
  * @template {IDecoder<T>} U - The decoder to use.
  * @param {Array<[number, Result<unknown, Issues>]>} results - The results of the decoders.
- * @returns {Result<ArrayDecodeResponse<U>, ArrayDecodeIssues<U, Issue<"array", "issue.unexpectedValue", { expected: "type.array"; received: TypeKeys }>>>} The result of the array decoder.
+ * @returns {Result<ArrayDecodeResponse<U>, ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined>>>} The result of the array decoder.
  */
 const decodeArrayHelper = <T, U extends IDecoder<T>>(
 	results: Array<[number, Result<unknown, Issues>]>,
 ): Result<
 	ArrayDecodeResponse<U>,
-	ArrayDecodeIssues<
-		U,
-		Issue<"array", string, { expected: string; received: string }>
-	>
+	ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined>>
 > => {
 	const issues = results.filter(([_, result]) => !result.ok);
 
 	if (issues.length > 0) {
 		return {
 			error: new DecodeError(
-				"Array expected",
+				"Array elements failed validation",
 				createIssues(
 					"array",
-					"issue.unexpectedValue",
-					{
-						expected: "type.array",
-						received: typeOf(value),
-					},
+					"issue.invalidArrayElements",
+					undefined,
 					Object.fromEntries(
 						issues.map(([i, result]) => [i, result.error?.issues]),
 					),
@@ -756,23 +751,29 @@ const decodeConstantFunc =
  * Helper function to decode a field.
  * @template T - The type of the value.
  * @template {IDecoder<T>} U - The decoder to use.
- * @param {string} key - The key of the field.
+ * @template K - The type of the key.
+ * @param {K} key - The key of the field.
  * @param {IDecoder<T>} decoder - The decoder to use.
- * @returns {DecodeFunction<T, FieldDecodeIssues<U, Issue<"field", "issue.missingField", { key: string }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
+ * @returns {DecodeFunction<T, FieldDecodeIssues<K, U, Issue<"field", "issue.invalidObjectField", { key: K }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
  */
-const decodeFieldFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
-	key: string,
+const decodeFieldFunc = <
+	T,
+	U extends IDecoder<T> = IDecoder<T>,
+	K extends string = string,
+>(
+	key: K,
 	decoder: U,
 ): DecodeFunction<
 	FieldDecodeResponse<U>,
 	FieldDecodeIssues<
 		U,
-		| Issue<"field", "issue.missingField", { key: string }>
+		| Issue<"field", "issue.invalidObjectField", { key: K }>
 		| Issue<
 				"field",
 				"issue.unexpectedType",
 				{ expected: "type.object"; received: TypeKeys }
-		  >
+		  >,
+		K
 	>
 > => {
 	return (value) => {
@@ -789,7 +790,8 @@ const decodeFieldFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
 							"field",
 							"issue.unexpectedType",
 							{ expected: "type.object"; received: TypeKeys }
-						>
+						>,
+						K
 					>,
 				),
 				ok: false,
@@ -798,23 +800,16 @@ const decodeFieldFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
 		// if the issue is an unexpected type and the received type is undefined, return a missing field issue
 		return decoder
 			.catch((issue) => {
-				const issueMessage = getIssueMessage(issue);
-
-				if (
-					issueMessage?.message === "issue.unexpectedType" &&
-					issueMessage.vars?.received === "type.undefined"
-				) {
-					return {
-						error: new DecodeError(
-							"Field expected",
-							createIssues("field", "issue.missingField", { key }),
-						),
-						ok: false,
-					};
-				}
-
 				return {
-					error: new DecodeError("Field expected", issue),
+					error: new DecodeError(
+						"Field expected",
+						createIssues(
+							"field",
+							"issue.invalidObjectField",
+							{ key },
+							{ [key]: issue },
+						),
+					),
 					ok: false,
 				};
 			})
@@ -827,26 +822,32 @@ const decodeFieldFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
 						"field",
 						"issue.unexpectedType",
 						{ expected: "type.object"; received: TypeKeys }
-					>
+					>,
+					K
 				>
 			>
 		>;
 	};
 };
 
-const decodeIndexFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
-	index: number,
+const decodeIndexFunc = <
+	T,
+	U extends IDecoder<T> = IDecoder<T>,
+	N extends number = number,
+>(
+	index: N,
 	decoder: U,
 ): DecodeFunction<
 	IndexDecodeResponse<U>,
 	IndexDecodeIssues<
 		U,
-		| Issue<"index:outOfBounds", "issue.outOfBounds", { index: number }>
+		| Issue<"index", "issue.invalidArrayIndex", { index: N }>
 		| Issue<
-				"index:type",
+				"index",
 				"issue.unexpectedType",
 				{ expected: "type.array"; received: TypeKeys }
-		  >
+		  >,
+		N
 	>
 > => {
 	return (value) => {
@@ -854,52 +855,44 @@ const decodeIndexFunc = <T, U extends IDecoder<T> = IDecoder<T>>(
 			return {
 				error: new DecodeError(
 					"Array expected",
-					createIssues("index:type", "issue.unexpectedType", {
+					createIssues("index", "issue.unexpectedType", {
 						expected: "type.array",
 						received: typeOf(value),
 					}) as IndexDecodeIssues<
 						U,
-						| Issue<"index:outOfBounds", "issue.outOfBounds", { index: number }>
-						| Issue<
-								"index:type",
-								"issue.unexpectedType",
-								{ expected: "type.array"; received: TypeKeys }
-						  >
+						Issue<
+							"index",
+							"issue.unexpectedType",
+							{ expected: "type.array"; received: TypeKeys }
+						>,
+						N
 					>,
 				),
 				ok: false,
 			};
 
-		if (index < 0 || index >= value.length)
-			return {
-				error: new DecodeError(
-					"Index out of bounds",
-					createIssues("index:outOfBounds", "issue.outOfBounds", {
-						index,
-					}) as IndexDecodeIssues<
-						U,
-						| Issue<"index:outOfBounds", "issue.outOfBounds", { index: number }>
-						| Issue<
-								"index:type",
-								"issue.unexpectedType",
-								{ expected: "type.array"; received: TypeKeys }
-						  >
-					>,
-				),
-				ok: false,
-			};
-
-		return decoder.decodeValue(value[index]) as Awaitable<
+		return decoder
+			.catch((issue) => {
+				return {
+					error: new DecodeError(
+						"Array index expected",
+						createIssues(
+							"index",
+							"issue.invalidArrayIndex",
+							{ index },
+							{ [index]: issue },
+						),
+					),
+					ok: false,
+				};
+			})
+			.decodeValue(value[index]) as Awaitable<
 			Result<
 				IndexDecodeResponse<U>,
 				IndexDecodeIssues<
 					U,
-					| Issue<"index:outOfBounds", "issue.outOfBounds", { index: number }>
-					| Issue<
-							"index:type",
-							"issue.unexpectedType",
-							{ expected: "type.array"; received: TypeKeys }
-					  >
+					Issue<"index", "issue.invalidArrayIndex", { index: N }>,
+					N
 				>
 			>
 		>;
@@ -1097,7 +1090,7 @@ const decodeTupleHelper = <
 	if (issues.length > 0) {
 		return {
 			error: new DecodeError(
-				"Tuple expected",
+				"Tuple elements failed validation",
 				createIssues(
 					"tuple:elements",
 					"issue.invalidArrayElements",
@@ -1296,7 +1289,7 @@ const decodeUnionFunc =
  * Creates a decoder that decodes an array.
  * @template T - The type of the array elements.
  * @param {IDecoder<T>} decoder - The decoder to use.
- * @returns {IDecoder<Array<T>>} A decoder that decodes an array.
+ * @returns {IDecoder<Array<T>, ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined> | Issue<"array", "issue.unexpectedValue", { expected: "type.array"; received: TypeKeys }>>>} A decoder that decodes an array.
  */
 export function array<T, U extends IDecoder<T> = IDecoder<T>>(
 	decoder: U,
@@ -1304,7 +1297,12 @@ export function array<T, U extends IDecoder<T> = IDecoder<T>>(
 	ArrayDecodeResponse<U>,
 	ArrayDecodeIssues<
 		U,
-		Issue<"array", string, { expected: string; received: string }>
+		| Issue<"array", "issue.invalidArrayElements", undefined>
+		| Issue<
+				"array",
+				"issue.unexpectedValue",
+				{ expected: "type.array"; received: TypeKeys }
+		  >
 	>,
 	SchemaAsyncOf<U>
 > {
@@ -1312,7 +1310,12 @@ export function array<T, U extends IDecoder<T> = IDecoder<T>>(
 		ArrayDecodeResponse<U>,
 		ArrayDecodeIssues<
 			U,
-			Issue<"array", string, { expected: string; received: string }>
+			| Issue<"array", "issue.invalidArrayElements", undefined>
+			| Issue<
+					"array",
+					"issue.unexpectedValue",
+					{ expected: "type.array"; received: TypeKeys }
+			  >
 		>,
 		SchemaAsyncOf<U>
 	>(
@@ -1385,21 +1388,26 @@ export function failed(): IDecoder<
  * @template {IDecoder<T>} U - The decoder to use.
  * @param {string} key - The name of the field.
  * @param {IDecoder<T>} decoder - The decoder to use.
- * @returns {IDecoder<T, FieldDecodeIssues<U, Issue<"field", "issue.missingField", { key: string }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
+ * @returns {IDecoder<T, FieldDecodeIssues<U, Issue<"field", "issue.invalidObjectField", { key: string }> | Issue<"field", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a field.
  */
-export function field<T, U extends IDecoder<T> = IDecoder<T>>(
-	key: string,
+export function field<
+	T,
+	U extends IDecoder<T> = IDecoder<T>,
+	K extends string = string,
+>(
+	key: K,
 	decoder: U,
 ): IDecoder<
 	FieldDecodeResponse<U>,
 	FieldDecodeIssues<
 		U,
-		| Issue<"field", "issue.missingField", { key: string }>
+		| Issue<"field", "issue.invalidObjectField", { key: K }>
 		| Issue<
 				"field",
 				"issue.unexpectedType",
 				{ expected: "type.object"; received: TypeKeys }
-		  >
+		  >,
+		K
 	>,
 	SchemaAsyncOf<U>
 > {
@@ -1407,12 +1415,13 @@ export function field<T, U extends IDecoder<T> = IDecoder<T>>(
 		FieldDecodeResponse<U>,
 		FieldDecodeIssues<
 			U,
-			| Issue<"field", "issue.missingField", { key: string }>
+			| Issue<"field", "issue.invalidObjectField", { key: K }>
 			| Issue<
 					"field",
 					"issue.unexpectedType",
 					{ expected: "type.object"; received: TypeKeys }
-			  >
+			  >,
+			K
 		>,
 		SchemaAsyncOf<U>
 	>(
@@ -1448,17 +1457,26 @@ export function float(): IDecoder<
  * @template {IDecoder<T>} U - The decoder to use.
  * @param {number} index - The index to decode.
  * @param {IDecoder<T>} decoder - The decoder to use.
- * @returns {IDecoder<T, IndexDecodeIssues<U, Issue<"index:outOfBounds", string, { index: number }> | Issue<"index:type", string, { expected: string; received: string }>>>} A decoder that decodes an index.
+ * @returns {IDecoder<T, IndexDecodeIssues<U, Issue<"index", "issue.invalidArrayIndex", { index: N }> | Issue<"index", "issue.unexpectedType", { expected: "type.array"; received: TypeKeys }>, N>>} A decoder that decodes an index.
  */
-export function index<T, U extends IDecoder<T> = IDecoder<T>>(
-	index: number,
+export function index<
+	T,
+	U extends IDecoder<T> = IDecoder<T>,
+	N extends number = number,
+>(
+	index: N,
 	decoder: U,
 ): IDecoder<
 	IndexDecodeResponse<U>,
 	IndexDecodeIssues<
 		U,
-		| Issue<"index:outOfBounds", string, { index: number }>
-		| Issue<"index:type", string, { expected: string; received: string }>
+		| Issue<"index", "issue.invalidArrayIndex", { index: N }>
+		| Issue<
+				"index",
+				"issue.unexpectedType",
+				{ expected: "type.array"; received: TypeKeys }
+		  >,
+		N
 	>,
 	SchemaAsyncOf<U>
 > {
@@ -1466,8 +1484,13 @@ export function index<T, U extends IDecoder<T> = IDecoder<T>>(
 		IndexDecodeResponse<U>,
 		IndexDecodeIssues<
 			U,
-			| Issue<"index:outOfBounds", string, { index: number }>
-			| Issue<"index:type", string, { expected: string; received: string }>
+			| Issue<"index", "issue.invalidArrayIndex", { index: N }>
+			| Issue<
+					"index",
+					"issue.unexpectedType",
+					{ expected: "type.array"; received: TypeKeys }
+			  >,
+			N
 		>,
 		SchemaAsyncOf<U>
 	>(

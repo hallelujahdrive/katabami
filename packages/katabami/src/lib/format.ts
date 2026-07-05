@@ -24,12 +24,12 @@ export const defaultMessageResources = {
 	issue: {
 		failedToDecode: "Failed to decode.",
 		invalidArrayElements: "One or more array elements failed validation.",
+		invalidArrayIndex: 'Array index "{{index}}" failed validation.',
 		invalidArrayLength:
 			"Expected array length {{expected}}, but received {{received}}.",
 		invalidObject: "One or more object properties failed validation.",
+		invalidObjectField: 'Object property "{{key}}" failed validation.',
 		invalidUnion: "None of the union members matched.",
-		missingField: 'Expected field "{{key}}", but received undefined.',
-		outOfBounds: "Index {{index}} is out of bounds.",
 		unexpectedType: "Expected {{expected}}, but received {{received}}.",
 		unexpectedValue:
 			"Expected {{expected, quoteString}}, but received {{received, quoteString}}.",

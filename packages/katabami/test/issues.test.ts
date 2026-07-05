@@ -113,7 +113,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Expected field "foo", but received undefined.',
+				'Object property "foo" failed validation.',
 			);
 		});
 
@@ -176,8 +176,29 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Index 0 is out of bounds.",
+				'Array index "0" failed validation.',
 			);
+
+			expect(
+				getIssueMessage(result.error?.issues?.[0])?.format(),
+			).toStrictEqual("Expected string, but received undefined.");
+		});
+
+		test("unexpected value", () => {
+			const result = decoder.decodeValue([1]);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Array index "0" failed validation.',
+			);
+
+			expect(
+				getIssueMessage(result.error?.issues?.[0])?.format(),
+			).toStrictEqual("Expected string, but received number.");
 		});
 	});
 
@@ -240,7 +261,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Expected field "foo", but received undefined.',
+				'Object property "foo" failed validation.',
 			);
 		});
 	});

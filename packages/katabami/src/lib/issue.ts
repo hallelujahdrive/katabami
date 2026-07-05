@@ -130,7 +130,7 @@ function flattenIssuesHelper(
 	if (message != null) {
 		flattenedIssues.push({
 			message,
-			path: path ?? [],
+			path,
 		});
 	}
 

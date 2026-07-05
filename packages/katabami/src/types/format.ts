@@ -20,6 +20,10 @@ export type MessageResources = {
 		 */
 		invalidArrayElements: string;
 		/**
+		 * The message for the issue when the index of the array is invalid.
+		 */
+		invalidArrayIndex: string;
+		/**
 		 * The message for the issue when the length of the array is invalid.
 		 */
 		invalidArrayLength: string;
@@ -28,17 +32,13 @@ export type MessageResources = {
 		 */
 		invalidObject: string;
 		/**
+		 * The message for the issue when an object property is invalid.
+		 */
+		invalidObjectField: string;
+		/**
 		 * The message for the issue when none of the union members match.
 		 */
 		invalidUnion: string;
-		/**
-		 * The message for the issue when the field is missing.
-		 */
-		missingField: string;
-		/**
-		 * The message for the issue when the index is out of bounds.
-		 */
-		outOfBounds: string;
 		/**
 		 * The message for the issue when the value is unexpected.
 		 */

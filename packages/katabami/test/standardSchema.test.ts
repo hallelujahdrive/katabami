@@ -2,12 +2,6 @@ import { describe, expect, test } from "vitest";
 
 import { type Decoder, katabami } from "../src/index.js";
 
-const validationFailure = {
-	issues: expect.arrayContaining([
-		expect.objectContaining({ message: expect.any(String) }),
-	]),
-} as const;
-
 async function expectValidateAsync(
 	decoder: Decoder<unknown>,
 	value: unknown,
@@ -45,7 +39,19 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, [true, 1], validationFailure);
+					expectValidateSync(decoder, [true, 1], {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{ message: "Expected string, but received number.", path: ["1"] },
+						],
+					});
 				});
 			});
 
@@ -57,11 +63,19 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse("[true,1]"),
-						validationFailure,
-					);
+					expectValidateSync(decoder, JSON.parse("[true,1]"), {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{ message: "Expected string, but received number.", path: ["1"] },
+						],
+					});
 				});
 			});
 		});
@@ -83,7 +97,19 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(decoder, [true, 1], validationFailure);
+					await expectValidateAsync(decoder, [true, 1], {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{ message: "Expected string, but received number.", path: ["1"] },
+						],
+					});
 				});
 			});
 
@@ -95,11 +121,19 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(
-						decoder,
-						JSON.parse("[true,1]"),
-						validationFailure,
-					);
+					await expectValidateAsync(decoder, JSON.parse("[true,1]"), {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{ message: "Expected string, but received number.", path: ["1"] },
+						],
+					});
 				});
 			});
 		});
@@ -114,7 +148,14 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, "foo", validationFailure);
+				expectValidateSync(decoder, "foo", {
+					issues: [
+						{
+							message: "Expected boolean, but received string.",
+							path: undefined,
+						},
+					],
+				});
 			});
 		});
 
@@ -126,7 +167,14 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, JSON.parse('"foo"'), validationFailure);
+				expectValidateSync(decoder, JSON.parse('"foo"'), {
+					issues: [
+						{
+							message: "Expected boolean, but received string.",
+							path: undefined,
+						},
+					],
+				});
 			});
 		});
 	});
@@ -140,7 +188,11 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, "bar", validationFailure);
+				expectValidateSync(decoder, "bar", {
+					issues: [
+						{ message: 'Expected "foo", but received "bar".', path: undefined },
+					],
+				});
 			});
 		});
 
@@ -152,7 +204,11 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, JSON.parse('"bar"'), validationFailure);
+				expectValidateSync(decoder, JSON.parse('"bar"'), {
+					issues: [
+						{ message: 'Expected "foo", but received "bar".', path: undefined },
+					],
+				});
 			});
 		});
 	});
@@ -169,7 +225,22 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, { bar: "bar" }, validationFailure);
+					expectValidateSync(
+						decoder,
+						{ bar: "bar" },
+						{
+							issues: [
+								{
+									message: 'Object property "foo" failed validation.',
+									path: undefined,
+								},
+								{
+									message: "Expected string, but received undefined.",
+									path: ["foo"],
+								},
+							],
+						},
+					);
 				});
 			});
 
@@ -181,21 +252,32 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse('{"bar":"bar"}'),
-						validationFailure,
-					);
+					expectValidateSync(decoder, JSON.parse('{"bar":"bar"}'), {
+						issues: [
+							{
+								message: 'Object property "foo" failed validation.',
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received undefined.",
+								path: ["foo"],
+							},
+						],
+					});
 				});
 			});
 		});
 
 		describe("async", () => {
 			const decoder = katabami
-				.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
-				})
+				.field(
+					"foo",
+					katabami.string().andThen((value) => {
+						return new Promise<Decoder<string, never>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					}),
+				)
 				.andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
 						resolve(katabami.succeed(value)),
@@ -204,43 +286,51 @@ describe("StandardSchemaV1", () => {
 
 			describe("validate value", () => {
 				test("success", async () => {
-					await expectValidateAsync(
-						decoder,
-						{
-							bar: 1,
-							foo: "foo",
-						},
-						{ value: { bar: 1, foo: "foo" } } as const,
-					);
+					await expectValidateAsync(decoder, { foo: "foo" }, {
+						value: "foo",
+					} as const);
 				});
 
-				test("fail", () => {
-					expectValidateSync(
+				test("fail", async () => {
+					await expectValidateAsync(
 						decoder,
+						{ bar: "bar" },
 						{
-							bar: "1",
-							foo: "foo",
+							issues: [
+								{
+									message: 'Object property "foo" failed validation.',
+									path: undefined,
+								},
+								{
+									message: "Expected string, but received undefined.",
+									path: ["foo"],
+								},
+							],
 						},
-						validationFailure,
 					);
 				});
 			});
 
 			describe("validate parsed string", () => {
 				test("success", async () => {
-					await expectValidateAsync(
-						decoder,
-						JSON.parse('{"bar":1,"foo":"foo"}'),
-						{ value: { bar: 1, foo: "foo" } } as const,
-					);
+					await expectValidateAsync(decoder, JSON.parse('{"foo":"foo"}'), {
+						value: "foo",
+					} as const);
 				});
 
-				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse('{"bar":"1","foo":"foo"}'),
-						validationFailure,
-					);
+				test("fail", async () => {
+					await expectValidateAsync(decoder, JSON.parse('{"bar":"bar"}'), {
+						issues: [
+							{
+								message: 'Object property "foo" failed validation.',
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received undefined.",
+								path: ["foo"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -258,7 +348,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, ["foo"], validationFailure);
+					expectValidateSync(decoder, ["foo"], {
+						issues: [
+							{
+								message: 'Array index "1" failed validation.',
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received undefined.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 
@@ -270,7 +371,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, JSON.parse('["foo"]'), validationFailure);
+					expectValidateSync(decoder, JSON.parse('["foo"]'), {
+						issues: [
+							{
+								message: 'Array index "1" failed validation.',
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received undefined.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -306,7 +418,18 @@ describe("StandardSchemaV1", () => {
 							bar: "1",
 							foo: "foo",
 						},
-						validationFailure,
+						{
+							issues: [
+								{
+									message: "One or more object properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected number, but received string.",
+									path: ["bar"],
+								},
+							],
+						},
 					);
 				});
 			});
@@ -321,11 +444,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse('{"bar":"1","foo":"foo"}'),
-						validationFailure,
-					);
+					expectValidateSync(decoder, JSON.parse('{"bar":"1","foo":"foo"}'), {
+						issues: [
+							{
+								message: "One or more object properties failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received string.",
+								path: ["bar"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -352,7 +482,18 @@ describe("StandardSchemaV1", () => {
 					expectValidateSync(
 						decoder,
 						{ bar: "1", foo: "foo" },
-						validationFailure,
+						{
+							issues: [
+								{
+									message: 'Object property "bar" failed validation.',
+									path: undefined,
+								},
+								{
+									message: "Expected number, but received string.",
+									path: ["bar"],
+								},
+							],
+						},
 					);
 				});
 			});
@@ -365,11 +506,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse('{"bar":"1","foo":"foo"}'),
-						validationFailure,
-					);
+					expectValidateSync(decoder, JSON.parse('{"bar":"2","foo":"foo"}'), {
+						issues: [
+							{
+								message: 'Object property "bar" failed validation.',
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received string.",
+								path: ["bar"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -399,7 +547,18 @@ describe("StandardSchemaV1", () => {
 						await expectValidateAsync(
 							decoder,
 							{ bar: "1", foo: "foo" },
-							validationFailure,
+							{
+								issues: [
+									{
+										message: 'Object property "bar" failed validation.',
+										path: undefined,
+									},
+									{
+										message: "Expected number, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -417,7 +576,18 @@ describe("StandardSchemaV1", () => {
 						await expectValidateAsync(
 							decoder,
 							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
+							{
+								issues: [
+									{
+										message: 'Object property "bar" failed validation.',
+										path: undefined,
+									},
+									{
+										message: "Expected number, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -446,7 +616,18 @@ describe("StandardSchemaV1", () => {
 						expectValidateSync(
 							decoder,
 							{ bar: "1", foo: "foo" },
-							validationFailure,
+							{
+								issues: [
+									{
+										message: 'Object property "bar" failed validation.',
+										path: undefined,
+									},
+									{
+										message: "Expected number, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -461,11 +642,18 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(
-							decoder,
-							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
-						);
+						expectValidateSync(decoder, JSON.parse('{"bar":"1","foo":"foo"}'), {
+							issues: [
+								{
+									message: 'Object property "bar" failed validation.',
+									path: undefined,
+								},
+								{
+									message: "Expected number, but received string.",
+									path: ["bar"],
+								},
+							],
+						});
 					});
 				});
 			});
@@ -499,7 +687,18 @@ describe("StandardSchemaV1", () => {
 								bar: "1",
 								foo: "foo",
 							},
-							validationFailure,
+							{
+								issues: [
+									{
+										message: "One or more object properties failed validation.",
+										path: undefined,
+									},
+									{
+										message: "Expected number, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -512,11 +711,18 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(
-							decoder,
-							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
-						);
+						expectValidateSync(decoder, JSON.parse('{"bar":"1","foo":"foo"}'), {
+							issues: [
+								{
+									message: "One or more object properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected number, but received string.",
+									path: ["bar"],
+								},
+							],
+						});
 					});
 				});
 			});
@@ -552,7 +758,18 @@ describe("StandardSchemaV1", () => {
 								bar: "1",
 								foo: "foo",
 							},
-							validationFailure,
+							{
+								issues: [
+									{
+										message: "One or more object properties failed validation.",
+										path: undefined,
+									},
+									{
+										message: "Expected number, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -567,11 +784,18 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(
-							decoder,
-							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
-						);
+						expectValidateSync(decoder, JSON.parse('{"bar":"1","foo":"foo"}'), {
+							issues: [
+								{
+									message: "One or more object properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected number, but received string.",
+									path: ["bar"],
+								},
+							],
+						});
 					});
 				});
 			});
@@ -605,7 +829,18 @@ describe("StandardSchemaV1", () => {
 								bar: "1",
 								foo: "foo",
 							},
-							validationFailure,
+							{
+								issues: [
+									{
+										message: "One or more object properties failed validation.",
+										path: undefined,
+									},
+									{
+										message: "Expected object, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -618,11 +853,18 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(
-							decoder,
-							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
-						);
+						expectValidateSync(decoder, JSON.parse('{"bar":"1","foo":"foo"}'), {
+							issues: [
+								{
+									message: "One or more object properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected object, but received string.",
+									path: ["bar"],
+								},
+							],
+						});
 					});
 				});
 			});
@@ -658,7 +900,18 @@ describe("StandardSchemaV1", () => {
 								bar: "1",
 								foo: "foo",
 							},
-							validationFailure,
+							{
+								issues: [
+									{
+										message: "One or more object properties failed validation.",
+										path: undefined,
+									},
+									{
+										message: "Expected object, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -676,7 +929,18 @@ describe("StandardSchemaV1", () => {
 						await expectValidateAsync(
 							decoder,
 							JSON.parse('{"bar":"1","foo":"foo"}'),
-							validationFailure,
+							{
+								issues: [
+									{
+										message: "One or more object properties failed validation.",
+										path: undefined,
+									},
+									{
+										message: "Expected object, but received string.",
+										path: ["bar"],
+									},
+								],
+							},
 						);
 					});
 				});
@@ -693,7 +957,14 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, true, validationFailure);
+				expectValidateSync(decoder, true, {
+					issues: [
+						{
+							message: "Expected string, but received boolean.",
+							path: undefined,
+						},
+					],
+				});
 			});
 		});
 
@@ -705,7 +976,14 @@ describe("StandardSchemaV1", () => {
 			});
 
 			test("fail", () => {
-				expectValidateSync(decoder, JSON.parse("true"), validationFailure);
+				expectValidateSync(decoder, JSON.parse("true"), {
+					issues: [
+						{
+							message: "Expected string, but received boolean.",
+							path: undefined,
+						},
+					],
+				});
 			});
 		});
 	});
@@ -720,7 +998,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, [true, 1], validationFailure);
+					expectValidateSync(decoder, [true, 1], {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+						],
+					});
 				});
 			});
 
@@ -732,11 +1021,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(
-						decoder,
-						JSON.parse("[true,1]"),
-						validationFailure,
-					);
+					expectValidateSync(decoder, JSON.parse("[true,1]"), {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -757,7 +1053,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(decoder, [true, 1], validationFailure);
+					await expectValidateAsync(decoder, [true, 1], {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+						],
+					});
 				});
 			});
 
@@ -769,11 +1076,18 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(
-						decoder,
-						JSON.parse("[true,1]"),
-						validationFailure,
-					);
+					await expectValidateAsync(decoder, JSON.parse("[true,1]"), {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -789,7 +1103,30 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, true, validationFailure);
+					expectValidateSync(decoder, true, {
+						issues: [
+							{
+								message: "None of the union members matched.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 
@@ -801,7 +1138,30 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", () => {
-					expectValidateSync(decoder, JSON.parse("true"), validationFailure);
+					expectValidateSync(decoder, JSON.parse("true"), {
+						issues: [
+							{
+								message: "None of the union members matched.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -822,7 +1182,30 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(decoder, true, validationFailure);
+					await expectValidateAsync(decoder, true, {
+						issues: [
+							{
+								message: "None of the union members matched.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 
@@ -834,11 +1217,30 @@ describe("StandardSchemaV1", () => {
 				});
 
 				test("fail", async () => {
-					await expectValidateAsync(
-						decoder,
-						JSON.parse("true"),
-						validationFailure,
-					);
+					await expectValidateAsync(decoder, JSON.parse("true"), {
+						issues: [
+							{
+								message: "None of the union members matched.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{
+								message: "Expected number, but received boolean.",
+								path: ["1"],
+							},
+						],
+					});
 				});
 			});
 		});
@@ -855,7 +1257,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, 1.5, validationFailure);
+						expectValidateSync(decoder, 1.5, {
+							issues: [
+								{
+									message: "Expected integer, but received float.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 
@@ -865,7 +1274,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, JSON.parse("1.5"), validationFailure);
+						expectValidateSync(decoder, JSON.parse("1.5"), {
+							issues: [
+								{
+									message: "Expected integer, but received float.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 			});
@@ -886,7 +1302,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", async () => {
-						await expectValidateAsync(decoder, 1.5, validationFailure);
+						await expectValidateAsync(decoder, 1.5, {
+							issues: [
+								{
+									message: "Expected integer, but received float.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 
@@ -898,11 +1321,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", async () => {
-						await expectValidateAsync(
-							decoder,
-							JSON.parse("1.5"),
-							validationFailure,
-						);
+						await expectValidateAsync(decoder, JSON.parse("1.5"), {
+							issues: [
+								{
+									message: "Expected integer, but received float.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 			});
@@ -918,7 +1344,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, 1, validationFailure);
+						expectValidateSync(decoder, 1, {
+							issues: [
+								{
+									message: "Expected string, but received number.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 
@@ -930,7 +1363,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, JSON.parse("1"), validationFailure);
+						expectValidateSync(decoder, JSON.parse("1"), {
+							issues: [
+								{
+									message: "Expected string, but received number.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 			});
@@ -948,7 +1388,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, 1, validationFailure);
+						expectValidateSync(decoder, 1, {
+							issues: [
+								{
+									message: "Expected string, but received number.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 
@@ -960,7 +1407,14 @@ describe("StandardSchemaV1", () => {
 					});
 
 					test("fail", () => {
-						expectValidateSync(decoder, JSON.parse("1"), validationFailure);
+						expectValidateSync(decoder, JSON.parse("1"), {
+							issues: [
+								{
+									message: "Expected string, but received number.",
+									path: undefined,
+								},
+							],
+						});
 					});
 				});
 			});

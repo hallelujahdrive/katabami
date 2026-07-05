@@ -147,8 +147,14 @@ export type Err<I extends Issues = Issues> = {
 /**
  * The issues type of a field decoder.
  */
-export type FieldDecodeIssues<T extends Decoder<unknown>, I extends Issue> =
-	T extends Decoder<unknown, infer A> ? A | I : never;
+export type FieldDecodeIssues<
+	T extends Decoder<unknown>,
+	I extends Issue,
+	K extends string,
+> = _Issues<
+	{ readonly [key in K]?: T extends Decoder<unknown, infer A> ? A : never },
+	I
+>;
 
 /**
  * The response type of a field decoder.
@@ -159,8 +165,14 @@ export type FieldDecodeResponse<T extends Decoder<unknown>> =
 /**
  * The issues type of an index decoder.
  */
-export type IndexDecodeIssues<T extends Decoder<unknown>, I extends Issue> =
-	T extends Decoder<unknown, infer A> ? A | I : never;
+export type IndexDecodeIssues<
+	T extends Decoder<unknown>,
+	I extends Issue,
+	N extends number = number,
+> = _Issues<
+	{ readonly [K in N]?: T extends Decoder<unknown, infer A> ? A : never },
+	I
+>;
 
 /**
  * The issues type of an index decoder.
