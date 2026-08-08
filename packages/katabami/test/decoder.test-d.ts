@@ -336,6 +336,38 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("record", () => {
+		test("fixed", () => {
+			const _decoder = katabami.record<number>(katabami.float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<string, number>
+			>();
+		});
+
+		test("complement", () => {
+			const _decoder = katabami.record(katabami.float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<string, number>
+			>();
+		});
+
+		test("has promise", () => {
+			const _decoder = katabami.record(
+				katabami.float().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) =>
+						resolve(katabami.int()),
+					);
+				}),
+			);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Promise<Record<string, number>>
+			>();
+		});
+	});
+
 	describe("optional", () => {
 		describe("sync", () => {
 			test("fixed", () => {
@@ -442,8 +474,8 @@ describe("Decoder", () => {
 	describe("union", () => {
 		test("fixed", () => {
 			const _decoder = katabami.union<"bar" | "foo">(
-				katabami.constant("foo"),
 				katabami.constant("bar"),
+				katabami.constant("foo"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();

@@ -39,6 +39,7 @@ export type DecoderSchema =
 	| NumberDecoderSchema
 	| ObjectDecoderSchema
 	| OptionalDecoderSchema
+	| RecordDecoderSchema
 	| StringDecoderSchema
 	| TupleDecoderSchema
 	| UnionDecoderSchema
@@ -105,6 +106,14 @@ export type ObjectDecoderSchema = {
 export type OptionalDecoderSchema = {
 	readonly kind: "optional";
 	readonly schema: DecoderSchema;
+};
+
+/**
+ * A decoder that accepts records with values of the given schema.
+ */
+export type RecordDecoderSchema = {
+	readonly kind: "record";
+	readonly value: DecoderSchema;
 };
 
 /**

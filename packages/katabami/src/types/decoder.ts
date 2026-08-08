@@ -272,6 +272,27 @@ export type Ok<T> = { error?: never; ok: true; value: T };
 export type OptionalDecodeResponse<T> =
 	T extends Promise<unknown> ? Promise<Resolved<T> | undefined> : T | undefined;
 
+/**
+ * The issues type of a record decoder.
+ */
+export type RecordDecodeIssues<
+	T extends Decoder<unknown>,
+	I extends Issue = Issue,
+> =
+	T extends Decoder<unknown, infer A>
+		? _Issues<{ readonly [key: string]: A } | undefined, I>
+		: never;
+
+/**
+ * The response type of a record decoder.
+ */
+export type RecordDecodeResponse<T extends Decoder<unknown>> =
+	T extends Decoder<infer A>
+		? A extends Resolved<A>
+			? Record<string, A>
+			: Promise<Record<string, Resolved<A>>>
+		: never;
+
 export type RecordSchemaHasPromise<T extends Record<string, unknown>> =
 	T extends {
 		[key in keyof T]: T[key] extends Decoder<unknown, infer I, infer _>

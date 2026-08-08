@@ -302,6 +302,40 @@ describe("issues", () => {
 		});
 	});
 
+	describe("record decoder", () => {
+		const decoder = katabami.record(katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("invalid record", () => {
+			const result = decoder.decodeValue({ foo: 1 });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"One or more record properties failed validation.",
+			);
+
+			expect(
+				getIssueMessage(result.error?.issues?.foo)?.format(),
+			).toStrictEqual("Expected string, but received number.");
+		});
+	});
+
 	describe("string decoder", () => {
 		const decoder = katabami.string();
 

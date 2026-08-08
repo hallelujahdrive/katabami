@@ -81,6 +81,30 @@ describe("getSchema", () => {
 		});
 	});
 
+	describe("record", () => {
+		test("sync", () => {
+			expect(katabami.record(katabami.int()).getSchema()).toEqual({
+				kind: "record",
+				value: { kind: "integer" },
+			});
+		});
+
+		test("async", () => {
+			const decoder = katabami.record(
+				katabami.int().andThen((value) => {
+					return new Promise<Decoder<typeof value, never>>((resolve) =>
+						resolve(katabami.succeed(value)),
+					);
+				}),
+			);
+
+			expect(decoder.getSchema()).toEqual({
+				kind: "record",
+				value: { kind: "integer" },
+			});
+		});
+	});
+
 	test("tuple", () => {
 		expect(
 			katabami.tuple(katabami.string(), katabami.int()).getSchema(),

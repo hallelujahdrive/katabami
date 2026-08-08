@@ -56,7 +56,7 @@ export type Issues<
 > = _Issues<
 	T extends "union"
 		? readonly IssuesObject[]
-		: T extends "array" | "object"
+		: T extends "array" | "object" | "record"
 			? IssuesObject
 			: Record<never, never>,
 	I
@@ -81,6 +81,7 @@ type CommonIssueType =
 	| "float"
 	| "integer"
 	| "object"
+	| "record"
 	| "string"
 	| "union";
 

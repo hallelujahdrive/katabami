@@ -29,6 +29,7 @@ export const defaultMessageResources = {
 			"Expected array length {{expected}}, but received {{received}}.",
 		invalidObject: "One or more object properties failed validation.",
 		invalidObjectField: 'Object property "{{key}}" failed validation.',
+		invalidRecord: "One or more record properties failed validation.",
 		invalidUnion: "None of the union members matched.",
 		unexpectedType: "Expected {{expected}}, but received {{received}}.",
 		unexpectedValue:

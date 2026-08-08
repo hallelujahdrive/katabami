@@ -948,6 +948,136 @@ describe("StandardSchemaV1", () => {
 		});
 	});
 
+	describe("record", () => {
+		describe("sync", () => {
+			const decoder = katabami.record(katabami.string());
+
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(
+						decoder,
+						{ bar: "bar", foo: "foo" },
+						{
+							value: { bar: "bar", foo: "foo" },
+						},
+					);
+				});
+
+				test("fail", () => {
+					expectValidateSync(
+						decoder,
+						{ bar: 1, foo: "foo" },
+						{
+							issues: [
+								{
+									message: "One or more record properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected string, but received number.",
+									path: ["bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+
+			describe("validate parsed string", () => {
+				test("success", () => {
+					expectValidateSync(decoder, JSON.parse('{"bar":"bar","foo":"foo"}'), {
+						value: { bar: "bar", foo: "foo" },
+					});
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, JSON.parse('{"bar":1,"foo":"foo"}'), {
+						issues: [
+							{
+								message: "One or more record properties failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received number.",
+								path: ["bar"],
+							},
+						],
+					});
+				});
+			});
+		});
+
+		describe("async", () => {
+			const decoder = katabami.record(
+				katabami.string().andThen((value) => {
+					return new Promise<Decoder<string, never>>((resolve) =>
+						resolve(katabami.succeed(value)),
+					);
+				}),
+			);
+
+			describe("validate value", () => {
+				test("success", async () => {
+					await expectValidateAsync(
+						decoder,
+						{ bar: "bar", foo: "foo" },
+						{
+							value: { bar: "bar", foo: "foo" },
+						},
+					);
+				});
+
+				test("fail", async () => {
+					await expectValidateAsync(
+						decoder,
+						{ bar: 1, foo: "foo" },
+						{
+							issues: [
+								{
+									message: "One or more record properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected string, but received number.",
+									path: ["bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+
+			describe("validate parsed string", () => {
+				test("success", async () => {
+					await expectValidateAsync(
+						decoder,
+						JSON.parse('{"bar":"bar","foo":"foo"}'),
+						{ value: { bar: "bar", foo: "foo" } },
+					);
+				});
+
+				test("fail", async () => {
+					await expectValidateAsync(
+						decoder,
+						JSON.parse('{"bar":1,"foo":"foo"}'),
+						{
+							issues: [
+								{
+									message: "One or more record properties failed validation.",
+									path: undefined,
+								},
+								{
+									message: "Expected string, but received number.",
+									path: ["bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+		});
+	});
+
 	describe("string", () => {
 		const decoder = katabami.string();
 

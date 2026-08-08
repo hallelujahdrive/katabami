@@ -67,4 +67,17 @@ describe("getSchema", () => {
 		expectTypeOf<SchemaAsyncOf<typeof _decoder>>().toEqualTypeOf<false>();
 		expectTypeOf(_decoder.getSchema()).toEqualTypeOf<DecoderSchema>();
 	});
+
+	test("record with async decode preserves sync schema", () => {
+		const _decoder = katabami.record(
+			katabami.string().andThen(() => {
+				return new Promise<Decoder<string>>((resolve) =>
+					resolve(katabami.succeed("foo")),
+				);
+			}),
+		);
+
+		expectTypeOf<SchemaAsyncOf<typeof _decoder>>().toEqualTypeOf<false>();
+		expectTypeOf(_decoder.getSchema()).toEqualTypeOf<DecoderSchema>();
+	});
 });

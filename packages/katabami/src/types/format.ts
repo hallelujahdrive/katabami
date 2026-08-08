@@ -36,6 +36,10 @@ export type MessageResources = {
 		 */
 		invalidObjectField: string;
 		/**
+		 * The message for the issue when one or more record properties fail validation.
+		 */
+		invalidRecord: string;
+		/**
 		 * The message for the issue when none of the union members match.
 		 */
 		invalidUnion: string;

@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, test } from "vitest";
 
 import {
+	type ArrayDecodeIssues,
 	createIssues,
 	DecodeError,
 	type Decoder,
@@ -10,6 +11,7 @@ import {
 	katabami,
 	type ObjectDecodeIssues,
 	type Primitive,
+	type RecordDecodeIssues,
 	type Resolved,
 	type Result,
 	type TupleDecodeIssues,
@@ -30,16 +32,20 @@ type ExtractIssue<I> = I extends infer U
 		? Issue
 		: U extends TupleDecodeIssues<infer _, infer Issue>
 			? Issue
-			: U extends ObjectDecodeIssues<
-						Record<string, Decoder<unknown>>,
-						infer Issue
-					>
+			: U extends ArrayDecodeIssues<Decoder<unknown>, infer Issue>
 				? Issue
-				: U extends Issues<IssueType, infer Issue>
+				: U extends RecordDecodeIssues<Decoder<unknown>, infer Issue>
 					? Issue
-					: U extends Issue<infer _, infer __, infer ___>
-						? U
-						: never
+					: U extends ObjectDecodeIssues<
+								Record<string, Decoder<unknown>>,
+								infer Issue
+							>
+						? Issue
+						: U extends Issues<IssueType, infer Issue>
+							? Issue
+							: U extends Issue<infer _, infer __, infer ___>
+								? U
+								: never
 	: never;
 
 type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
@@ -80,8 +86,8 @@ describe("DecodeError", () => {
 
 		test("issue message", () => {
 			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-				expected: string;
-				received: string;
+				expected: "type.array";
+				received: TypeKeys;
 			}>();
 		});
 
@@ -137,29 +143,17 @@ describe("DecodeError", () => {
 	test("field", () => {
 		const _decoder = katabami.field("foo", katabami.string());
 
-		expectTypeOf<{ key: string }>().toExtend<GetVars<typeof _decoder>>();
-		expectTypeOf<{
-			expected: "type.object";
-			received: TypeKeys;
-		}>().toExtend<GetVars<typeof _decoder>>();
-		expectTypeOf<{
-			expected: "type.string";
-			received: string;
-		}>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			{ expected: "type.object"; received: TypeKeys } | { key: "foo" }
+		>();
 	});
 
 	test("index", () => {
 		const _decoder = katabami.index(0, katabami.string());
 
-		expectTypeOf<{ index: number }>().toExtend<GetVars<typeof _decoder>>();
-		expectTypeOf<{
-			expected: string;
-			received: string;
-		}>().toExtend<GetVars<typeof _decoder>>();
-		expectTypeOf<{
-			expected: "type.string";
-			received: string;
-		}>().toExtend<GetVars<typeof _decoder>>();
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			{ expected: "type.array"; received: TypeKeys } | { index: 0 }
+		>();
 	});
 
 	test("optional", () => {
@@ -258,6 +252,23 @@ describe("DecodeError", () => {
 					};
 				}>();
 			});
+		});
+	});
+
+	describe("record", () => {
+		const _decoder = katabami.record(katabami.string());
+
+		test("issue message", () => {
+			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+				expected: "type.object";
+				received: TypeKeys;
+			}>();
+		});
+
+		test("record decode issues", () => {
+			expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toExtend<{
+				readonly [key: string]: Record<never, never>;
+			}>();
 		});
 	});
 
