@@ -1247,14 +1247,6 @@ describe("StandardSchemaV1", () => {
 								message: "Expected number, but received boolean.",
 								path: undefined,
 							},
-							{
-								message: "Expected string, but received boolean.",
-								path: ["0"],
-							},
-							{
-								message: "Expected number, but received boolean.",
-								path: ["1"],
-							},
 						],
 					});
 				});
@@ -1281,14 +1273,6 @@ describe("StandardSchemaV1", () => {
 							{
 								message: "Expected number, but received boolean.",
 								path: undefined,
-							},
-							{
-								message: "Expected string, but received boolean.",
-								path: ["0"],
-							},
-							{
-								message: "Expected number, but received boolean.",
-								path: ["1"],
 							},
 						],
 					});
@@ -1326,14 +1310,6 @@ describe("StandardSchemaV1", () => {
 								message: "Expected number, but received boolean.",
 								path: undefined,
 							},
-							{
-								message: "Expected string, but received boolean.",
-								path: ["0"],
-							},
-							{
-								message: "Expected number, but received boolean.",
-								path: ["1"],
-							},
 						],
 					});
 				});
@@ -1360,14 +1336,6 @@ describe("StandardSchemaV1", () => {
 							{
 								message: "Expected number, but received boolean.",
 								path: undefined,
-							},
-							{
-								message: "Expected string, but received boolean.",
-								path: ["0"],
-							},
-							{
-								message: "Expected number, but received boolean.",
-								path: ["1"],
 							},
 						],
 					});

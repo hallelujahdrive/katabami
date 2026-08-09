@@ -2,8 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
 	createIssues,
 	DecodeError,
+	flattenIssues,
 	getIssueMessage,
 	katabami,
+	unflattenIssues,
 } from "../src/index.js";
 
 describe("issues", () => {
@@ -512,6 +514,134 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
 				"Expected string, but received number.",
+			);
+		});
+	});
+
+	describe("unflattenIssues", () => {
+		test("round-trips object issues", () => {
+			const decoder = katabami.object({
+				foo: katabami.string(),
+			});
+			const result = decoder.decodeValue({ foo: 1 });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues<typeof decoder>(
+				flattenIssues(result.error.issues),
+			);
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(restored.foo)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+			expect(getIssueMessage(restored.foo)?.message).toStrictEqual(
+				"Expected string, but received number.",
+			);
+		});
+
+		test("round-trips nested object issues", () => {
+			const decoder = katabami.object({
+				foo: katabami.object({
+					bar: katabami.string(),
+				}),
+			});
+			const result = decoder.decodeValue({ foo: { bar: 1 } });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues<typeof decoder>(
+				flattenIssues(result.error.issues),
+			);
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(restored.foo)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(restored.foo?.bar)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+			expect(getIssueMessage(restored.foo?.bar)?.message).toStrictEqual(
+				"Expected string, but received number.",
+			);
+		});
+
+		test("round-trips array issues", () => {
+			const decoder = katabami.array(katabami.string());
+			const result = decoder.decodeValue([1, true]);
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues<typeof decoder>(
+				flattenIssues(result.error.issues),
+			);
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"One or more array elements failed validation.",
+			);
+			expect(getIssueMessage(restored[0])?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
+				"Expected string, but received boolean.",
+			);
+		});
+
+		test("round-trips union issues", () => {
+			const decoder = katabami.union(katabami.string(), katabami.int());
+			const result = decoder.decodeValue(true);
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues(flattenIssues(result.error.issues));
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"None of the union members matched.",
+			);
+			expect(getIssueMessage(restored[0])?.format()).toStrictEqual(
+				"Expected string, but received boolean.",
+			);
+			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
+				"Expected number, but received boolean.",
+			);
+		});
+
+		test("round-trips primitive issues", () => {
+			const decoder = katabami.string();
+			const result = decoder.decodeValue(1);
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues<typeof decoder>(
+				flattenIssues(result.error.issues),
+			);
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+			expect(getIssueMessage(restored)?.message).toStrictEqual(
+				"Expected string, but received number.",
+			);
+		});
+
+		test("accepts PathSegment objects", () => {
+			const restored = unflattenIssues([
+				{ message: "root failed", path: undefined },
+				{ message: "nested failed", path: [{ key: "foo" }] },
+			]);
+
+			expect(getIssueMessage(restored)?.format()).toStrictEqual("root failed");
+			expect(getIssueMessage(restored.foo)?.format()).toStrictEqual(
+				"nested failed",
 			);
 		});
 	});

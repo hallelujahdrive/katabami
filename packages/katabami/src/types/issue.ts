@@ -16,6 +16,11 @@ export type _Issues<T, I> = T &
 			});
 
 /**
+ * Issue whose message is already formatted (e.g. after {@link unflattenIssues}).
+ */
+export type FormattedIssue = Issue<"formatted", string, undefined>;
+
+/**
  * The issue type.
  */
 export interface Issue<
@@ -48,6 +53,18 @@ export interface Issue<
 }
 
 /**
+ * Extracts the issue label stored on an {@link Issues} value (via `_Issues`).
+ * Distributes over unions.
+ */
+export type IssueLabelOf<T> = T extends infer U
+	? U extends { readonly [labelSymbol]?: infer L }
+		? Exclude<L, undefined>
+		: U extends Issue
+			? U
+			: never
+	: never;
+
+/**
  * The issues type.
  */
 export type Issues<
@@ -72,6 +89,32 @@ export interface IssuesObject {
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
 /**
+ * Open issues tree reconstructed by {@link unflattenIssues} without a source type.
+ * Supports path access such as `issues.foo` / `issues[0]`.
+ */
+export type UnflattenedIssues = _Issues<
+	{ readonly [key: string]: undefined | UnflattenedIssues },
+	FormattedIssue
+>;
+
+/**
+ * Keeps the path structure of {@link Issues} while replacing every issue label
+ * with {@link FormattedIssue} (message is always `string`).
+ *
+ * @example
+ * ```ts
+ * type Nested = ObjectDecodeIssues<
+ *   { foo: Decoder<{ bar: string }> },
+ *   Issue
+ * >;
+ * // UnflattenedIssuesOf<Nested> allows `issues.foo?.bar`
+ * ```
+ */
+export type UnflattenedIssuesOf<T> = [T] extends [never]
+	? never
+	: _Issues<UnflattenedIssuesShape<T>, FormattedIssue>;
+
+/**
  * Common issue types
  */
 type CommonIssueType =
@@ -89,3 +132,11 @@ type CommonIssueType =
  * Custom issue types
  */
 type CustomIssueType = never;
+
+type UnflattenedIssuesShape<T> = T extends readonly (infer E)[]
+	? { readonly [key: number]: undefined | UnflattenedIssuesOf<E> }
+	: {
+			readonly [K in keyof T as K extends symbol
+				? never
+				: K]?: UnflattenedIssuesOf<NonNullable<T[K]>>;
+		};

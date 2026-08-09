@@ -1,5 +1,5 @@
 import type { Resolved, UnionToTuple } from "./helpers.js";
-import type { _Issues, Issue, Issues } from "./issue.js";
+import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue.js";
 import type { DecoderSchema } from "./schema.js";
 import type { StandardSchemaV1 } from "./standardSchema.js";
 
@@ -187,6 +187,12 @@ export type Infer<T extends Decoder<unknown, Issues, boolean>> =
 	T extends Decoder<infer A, Issues, boolean> ? A : "";
 
 /**
+ * The issues type of a decoder.
+ */
+export type IssuesFromDecoder<D extends Decoder<unknown, Issues, boolean>> =
+	D extends Decoder<unknown, infer I, boolean> ? I : never;
+
+/**
  * The type of a map decode function.
  */
 export type MapDecodeFunction<T, U extends Array<Decoder<unknown>>> = (
@@ -353,6 +359,20 @@ export type TupleSchemaHasPromise<T extends Array<Decoder<unknown>>> =
 	}
 		? false
 		: true;
+
+/**
+ * Restores typed issue paths from a {@link Decoder}'s issue type.
+ *
+ * @example
+ * ```ts
+ * type Paths = UnflattenedIssuesFromDecoder<typeof decoder>;
+ * // object({ foo: object({ bar: string() }) }) → `{ foo?: { bar?: ... } }`
+ * ```
+ */
+export type UnflattenedIssuesFromDecoder<
+	D extends Decoder<unknown, Issues, boolean>,
+> =
+	D extends Decoder<unknown, infer I, boolean> ? UnflattenedIssuesOf<I> : never;
 
 /**
  * The issues type of a union decoder.
