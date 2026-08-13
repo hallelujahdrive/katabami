@@ -234,6 +234,12 @@ export type MapDecodeResponse<
 		: never;
 
 /**
+ * The response type of a nullable decoder.
+ */
+export type NullableDecodeResponse<T> =
+	T extends Promise<unknown> ? Promise<null | Resolved<T>> : null | T;
+
+/**
  * The issues type of an object decoder.
  */
 export type ObjectDecodeIssues<

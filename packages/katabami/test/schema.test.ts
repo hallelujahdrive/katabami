@@ -123,6 +123,13 @@ describe("getSchema", () => {
 		});
 	});
 
+	test("nullable", () => {
+		expect(katabami.nullable(katabami.string()).getSchema()).toEqual({
+			kind: "nullable",
+			schema: { kind: "string" },
+		});
+	});
+
 	test("optional", () => {
 		expect(katabami.optional(katabami.string()).getSchema()).toEqual({
 			kind: "optional",

@@ -132,6 +132,37 @@ describe("toJsonSchema", () => {
 		});
 	});
 
+	test("converts nullable as required null union", () => {
+		expect(toJsonSchema(katabami.nullable(katabami.string()))).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: ["string", "null"],
+		});
+		expect(
+			toJsonSchema(katabami.nullable(katabami.string()), {
+				target: "openapi-3.0",
+			}),
+		).toEqual({
+			nullable: true,
+			type: "string",
+		});
+		expect(
+			toJsonSchema(
+				katabami.object({
+					age: katabami.int(),
+					name: katabami.nullable(katabami.string()),
+				}),
+			),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				age: { type: "integer" },
+				name: { type: ["string", "null"] },
+			},
+			required: ["age", "name"],
+			type: "object",
+		});
+	});
+
 	test("converts map of fields to an object schema", () => {
 		const decoder = katabami.map(
 			(name, age) => ({ age, name }),

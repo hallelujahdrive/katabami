@@ -333,6 +333,18 @@ describe("Decoder", () => {
 				}>
 			>();
 		});
+
+		test("nullable field", () => {
+			const _decoder = katabami.object({
+				nullableStr: katabami.nullable(katabami.string()),
+				num: katabami.float(),
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
+				nullableStr: null | string;
+				num: number;
+			}>();
+		});
 	});
 
 	describe("record", () => {
@@ -364,6 +376,52 @@ describe("Decoder", () => {
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Promise<Record<string, number>>
 			>();
+		});
+	});
+
+	describe("nullable", () => {
+		describe("sync", () => {
+			test("fixed", () => {
+				const _decoder = katabami.nullable<number>(katabami.float());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.nullable(katabami.float());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
+			});
+		});
+
+		describe("async", () => {
+			test("fixed", () => {
+				const _decoder = katabami.nullable<Promise<number>>(
+					katabami.float().andThen((value) => {
+						return new Promise<Decoder<number>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					}),
+				);
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+					Promise<null | number>
+				>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.nullable(
+					katabami.float().andThen((value) => {
+						return new Promise<Decoder<number>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					}),
+				);
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+					Promise<null | number>
+				>();
+			});
 		});
 	});
 

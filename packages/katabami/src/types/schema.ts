@@ -36,6 +36,7 @@ export type DecoderSchema =
 	| IntegerDecoderSchema
 	| MapDecoderSchema
 	| NeverDecoderSchema
+	| NullableDecoderSchema
 	| NumberDecoderSchema
 	| ObjectDecoderSchema
 	| OptionalDecoderSchema
@@ -83,6 +84,14 @@ export type MapDecoderSchema = {
  */
 export type NeverDecoderSchema = {
 	readonly kind: "never";
+};
+
+/**
+ * A decoder that accepts the inner schema or null.
+ */
+export type NullableDecoderSchema = {
+	readonly kind: "nullable";
+	readonly schema: DecoderSchema;
 };
 
 /**

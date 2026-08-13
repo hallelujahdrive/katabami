@@ -156,6 +156,15 @@ describe("DecodeError", () => {
 		>();
 	});
 
+	test("nullable", () => {
+		const _decoder = katabami.nullable(katabami.int());
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.integer" | "type.number";
+			received: string;
+		}>();
+	});
+
 	test("optional", () => {
 		const _decoder = katabami.optional(katabami.int());
 

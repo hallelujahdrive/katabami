@@ -226,6 +226,8 @@ export const convertSchema = (
 			return convertMap(schema.decoders, target);
 		case "never":
 			return { not: {} };
+		case "nullable":
+			return convertNullable(schema.schema, target);
 		case "number":
 			return { type: "number" };
 		case "object":

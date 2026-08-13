@@ -26,6 +26,7 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	constant: katabami.constant("foo"),
 	decoderSchema: { kind: "string" },
 	field: katabami.field("name", katabami.string()),
+	fieldNullable: katabami.field("name", katabami.nullable(katabami.string())),
 	fieldOptional: katabami.field("name", katabami.optional(katabami.string())),
 	index: katabami.index(1, katabami.int()),
 	integer: katabami.int(),
@@ -47,10 +48,18 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 		}),
 	}),
 	never: katabami.failed(),
+	nullable: katabami.nullable(katabami.string()),
+	nullableUnion: katabami.nullable(
+		katabami.union(katabami.string(), katabami.int()),
+	),
 	number: katabami.float(),
 	object: katabami.object({
 		age: katabami.int(),
 		name: katabami.optional(katabami.string()),
+	}),
+	objectNullable: katabami.object({
+		age: katabami.int(),
+		name: katabami.nullable(katabami.string()),
 	}),
 	optional: katabami.optional(katabami.string()),
 	optionalUnion: katabami.optional(

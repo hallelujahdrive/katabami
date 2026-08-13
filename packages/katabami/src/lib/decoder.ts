@@ -15,6 +15,7 @@ import type {
 	MapDecodeFunctionParams,
 	MapDecodeIssues,
 	MapDecodeResponse,
+	NullableDecodeResponse,
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
 	ObjectDecoders,
@@ -92,6 +93,11 @@ const tupleSchema = (elements: readonly DecoderSchema[]): DecoderSchema => ({
 const unionSchema = (variants: readonly DecoderSchema[]): DecoderSchema => ({
 	kind: "union",
 	variants,
+});
+
+const nullableSchema = (schema: DecoderSchema): DecoderSchema => ({
+	kind: "nullable",
+	schema,
 });
 
 const optionalSchema = (schema: DecoderSchema): DecoderSchema => ({
@@ -226,6 +232,11 @@ const mapSchemaDescriptor =
 			allAwaitable(decoders.map((decoder) => decoder.getSchema())),
 			(schemas) => mapSchema(schemas),
 		);
+
+const nullableSchemaDescriptor =
+	(decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => nullableSchema(schema));
 
 const optionalSchemaDescriptor =
 	(decoder: SchemaDecoder): SchemaDescriptor =>
@@ -1692,6 +1703,37 @@ export function map<
 		mapSchemaDescriptor(decoders),
 		anyDecoderAsync(decoders) ||
 			returnsPromise(mapFunc as unknown as (value: never) => unknown),
+	);
+}
+
+/**
+ * Create a decoder that makes a decoder nullable.
+ *
+ * @template T The type of the value.
+ * @template {Issues<TypeOf<T>>} I The type of the issues.
+ * @param {IDecoder<T, I>} decoder The decoder to make nullable.
+ * @returns {IDecoder<NullableDecodeResponse<T>, I>} A decoder that accepts either the original value or null.
+ */
+export function nullable<
+	T,
+	I extends Issues = Issues,
+	S extends boolean = false,
+>(decoder: IDecoder<T, I, S>): IDecoder<NullableDecodeResponse<T>, I, S> {
+	return new Decoder<NullableDecodeResponse<T>, I, S>(
+		(value) => {
+			if (value === null)
+				return { ok: true, value: null } as Result<
+					NullableDecodeResponse<T>,
+					I
+				>;
+
+			return decoder.decodeValue(value) as Awaitable<
+				Result<NullableDecodeResponse<T>, I>
+			>;
+		},
+		undefined,
+		nullableSchemaDescriptor(decoder),
+		isDecoderAsync(decoder),
 	);
 }
 

@@ -134,6 +134,31 @@ describe("issues", () => {
 				});
 			});
 		});
+
+		describe("nullable field", () => {
+			const decoder = katabami.field(
+				"foo",
+				katabami.nullable(katabami.string()),
+			);
+
+			test("null field", () => {
+				const result = decoder.decodeValue({ foo: null });
+
+				expect(result).toStrictEqual({
+					ok: true,
+					value: null,
+				});
+			});
+
+			test("missing field", () => {
+				const result = decoder.decodeValue({});
+
+				expect(result).toStrictEqual({
+					error: expect.any(DecodeError),
+					ok: false,
+				});
+			});
+		});
 	});
 
 	describe("float decoder", () => {
