@@ -1,6 +1,8 @@
 import type { TFunction, TOptions } from "i18next";
 import type { Formatter } from "katabami";
 
+type Translate = (key: string, options?: TOptions) => string;
+
 /**
  * Creates a formatter for the katabami.
  * @param {TFunction} t - The i18next t function.
@@ -17,13 +19,16 @@ export const createFormatter = (
 			? Object.fromEntries(
 					Object.entries(vars).map(([key, value]) => {
 						if (typeof value === "string") {
-							return [key, t(value, tOptions)];
+							return [key, (t as Translate)(value, tOptions)];
 						}
 						return [key, value];
 					}),
 				)
 			: {};
 
-		return t(message, { ...(tOptions ?? {}), ...translatedVars });
+		return (t as Translate)(message, {
+			...(tOptions ?? {}),
+			...translatedVars,
+		});
 	};
 };

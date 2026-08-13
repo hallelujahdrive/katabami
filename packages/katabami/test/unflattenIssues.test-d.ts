@@ -1,11 +1,10 @@
 import { describe, expectTypeOf, test } from "vitest";
-
+import * as katabami from "../src/index.js";
 import {
 	type FormattedIssue,
 	flattenIssues,
 	getIssueMessage,
 	type IssuesFromDecoder,
-	katabami,
 	type UnflattenedIssuesFromDecoder,
 	unflattenIssues,
 } from "../src/index.js";
