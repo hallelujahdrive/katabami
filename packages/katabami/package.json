@@ -6,18 +6,23 @@
 	"description": "Katabami is a JSON decoding library",
 	"exports": {
 		".": {
-			"default": "./src/index.ts",
-			"types": "./src/index.ts"
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
 		}
 	},
+	"files": [
+		"dist"
+	],
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
 	"license": "WTFPL",
+	"main": "./dist/index.js",
 	"name": "katabami",
 	"scripts": {
+		"build": "rolldown -c",
 		"test": "vitest",
 		"test:typecheck": "vitest --typecheck"
 	},
 	"type": "module",
-	"types": "./src/index.ts",
+	"types": "./dist/index.d.ts",
 	"version": "0.0.0"
 }

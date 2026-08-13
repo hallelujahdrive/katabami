@@ -1,6 +1,5 @@
 import { describe, expectTypeOf, test } from "vitest";
-
-import type { IsUnion, TypeOf, UnionToTuple } from "../src/index.js";
+import type { IsUnion, TypeOf, UnionToTuple } from "../src";
 
 describe("helpers", () => {
 	describe("isUnion", () => {

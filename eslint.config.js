@@ -5,6 +5,9 @@ import perfectionist from "eslint-plugin-perfectionist";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
 	{
+		ignores: ["**/dist/**"],
+	},
+	{
 		files: ["**/*.{js,ts}"],
 	},
 	{

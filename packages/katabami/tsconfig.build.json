@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"allowImportingTsExtensions": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"noEmit": false,
+		"rootDir": "./src",
+		"types": []
+	},
+	"extends": "./tsconfig.json",
+	"include": ["src"]
+}

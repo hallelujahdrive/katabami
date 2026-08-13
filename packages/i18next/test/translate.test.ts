@@ -1,10 +1,10 @@
 import i18next from "i18next";
+import * as katabami from "katabami";
 import {
 	createIssues,
 	DecodeError,
 	flattenIssues,
 	getIssueMessage,
-	katabami,
 	unflattenIssues,
 } from "katabami";
 import { describe, expect, test } from "vitest";

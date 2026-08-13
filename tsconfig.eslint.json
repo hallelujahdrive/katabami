@@ -3,6 +3,7 @@
 	"include": [
 		"packages/*/src",
 		"packages/*/test",
+		"packages/*/rolldown.config.ts",
 		"packages/*/vitest.config.ts",
 		"eslint.config.js",
 		"lint-staged.config.js"

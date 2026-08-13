@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
+import * as katabami from "../src/index.js";
 import {
 	createIssues,
 	DecodeError,
 	flattenIssues,
 	getIssueMessage,
-	katabami,
 	unflattenIssues,
 } from "../src/index.js";
 

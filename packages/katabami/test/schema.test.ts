@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-
-import { type Decoder, katabami } from "../src/index.js";
+import type { Decoder } from "../src/index.js";
+import * as katabami from "../src/index.js";
 
 describe("getSchema", () => {
 	test("primitives", () => {

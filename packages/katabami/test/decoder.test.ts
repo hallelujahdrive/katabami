@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-
-import { DecodeError, type Decoder, katabami } from "../src/index.js";
+import * as katabami from "../src";
+import { DecodeError, type Decoder } from "../src";
 
 describe("decoder", () => {
 	describe("array", () => {

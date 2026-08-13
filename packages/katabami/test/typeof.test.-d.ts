@@ -1,5 +1,4 @@
 import { describe, expectTypeOf, test } from "vitest";
-
 import type { TypeOf } from "../src/index.js";
 
 describe("TypeOf", () => {

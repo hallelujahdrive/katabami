@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 
+import * as katabami from "../src/index.js";
 import {
 	type ArrayDecodeIssues,
 	createIssues,
@@ -8,7 +9,6 @@ import {
 	type Issue,
 	type Issues,
 	type IssueType,
-	katabami,
 	type ObjectDecodeIssues,
 	type Primitive,
 	type RecordDecodeIssues,

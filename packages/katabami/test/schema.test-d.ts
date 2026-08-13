@@ -1,14 +1,13 @@
 import { describe, expectTypeOf, test } from "vitest";
-
-import {
-	type Decoder,
-	type DecoderSchema,
-	type Infer,
-	type Issues,
-	katabami,
-	type SchemaAsyncOf,
-	type SchemaResult,
+import type {
+	Decoder,
+	DecoderSchema,
+	Infer,
+	Issues,
+	SchemaAsyncOf,
+	SchemaResult,
 } from "../src/index.js";
+import * as katabami from "../src/index.js";
 
 type GetSchema<T extends Decoder<unknown, Issues, boolean>> = ReturnType<
 	T["getSchema"]
