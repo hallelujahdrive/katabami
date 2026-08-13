@@ -9,12 +9,11 @@ export default [
 	},
 	{
 		files: ["**/*.{js,ts}"],
-	},
-	{
 		languageOptions: {
 			parser: tsEslintParser,
 			parserOptions: {
 				project: "./tsconfig.eslint.json",
+				tsconfigRootDir: import.meta.dirname,
 			},
 		},
 		plugins: { perfectionist },

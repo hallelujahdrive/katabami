@@ -1,0 +1,31 @@
+{
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"dependencies": {
+		"katabami": "workspace:*"
+	},
+	"description": "JSON Schema generation for Katabami",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"main": "./dist/index.js",
+	"name": "@katabami/json-schema",
+	"scripts": {
+		"build": "rolldown -c",
+		"test": "vitest",
+		"test:typecheck": "vitest --typecheck"
+	},
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "0.0.0"
+}

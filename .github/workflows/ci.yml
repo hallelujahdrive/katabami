@@ -40,6 +40,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/packs"
           bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/katabami
           bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/i18next
+          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/json-schema
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,8 +52,9 @@ jobs:
           shopt -s nullglob
           katabami_tgz=("${RUNNER_TEMP}/packs"/katabami-[0-9]*.tgz)
           i18next_tgz=("${RUNNER_TEMP}/packs"/katabami-i18next-*.tgz)
+          json_schema_tgz=("${RUNNER_TEMP}/packs"/katabami-json-schema-*.tgz)
 
-          if [[ ${#katabami_tgz[@]} -ne 1 || ${#i18next_tgz[@]} -ne 1 ]]; then
+          if [[ ${#katabami_tgz[@]} -ne 1 || ${#i18next_tgz[@]} -ne 1 || ${#json_schema_tgz[@]} -ne 1 ]]; then
             echo "expected one tarball per package" >&2
             ls -la "${RUNNER_TEMP}/packs"
             exit 1
@@ -62,8 +64,8 @@ jobs:
           cd "${RUNNER_TEMP}/npm-install-check"
           npm init --yes
           npm pkg set type=module
-          npm install "${katabami_tgz[0]}" "${i18next_tgz[0]}" i18next
-          npm ls katabami @katabami/i18next i18next
+          npm install "${katabami_tgz[0]}" "${i18next_tgz[0]}" "${json_schema_tgz[0]}" i18next
+          npm ls katabami @katabami/i18next @katabami/json-schema i18next
 
       - name: Import packed packages
         working-directory: ${{ runner.temp }}/npm-install-check
@@ -71,6 +73,10 @@ jobs:
           cat > smoke.mjs <<'EOF'
           import * as katabami from "katabami";
           import { createFormatter, formatter, resources } from "@katabami/i18next";
+          import {
+            toJsonSchema,
+            toStandardJsonSchema,
+          } from "@katabami/json-schema";
           import i18next from "i18next";
 
           const result = katabami.string().decodeValue("ok");
@@ -91,6 +97,19 @@ jobs:
           const format = createFormatter(i18next.t);
           if (typeof format !== "function") {
             throw new Error("createFormatter did not return a formatter");
+          }
+
+          const json = toJsonSchema(katabami.string(), { target: "draft-2020-12" });
+          if (json.type !== "string") {
+            throw new Error("toJsonSchema failed");
+          }
+
+          const standard = toStandardJsonSchema(katabami.string());
+          const fromStandard = standard["~standard"].jsonSchema.input({
+            target: "draft-07",
+          });
+          if (fromStandard.type !== "string") {
+            throw new Error("toStandardJsonSchema failed");
           }
 
           console.log("npm install smoke test passed");
