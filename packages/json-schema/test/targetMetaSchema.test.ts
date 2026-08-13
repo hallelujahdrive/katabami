@@ -22,6 +22,7 @@ const META_SCHEMA_URI = {
 
 const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	array: katabami.array(katabami.string()),
+	at: katabami.at(["person", "name"], katabami.string()),
 	boolean: katabami.boolean(),
 	constant: katabami.constant("foo"),
 	decoderSchema: { kind: "string" },

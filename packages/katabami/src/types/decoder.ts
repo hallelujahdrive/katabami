@@ -1,3 +1,4 @@
+import type { TypeKeys } from "./format.js";
 import type { Resolved, UnionToTuple } from "./helpers.js";
 import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue.js";
 import type { DecoderSchema } from "./schema.js";
@@ -23,6 +24,21 @@ export type ArrayDecodeResponse<T extends Decoder<unknown>> =
 			? A[]
 			: Promise<Resolved<A>[]>
 		: never;
+
+/**
+ * The decoder produced by nested field access.
+ */
+export type AtDecoder<
+	U extends Decoder<unknown, Issues, boolean>,
+	K extends readonly string[],
+> = number extends K["length"]
+	? AtFieldDecoder<U, string>
+	: K extends readonly [
+				infer Head extends string,
+				...infer Tail extends readonly string[],
+			]
+		? AtFieldDecoder<AtDecoder<U, Tail>, Head>
+		: U;
 
 /**
  * The catch function for a decoder.
@@ -408,6 +424,27 @@ type _UnionDecoders<T extends unknown[]> = T extends [infer A, ...infer B]
 		? [Decoder<A>, ..._UnionDecoders<B>]
 		: [Decoder<A>]
 	: [];
+
+/**
+ * A field decoder wrapping another decoder.
+ */
+type AtFieldDecoder<
+	U extends Decoder<unknown, Issues, boolean>,
+	K extends string,
+> = Decoder<
+	FieldDecodeResponse<U>,
+	FieldDecodeIssues<
+		U,
+		| Issue<"field", "issue.invalidObjectField", { key: K }>
+		| Issue<
+				"field",
+				"issue.unexpectedType",
+				{ expected: "type.object"; received: TypeKeys }
+		  >,
+		K
+	>,
+	SchemaAsyncOf<U>
+>;
 
 /**
  * The helper type to check if a record has a promise.

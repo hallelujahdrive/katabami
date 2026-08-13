@@ -161,6 +161,39 @@ describe("issues", () => {
 		});
 	});
 
+	describe("at decoder", () => {
+		const decoder = katabami.at(["foo", "bar"], katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("missing nested field", () => {
+			const result = decoder.decodeValue({ foo: {} });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Object property "foo" failed validation.',
+			);
+			expect(
+				getIssueMessage(result.error?.issues?.foo)?.format(),
+			).toStrictEqual('Object property "bar" failed validation.');
+		});
+	});
+
 	describe("float decoder", () => {
 		const decoder = katabami.float();
 
@@ -290,6 +323,39 @@ describe("issues", () => {
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
 			);
+		});
+	});
+
+	describe("at decoder", () => {
+		const decoder = katabami.at(["foo", "bar"], katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("missing nested field", () => {
+			const result = decoder.decodeValue({ foo: {} });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Object property "foo" failed validation.',
+			);
+			expect(
+				getIssueMessage(result.error?.issues?.foo)?.format(),
+			).toStrictEqual('Object property "bar" failed validation.');
 		});
 	});
 

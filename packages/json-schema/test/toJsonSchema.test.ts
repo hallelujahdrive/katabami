@@ -163,6 +163,25 @@ describe("toJsonSchema", () => {
 		});
 	});
 
+	test("converts nested at fields", () => {
+		expect(
+			toJsonSchema(katabami.at(["person", "name"], katabami.string())),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				person: {
+					properties: {
+						name: { type: "string" },
+					},
+					required: ["name"],
+					type: "object",
+				},
+			},
+			required: ["person"],
+			type: "object",
+		});
+	});
+
 	test("converts map of fields to an object schema", () => {
 		const decoder = katabami.map(
 			(name, age) => ({ age, name }),

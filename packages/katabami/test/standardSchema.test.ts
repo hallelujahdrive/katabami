@@ -139,6 +139,147 @@ describe("StandardSchemaV1", () => {
 		});
 	});
 
+	describe("at", () => {
+		describe("sync", () => {
+			const decoder = katabami.at(["foo", "bar"], katabami.string());
+
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, { foo: { bar: "baz" } }, {
+						value: "baz",
+					} as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(
+						decoder,
+						{ foo: { baz: "baz" } },
+						{
+							issues: [
+								{
+									message: 'Object property "foo" failed validation.',
+									path: undefined,
+								},
+								{
+									message: 'Object property "bar" failed validation.',
+									path: ["foo"],
+								},
+								{
+									message: "Expected string, but received undefined.",
+									path: ["foo", "bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+
+			describe("validate parsed string", () => {
+				test("success", () => {
+					expectValidateSync(decoder, JSON.parse('{"foo":{"bar":"baz"}}'), {
+						value: "baz",
+					} as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, JSON.parse('{"foo":{"baz":"baz"}}'), {
+						issues: [
+							{
+								message: 'Object property "foo" failed validation.',
+								path: undefined,
+							},
+							{
+								message: 'Object property "bar" failed validation.',
+								path: ["foo"],
+							},
+							{
+								message: "Expected string, but received undefined.",
+								path: ["foo", "bar"],
+							},
+						],
+					});
+				});
+			});
+		});
+
+		describe("async", () => {
+			const decoder = katabami.at(
+				["foo", "bar"],
+				katabami.string().andThen((value) => {
+					return new Promise<Decoder<string, never>>((resolve) =>
+						resolve(katabami.succeed(value)),
+					);
+				}),
+			);
+
+			describe("validate value", () => {
+				test("success", async () => {
+					await expectValidateAsync(decoder, { foo: { bar: "baz" } }, {
+						value: "baz",
+					} as const);
+				});
+
+				test("fail", async () => {
+					await expectValidateAsync(
+						decoder,
+						{ foo: { baz: "baz" } },
+						{
+							issues: [
+								{
+									message: 'Object property "foo" failed validation.',
+									path: undefined,
+								},
+								{
+									message: 'Object property "bar" failed validation.',
+									path: ["foo"],
+								},
+								{
+									message: "Expected string, but received undefined.",
+									path: ["foo", "bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+
+			describe("validate parsed string", () => {
+				test("success", async () => {
+					await expectValidateAsync(
+						decoder,
+						JSON.parse('{"foo":{"bar":"baz"}}'),
+						{
+							value: "baz",
+						} as const,
+					);
+				});
+
+				test("fail", async () => {
+					await expectValidateAsync(
+						decoder,
+						JSON.parse('{"foo":{"baz":"baz"}}'),
+						{
+							issues: [
+								{
+									message: 'Object property "foo" failed validation.',
+									path: undefined,
+								},
+								{
+									message: 'Object property "bar" failed validation.',
+									path: ["foo"],
+								},
+								{
+									message: "Expected string, but received undefined.",
+									path: ["foo", "bar"],
+								},
+							],
+						},
+					);
+				});
+			});
+		});
+	});
+
 	describe("boolean", () => {
 		const decoder = katabami.boolean();
 

@@ -176,6 +176,20 @@ describe("getSchema", () => {
 		});
 	});
 
+	test("at", () => {
+		expect(
+			katabami.at(["person", "name"], katabami.string()).getSchema(),
+		).toEqual({
+			key: "person",
+			kind: "field",
+			schema: {
+				key: "name",
+				kind: "field",
+				schema: { kind: "string" },
+			},
+		});
+	});
+
 	test("map", () => {
 		const decoder = katabami.map(
 			(name, age) => ({ age, name }),

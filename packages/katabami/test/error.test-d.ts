@@ -98,6 +98,18 @@ describe("DecodeError", () => {
 		});
 	});
 
+	test("at", () => {
+		const _decoder = katabami.at(["foo", "bar"], katabami.string());
+		const _field = katabami.field(
+			"foo",
+			katabami.field("bar", katabami.string()),
+		);
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			GetVars<typeof _field>
+		>();
+	});
+
 	test("boolean", () => {
 		const _decoder = katabami.boolean();
 

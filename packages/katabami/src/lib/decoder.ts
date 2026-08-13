@@ -1,6 +1,7 @@
 import type {
 	ArrayDecodeIssues,
 	ArrayDecodeResponse,
+	AtDecoder,
 	Awaitable,
 	CatchFunction,
 	DecodeResult,
@@ -1448,6 +1449,30 @@ export function array<T, U extends IDecoder<T> = IDecoder<T>>(
 		arraySchemaDescriptor(decoder),
 		isDecoderAsync(decoder),
 	);
+}
+
+/**
+ * Create a decoder that decodes a nested field.
+ *
+ * `at(["person", "name"], string())` is equivalent to
+ * `field("person", field("name", string()))`.
+ *
+ * @template T - The type of the value.
+ * @template {IDecoder<T>} U - The decoder to use.
+ * @template {readonly string[]} K - The nested field names.
+ * @param {K} keys - The nested field names.
+ * @param {IDecoder<T>} decoder - The decoder to use.
+ * @returns {AtDecoder<U, K>} A decoder that decodes a nested field.
+ */
+export function at<
+	T,
+	U extends IDecoder<T> = IDecoder<T>,
+	const K extends readonly string[] = readonly string[],
+>(keys: K, decoder: U): AtDecoder<U, K> {
+	return keys.reduceRight(
+		(acc: IDecoder<unknown, Issues, boolean>, key) => field(key, acc),
+		decoder,
+	) as AtDecoder<U, K>;
 }
 
 /**

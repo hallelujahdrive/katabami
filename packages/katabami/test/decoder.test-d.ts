@@ -40,6 +40,58 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("at", () => {
+		describe("sync", () => {
+			test("fixed", () => {
+				const _decoder = katabami.at<string>(["foo", "bar"], katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami.at(["foo", "bar"], katabami.string());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
+			});
+
+			test("equivalent to nested field", () => {
+				const _at = katabami.at(["foo", "bar"], katabami.string());
+				const _field = katabami.field(
+					"foo",
+					katabami.field("bar", katabami.string()),
+				);
+
+				expectTypeOf<Infer<typeof _at>>().toEqualTypeOf<Infer<typeof _field>>();
+			});
+		});
+
+		describe("async", () => {
+			test("fixed", () => {
+				const _decoder = katabami
+					.at<string>(["foo", "bar"], katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+
+			test("complement", () => {
+				const _decoder = katabami
+					.at(["foo", "bar"], katabami.string())
+					.andThen((value) => {
+						return new Promise<Decoder<string>>((resolve) =>
+							resolve(katabami.succeed(value)),
+						);
+					});
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
+			});
+		});
+	});
+
 	describe("boolean", () => {
 		test("fixed", () => {
 			const _decoder = katabami.boolean();
