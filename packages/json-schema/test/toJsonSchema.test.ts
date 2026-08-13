@@ -1,5 +1,5 @@
 import * as katabami from "katabami";
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
 	type StandardJSONSchemaV1,
 	toJsonSchema,
@@ -7,7 +7,7 @@ import {
 } from "../src/index.js";
 
 describe("toJsonSchema", () => {
-	it("converts primitives", () => {
+	test("converts primitives", () => {
 		expect(toJsonSchema(katabami.string())).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
@@ -32,7 +32,7 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	it("converts constants by target", () => {
+	test("converts constants by target", () => {
 		expect(toJsonSchema(katabami.constant("foo"))).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			const: "foo",
@@ -44,7 +44,7 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	it("converts object, array, record, tuple, and union", () => {
+	test("converts object, array, record, tuple, and union", () => {
 		expect(
 			toJsonSchema(
 				katabami.object({
@@ -97,6 +97,19 @@ describe("toJsonSchema", () => {
 		});
 
 		expect(
+			toJsonSchema(katabami.tuple(katabami.string(), katabami.int()), {
+				target: "openapi-3.0",
+			}),
+		).toEqual({
+			items: {
+				anyOf: [{ type: "string" }, { type: "integer" }],
+			},
+			maxItems: 2,
+			minItems: 2,
+			type: "array",
+		});
+
+		expect(
 			toJsonSchema(katabami.union(katabami.string(), katabami.int())),
 		).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
@@ -104,7 +117,7 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	it("converts optional and openapi nullable", () => {
+	test("converts optional and openapi nullable", () => {
 		expect(toJsonSchema(katabami.optional(katabami.string()))).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: ["string", "null"],
@@ -119,7 +132,7 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	it("converts map of fields to an object schema", () => {
+	test("converts map of fields to an object schema", () => {
 		const decoder = katabami.map(
 			(name, age) => ({ age, name }),
 			katabami.field("name", katabami.string()),
@@ -137,20 +150,20 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	it("accepts DecoderSchema directly", () => {
+	test("accepts DecoderSchema directly", () => {
 		expect(toJsonSchema({ kind: "string" })).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
 		});
 	});
 
-	it("throws for unsupported targets", () => {
+	test("throws for unsupported targets", () => {
 		expect(() =>
 			toJsonSchema(katabami.string(), { target: "draft-04" }),
 		).toThrow("Unsupported target: draft-04");
 	});
 
-	it("throws for async schemas", () => {
+	test("throws for async schemas", () => {
 		const decoder = katabami.lazy(() =>
 			Promise.resolve(katabami.object({ name: katabami.string() })),
 		);
@@ -160,7 +173,7 @@ describe("toJsonSchema", () => {
 });
 
 describe("toStandardJsonSchema", () => {
-	it("implements StandardJSONSchemaV1", () => {
+	test("implements StandardJSONSchemaV1", () => {
 		const schema = toStandardJsonSchema(katabami.string());
 
 		expect(schema).toSatisfy(
@@ -186,7 +199,7 @@ describe("toStandardJsonSchema", () => {
 		});
 	});
 
-	it("preserves Standard Schema validate", () => {
+	test("preserves Standard Schema validate", () => {
 		const schema = toStandardJsonSchema(katabami.string());
 		const ok = schema["~standard"].validate("hello");
 		const ng = schema["~standard"].validate(1);

@@ -41,20 +41,47 @@ const convertTuple = (
 	const converted = elements.map((element) => convertSchema(element, target));
 
 	if (target === "draft-2020-12") {
-		return {
+		const result: JsonSchema = {
 			items: false,
-			prefixItems: converted,
 			type: "array",
 		};
+
+		if (converted.length > 0) {
+			result.prefixItems = converted;
+		}
+
+		return result;
 	}
 
-	return {
+	if (target === "openapi-3.0") {
+		const result: JsonSchema = {
+			maxItems: converted.length,
+			minItems: converted.length,
+			type: "array",
+		};
+		const [onlyItem] = converted;
+
+		if (converted.length === 1 && onlyItem !== undefined) {
+			result.items = onlyItem;
+		} else if (converted.length > 1) {
+			result.items = { anyOf: converted };
+		}
+
+		return result;
+	}
+
+	const result: JsonSchema = {
 		additionalItems: false,
-		items: converted,
 		maxItems: converted.length,
 		minItems: converted.length,
 		type: "array",
 	};
+
+	if (converted.length > 0) {
+		result.items = converted;
+	}
+
+	return result;
 };
 
 const convertObject = (
@@ -142,6 +169,13 @@ const convertIndex = (
 	schema: DecoderSchema,
 	target: SupportedTarget,
 ): JsonSchema => {
+	if (target === "openapi-3.0") {
+		return {
+			minItems: index + 1,
+			type: "array",
+		};
+	}
+
 	const item = convertSchema(schema, target);
 	const items = Array.from({ length: index + 1 }, (_, i) =>
 		i === index ? item : true,

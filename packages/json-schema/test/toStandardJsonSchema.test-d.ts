@@ -1,13 +1,13 @@
 import type { StandardJSONSchemaV1 as SpecStandardJSONSchemaV1 } from "@standard-schema/spec";
 import * as katabami from "katabami";
-import { describe, expectTypeOf, it } from "vitest";
+import { describe, expectTypeOf, test } from "vitest";
 import {
 	type StandardJSONSchemaV1,
 	toStandardJsonSchema,
 } from "../src/index.js";
 
 describe("toStandardJsonSchema types", () => {
-	it("satisfies StandardJSONSchemaV1", () => {
+	test("satisfies StandardJSONSchemaV1", () => {
 		const schema = toStandardJsonSchema(katabami.string());
 
 		expectTypeOf(schema).toExtend<StandardJSONSchemaV1<string>>();
