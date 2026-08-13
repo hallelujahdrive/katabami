@@ -32,6 +32,71 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build packages
+        run: bun run build
+
+      - name: Pack packages
+        run: |
+          mkdir -p "${RUNNER_TEMP}/packs"
+          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/katabami
+          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/i18next
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install packed packages with npm
+        run: |
+          shopt -s nullglob
+          katabami_tgz=("${RUNNER_TEMP}/packs"/katabami-[0-9]*.tgz)
+          i18next_tgz=("${RUNNER_TEMP}/packs"/katabami-i18next-*.tgz)
+
+          if [[ ${#katabami_tgz[@]} -ne 1 || ${#i18next_tgz[@]} -ne 1 ]]; then
+            echo "expected one tarball per package" >&2
+            ls -la "${RUNNER_TEMP}/packs"
+            exit 1
+          fi
+
+          mkdir -p "${RUNNER_TEMP}/npm-install-check"
+          cd "${RUNNER_TEMP}/npm-install-check"
+          npm init --yes
+          npm pkg set type=module
+          npm install "${katabami_tgz[0]}" "${i18next_tgz[0]}" i18next
+          npm ls katabami @katabami/i18next i18next
+
+      - name: Import packed packages
+        working-directory: ${{ runner.temp }}/npm-install-check
+        run: |
+          cat > smoke.mjs <<'EOF'
+          import * as katabami from "katabami";
+          import { createFormatter, formatter, resources } from "@katabami/i18next";
+          import i18next from "i18next";
+
+          const result = katabami.string().decodeValue("ok");
+          if (!result.ok || result.value !== "ok") {
+            throw new Error("katabami decode failed");
+          }
+
+          if (typeof createFormatter !== "function") {
+            throw new Error("createFormatter is missing");
+          }
+          if (formatter?.type !== "formatter") {
+            throw new Error("i18next formatter module is missing");
+          }
+          if (resources.en == null || resources.ja == null) {
+            throw new Error("i18next resources are missing");
+          }
+
+          const format = createFormatter(i18next.t);
+          if (typeof format !== "function") {
+            throw new Error("createFormatter did not return a formatter");
+          }
+
+          console.log("npm install smoke test passed");
+          EOF
+          node smoke.mjs
+
   build:
     name: Build
     runs-on: ubuntu-latest
