@@ -650,7 +650,7 @@ const decodeArrayFunc =
 			| Issue<"array", "issue.invalidArrayElements", undefined>
 			| Issue<
 					"array",
-					"issue.unexpectedValue",
+					"issue.unexpectedType",
 					{ expected: "type.array"; received: TypeKeys }
 			  >
 		>
@@ -660,14 +660,14 @@ const decodeArrayFunc =
 			return {
 				error: new DecodeError(
 					"Array expected",
-					createIssues("array", "issue.unexpectedValue", {
+					createIssues("array", "issue.unexpectedType", {
 						expected: "type.array",
 						received: typeOf(value),
 					}) as ArrayDecodeIssues<
 						U,
 						Issue<
 							"array",
-							"issue.unexpectedValue",
+							"issue.unexpectedType",
 							{ expected: "type.array"; received: TypeKeys }
 						>
 					>,

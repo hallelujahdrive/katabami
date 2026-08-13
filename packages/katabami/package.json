@@ -4,9 +4,20 @@
 		"url": "https://github.com/hallelujahdrive/katabami/issues"
 	},
 	"description": "Katabami is a JSON decoding library",
+	"exports": {
+		".": {
+			"default": "./src/index.ts",
+			"types": "./src/index.ts"
+		}
+	},
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
 	"license": "WTFPL",
 	"name": "katabami",
+	"scripts": {
+		"test": "vitest",
+		"test:typecheck": "vitest --typecheck"
+	},
 	"type": "module",
+	"types": "./src/index.ts",
 	"version": "0.0.0"
 }

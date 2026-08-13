@@ -35,8 +35,8 @@
 		"lint": "biome lint . && eslint .",
 		"lint:fix": "biome lint --write . && eslint . --fix",
 		"prepare": "husky",
-		"test": "vitest",
-		"test:typecheck": "vitest --typecheck",
+		"test": "bun run --filter './packages/*' test",
+		"test:typecheck": "bun run --filter './packages/*' test:typecheck",
 		"types:check": "tsc --noEmit --pretty"
 	},
 	"type": "module",

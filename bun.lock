@@ -22,7 +22,7 @@
     "packages/i18next": {
       "name": "@katabami/i18next",
       "version": "0.0.0",
-      "dependencies": {
+      "devDependencies": {
         "katabami": "workspace:*",
       },
       "peerDependencies": {

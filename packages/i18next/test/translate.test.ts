@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import i18next from "i18next";
 import {
 	createIssues,
 	DecodeError,
@@ -6,36 +6,30 @@ import {
 	getIssueMessage,
 	katabami,
 	unflattenIssues,
-} from "../src/index.js";
+} from "katabami";
+import { describe, expect, test } from "vitest";
+import { createFormatter } from "../src";
 
-describe("issues", () => {
+describe("translate", () => {
+	const formatter = createFormatter(i18next.t, { lng: "ja" });
+
 	describe("array decoder", () => {
 		const decoder = katabami.array(katabami.string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
 
-			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected array, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("配列が期待されましたが、数値でした。");
 		});
 
 		test("unexpected value", () => {
 			const result = decoder.decodeValue([1]);
 
-			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
-				ok: false,
-			});
-
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received number.");
+				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -45,14 +39,9 @@ describe("issues", () => {
 		test("unexpected type", () => {
 			const result = decoder.decodeValue("foo");
 
-			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected boolean, but received string.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("真偽値が期待されましたが、文字列でした。");
 		});
 	});
 
@@ -62,14 +51,9 @@ describe("issues", () => {
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
 
-			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Expected "foo", but received 1.',
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('"foo"が期待されましたが、1でした。');
 		});
 	});
 
@@ -79,14 +63,9 @@ describe("issues", () => {
 		test("default message", () => {
 			const result = decoder.decodeValue("foo");
 
-			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Failed to decode.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("デコードに失敗しました。");
 		});
 	});
 
@@ -101,9 +80,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
 		});
 
 		test("missing field", () => {
@@ -114,8 +93,10 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Object property "foo" failed validation.',
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual(
+				'オブジェクトプロパティ"foo"のバリデーションに失敗しました。',
 			);
 		});
 
@@ -147,9 +128,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected float, but received string.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("浮動小数点数が期待されましたが、文字列でした。");
 		});
 	});
 
@@ -164,9 +145,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected array, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("配列が期待されましたが、数値でした。");
 		});
 
 		test("out of bounds", () => {
@@ -177,13 +158,13 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Array index "0" failed validation.',
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('配列のインデックス"0"のバリデーションに失敗しました。');
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received undefined.");
+				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、undefinedでした。");
 		});
 
 		test("unexpected value", () => {
@@ -194,13 +175,13 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Array index "0" failed validation.',
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('配列のインデックス"0"のバリデーションに失敗しました。');
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received number.");
+				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -215,9 +196,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected number, but received string.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("数値が期待されましたが、文字列でした。");
 		});
 
 		test("value is not an integer", () => {
@@ -228,9 +209,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected integer, but received float.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("整数が期待されましたが、浮動小数点数でした。");
 		});
 	});
 
@@ -249,9 +230,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
 		});
 
 		test("missing field", () => {
@@ -262,8 +243,10 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Object property "foo" failed validation.',
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual(
+				'オブジェクトプロパティ"foo"のバリデーションに失敗しました。',
 			);
 		});
 	});
@@ -281,9 +264,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
 		});
 
 		test("invalid object", () => {
@@ -294,13 +277,15 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"One or more object properties failed validation.",
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual(
+				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual("Expected string, but received number.");
+				getIssueMessage(result.error?.issues?.foo)?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -315,9 +300,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
 		});
 
 		test("invalid record", () => {
@@ -328,13 +313,15 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"One or more record properties failed validation.",
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual(
+				"1つ以上のレコードプロパティのバリデーションに失敗しました。",
 			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual("Expected string, but received number.");
+				getIssueMessage(result.error?.issues?.foo)?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -349,9 +336,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected string, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -366,9 +353,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected array, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("配列が期待されましたが、数値でした。");
 		});
 
 		test("invalid array length", () => {
@@ -379,9 +366,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected array length 2, but received 1.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("配列の長さは2が期待されましたが、1でした。");
 		});
 
 		test("unexpected element type", () => {
@@ -392,16 +379,16 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"One or more array elements failed validation.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("1つ以上の配列要素のバリデーションに失敗しました。");
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received undefined.");
+				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、undefinedでした。");
 
 			expect(
-				getIssueMessage(result.error?.issues?.[1])?.format(),
+				getIssueMessage(result.error?.issues?.[1])?.format(formatter),
 			).toStrictEqual(undefined);
 		});
 	});
@@ -417,17 +404,17 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"None of the union members matched.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("ユニオンのメンバーのいずれにも一致しませんでした。");
 
-			expect(getIssueMessage(result.error?.issues[0])?.format()).toStrictEqual(
-				"Expected string, but received boolean.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues[0])?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、真偽値でした。");
 
-			expect(getIssueMessage(result.error?.issues[1])?.format()).toStrictEqual(
-				"Expected number, but received boolean.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues[1])?.format(formatter),
+			).toStrictEqual("数値が期待されましたが、真偽値でした。");
 		});
 
 		describe("nested union", () => {
@@ -444,21 +431,21 @@ describe("issues", () => {
 					ok: false,
 				});
 
-				expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-					"None of the union members matched.",
-				);
+				expect(
+					getIssueMessage(result.error?.issues)?.format(formatter),
+				).toStrictEqual("ユニオンのメンバーのいずれにも一致しませんでした。");
 
 				expect(
-					getIssueMessage(result.error?.issues[0])?.format(),
-				).toStrictEqual('Expected "foo", but received 1.');
+					getIssueMessage(result.error?.issues[0])?.format(formatter),
+				).toStrictEqual('"foo"が期待されましたが、1でした。');
 
 				expect(
-					getIssueMessage(result.error?.issues[1])?.format(),
-				).toStrictEqual('Expected "bar", but received 1.');
+					getIssueMessage(result.error?.issues[1])?.format(formatter),
+				).toStrictEqual('"bar"が期待されましたが、1でした。');
 
 				expect(
-					getIssueMessage(result.error?.issues[2])?.format(),
-				).toStrictEqual('Expected "baz", but received 1.');
+					getIssueMessage(result.error?.issues[2])?.format(formatter),
+				).toStrictEqual('"baz"が期待されましたが、1でした。');
 			});
 		});
 	});
@@ -474,9 +461,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				'Expected "foo", but received "bar".',
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('"foo"が期待されましたが、"bar"でした。');
 		});
 
 		test("catch", () => {
@@ -497,9 +484,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Custom issue",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("Custom issue");
 		});
 
 		test("map", () => {
@@ -512,9 +499,9 @@ describe("issues", () => {
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"Expected string, but received number.",
-			);
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
 
@@ -529,17 +516,17 @@ describe("issues", () => {
 			if (result.ok) return;
 
 			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
+				flattenIssues(result.error.issues, formatter),
 			);
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
-				"One or more object properties failed validation.",
+				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 			);
 			expect(getIssueMessage(restored.foo)?.format()).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 			expect(getIssueMessage(restored.foo)?.message).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 		});
 
@@ -555,20 +542,20 @@ describe("issues", () => {
 			if (result.ok) return;
 
 			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
+				flattenIssues(result.error.issues, formatter),
 			);
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
-				"One or more object properties failed validation.",
+				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 			);
 			expect(getIssueMessage(restored.foo)?.format()).toStrictEqual(
-				"One or more object properties failed validation.",
+				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 			);
 			expect(getIssueMessage(restored.foo?.bar)?.format()).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 			expect(getIssueMessage(restored.foo?.bar)?.message).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 		});
 
@@ -580,17 +567,17 @@ describe("issues", () => {
 			if (result.ok) return;
 
 			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
+				flattenIssues(result.error.issues, formatter),
 			);
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
-				"One or more array elements failed validation.",
+				"1つ以上の配列要素のバリデーションに失敗しました。",
 			);
 			expect(getIssueMessage(restored[0])?.format()).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
-				"Expected string, but received boolean.",
+				"文字列が期待されましたが、真偽値でした。",
 			);
 		});
 
@@ -601,16 +588,18 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(
+				flattenIssues(result.error.issues, formatter),
+			);
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
-				"None of the union members matched.",
+				"ユニオンのメンバーのいずれにも一致しませんでした。",
 			);
 			expect(getIssueMessage(restored[0])?.format()).toStrictEqual(
-				"Expected string, but received boolean.",
+				"文字列が期待されましたが、真偽値でした。",
 			);
 			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
-				"Expected number, but received boolean.",
+				"数値が期待されましたが、真偽値でした。",
 			);
 		});
 
@@ -622,14 +611,14 @@ describe("issues", () => {
 			if (result.ok) return;
 
 			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
+				flattenIssues(result.error.issues, formatter),
 			);
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 			expect(getIssueMessage(restored)?.message).toStrictEqual(
-				"Expected string, but received number.",
+				"文字列が期待されましたが、数値でした。",
 			);
 		});
 
