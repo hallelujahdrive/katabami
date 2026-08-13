@@ -321,34 +321,63 @@ describe("StandardSchemaV1", () => {
 	});
 
 	describe("constant", () => {
-		const decoder = katabami.constant("foo");
+		describe("string", () => {
+			const decoder = katabami.constant("foo");
 
-		describe("validate value", () => {
-			test("success", () => {
-				expectValidateSync(decoder, "foo", { value: "foo" } as const);
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, "foo", { value: "foo" } as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, "bar", {
+						issues: [
+							{
+								message: 'Expected "foo", but received "bar".',
+								path: undefined,
+							},
+						],
+					});
+				});
 			});
 
-			test("fail", () => {
-				expectValidateSync(decoder, "bar", {
-					issues: [
-						{ message: 'Expected "foo", but received "bar".', path: undefined },
-					],
+			describe("validate parsed string", () => {
+				test("success", () => {
+					expectValidateSync(decoder, JSON.parse('"foo"'), {
+						value: "foo",
+					} as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, JSON.parse('"bar"'), {
+						issues: [
+							{
+								message: 'Expected "foo", but received "bar".',
+								path: undefined,
+							},
+						],
+					});
 				});
 			});
 		});
 
-		describe("validate parsed string", () => {
-			test("success", () => {
-				expectValidateSync(decoder, JSON.parse('"foo"'), {
-					value: "foo",
-				} as const);
-			});
+		describe("null", () => {
+			const decoder = katabami.constant(null);
 
-			test("fail", () => {
-				expectValidateSync(decoder, JSON.parse('"bar"'), {
-					issues: [
-						{ message: 'Expected "foo", but received "bar".', path: undefined },
-					],
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, null, { value: null } as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, "foo", {
+						issues: [
+							{
+								message: 'Expected null, but received "foo".',
+								path: undefined,
+							},
+						],
+					});
 				});
 			});
 		});

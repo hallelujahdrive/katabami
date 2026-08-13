@@ -55,6 +55,14 @@ describe("translate", () => {
 				getIssueMessage(result.error?.issues)?.format(formatter),
 			).toStrictEqual('"foo"が期待されましたが、1でした。');
 		});
+
+		test("null constant", () => {
+			const result = katabami.constant(null).decodeValue("foo");
+
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('nullが期待されましたが、"foo"でした。');
+		});
 	});
 
 	describe("failed decoder", () => {

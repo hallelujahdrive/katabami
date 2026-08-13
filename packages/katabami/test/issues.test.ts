@@ -71,6 +71,19 @@ describe("issues", () => {
 				'Expected "foo", but received 1.',
 			);
 		});
+
+		test("null constant", () => {
+			const result = katabami.constant(null).decodeValue("foo");
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				'Expected null, but received "foo".',
+			);
+		});
 	});
 
 	describe("failed decoder", () => {

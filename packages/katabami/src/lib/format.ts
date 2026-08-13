@@ -67,8 +67,8 @@ export const defaultFormatter: Formatter = (issue) => {
 		const [key, format] = p1.split(",").map((p: string) => p.trim());
 
 		const value = vars?.[key];
-		if (value == null || typeof value !== "string") {
-			return value ?? key;
+		if (value === undefined || typeof value !== "string") {
+			return value === undefined ? key : String(value);
 		}
 
 		const _value =

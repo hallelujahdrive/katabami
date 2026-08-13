@@ -263,47 +263,95 @@ describe("decoder", () => {
 	});
 
 	describe("constant", () => {
-		const decoder = katabami.constant("foo");
+		describe("string", () => {
+			const decoder = katabami.constant("foo");
 
-		describe("decode value", () => {
-			test("success", () => {
-				const result = decoder.decodeValue("foo");
+			describe("decode value", () => {
+				test("success", () => {
+					const result = decoder.decodeValue("foo");
 
-				const expectedResult = { ok: true, value: "foo" } as const;
+					const expectedResult = { ok: true, value: "foo" } as const;
 
-				expect(result).toStrictEqual(expectedResult);
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeValue("bar");
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
 			});
 
-			test("fail", () => {
-				const result = decoder.decodeValue("bar");
+			describe("decode string", () => {
+				test("success", () => {
+					const result = decoder.decodeString('"foo"');
 
-				const expectedResult = {
-					error: expect.any(DecodeError),
-					ok: false,
-				} as const;
+					const expectedResult = { ok: true, value: "foo" } as const;
 
-				expect(result).toStrictEqual(expectedResult);
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeString('"bar"');
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
 			});
 		});
 
-		describe("decode string", () => {
-			test("success", () => {
-				const result = decoder.decodeString('"foo"');
+		describe("null", () => {
+			const decoder = katabami.constant(null);
 
-				const expectedResult = { ok: true, value: "foo" } as const;
+			describe("decode value", () => {
+				test("success", () => {
+					const result = decoder.decodeValue(null);
 
-				expect(result).toStrictEqual(expectedResult);
+					const expectedResult = { ok: true, value: null } as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeValue("foo");
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
 			});
 
-			test("fail", () => {
-				const result = decoder.decodeString('"bar"');
+			describe("decode string", () => {
+				test("success", () => {
+					const result = decoder.decodeString("null");
 
-				const expectedResult = {
-					error: expect.any(DecodeError),
-					ok: false,
-				} as const;
+					const expectedResult = { ok: true, value: null } as const;
 
-				expect(result).toStrictEqual(expectedResult);
+					expect(result).toStrictEqual(expectedResult);
+				});
+
+				test("fail", () => {
+					const result = decoder.decodeString('"foo"');
+
+					const expectedResult = {
+						error: expect.any(DecodeError),
+						ok: false,
+					} as const;
+
+					expect(result).toStrictEqual(expectedResult);
+				});
 			});
 		});
 	});

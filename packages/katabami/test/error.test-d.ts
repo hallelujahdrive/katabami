@@ -128,6 +128,15 @@ describe("DecodeError", () => {
 		}>();
 	});
 
+	test("constant null", () => {
+		const _decoder = katabami.constant(null);
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: null;
+			received: Primitive;
+		}>();
+	});
+
 	test("int", () => {
 		const _decoder = katabami.int();
 

@@ -117,6 +117,12 @@ describe("Decoder", () => {
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"foo">();
 		});
 
+		test("null", () => {
+			const _decoder = katabami.constant(null);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null>();
+		});
+
 		test("promise", () => {
 			const _decoder = katabami.constant("foo").andThen((value) => {
 				return new Promise<Decoder<"foo">>((resolve) =>

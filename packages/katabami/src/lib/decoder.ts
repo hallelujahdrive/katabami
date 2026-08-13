@@ -1496,11 +1496,11 @@ export function boolean(): IDecoder<
 /**
  * A decoder that always returns the same value.
  *
- * @template {boolean | number | string} T The type of the value.
+ * @template {Primitive} T The type of the value.
  * @param {T} expected The value to return.
  * @returns {IDecoder<T, Issues<"constant", Issue<"constant", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that always returns the given value.
  */
-export function constant<T extends boolean | number | string>(
+export function constant<T extends Primitive>(
 	expected: T,
 ): IDecoder<
 	T,

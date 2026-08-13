@@ -65,7 +65,9 @@ type PrimitiveTypeOf<T extends Primitive> = boolean extends T
 		? "number"
 		: string extends T
 			? "string"
-			: "constant";
+			: T extends null
+				? "null"
+				: "constant";
 
 type UnionToIntersection<U> = (
 	U extends unknown

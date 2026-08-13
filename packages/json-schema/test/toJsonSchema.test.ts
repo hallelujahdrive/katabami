@@ -42,6 +42,15 @@ describe("toJsonSchema", () => {
 		).toEqual({
 			enum: ["foo"],
 		});
+		expect(toJsonSchema(katabami.constant(null))).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			const: null,
+		});
+		expect(
+			toJsonSchema(katabami.constant(null), { target: "openapi-3.0" }),
+		).toEqual({
+			enum: [null],
+		});
 	});
 
 	test("converts object, array, record, tuple, and union", () => {

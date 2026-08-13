@@ -17,6 +17,10 @@ describe("getSchema", () => {
 			kind: "constant",
 			value: "foo",
 		});
+		expect(katabami.constant(null).getSchema()).toEqual({
+			kind: "constant",
+			value: null,
+		});
 	});
 
 	describe("array", () => {

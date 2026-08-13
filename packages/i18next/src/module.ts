@@ -4,10 +4,21 @@ import type { Primitive } from "katabami";
 /**
  * The format function for the quote string.
  * @param {Primitive} value - The value to format.
- * @returns {`"${string}"` | boolean | number} The formatted value.
+ * @returns {"null" | `"${string}"` | boolean | number} The formatted value.
  */
-const quoteString = (value: Primitive): `"${string}"` | boolean | number =>
-	typeof value === "string" ? `"${value}"` : value;
+const quoteString = (
+	value: Primitive,
+): "null" | `"${string}"` | boolean | number => {
+	if (typeof value === "string") {
+		return `"${value}"`;
+	}
+
+	if (value === null) {
+		return "null";
+	}
+
+	return value;
+};
 
 /**
  * The formatter module for the katabami.
