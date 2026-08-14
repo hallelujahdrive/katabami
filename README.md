@@ -30,6 +30,27 @@ Katabami is a decoder library.
 - **A minimal type DSL, in the spirit of elm/json.** The combinators are the
   types themselves (`string`, `int`, `object`, `union`, …). You compose those
   into the shape you want to recover. There is no separate constraint language.
+- **Types flow both ways.** `katabami.Infer` reads the decoded type off a
+  decoder. The same combinators also take a generic, so you can start from a
+  type and build a decoder that must match it.
+
+```ts
+import * as katabami from "katabami";
+
+const fromDecoder = katabami.object({
+	age: katabami.int(),
+	name: katabami.string(),
+});
+
+type User = katabami.Infer<typeof fromDecoder>;
+// { age: number; name: string }
+
+const fromType = katabami.object<User>({
+	age: katabami.int(),
+	name: katabami.string(),
+});
+```
+
 - **Async and sync compose the same way.** A decoder that returns a `Promise`
   (`map`, `andThen`, `lazy`) nests inside `object`, `array`, and the rest
   exactly like a synchronous one. Decoding still goes through `decodeValue` /
@@ -56,6 +77,8 @@ if (!result.ok) {
 	// "Expected number, but received string."
 }
 ```
+
+
 
 ## Packages
 
