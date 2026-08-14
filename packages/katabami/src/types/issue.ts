@@ -1,6 +1,5 @@
 import type { IssueMessageKeys, TypeKeys } from "./format";
 import type { Primitive } from "./primitive";
-import type { StandardSchemaV1 } from "./standardSchema";
 
 /**
  * The formatter function.
@@ -22,10 +21,12 @@ export type _Issues<T, I> = T &
  * Produced by {@link flattenIssues}; {@link unflattenIssues} reads the brand
  * to restore typed paths without a decoder generic.
  */
-export type FlattenedIssues<I extends Issues = Issues> =
-	ReadonlyArray<StandardSchemaV1.Issue> & {
-		readonly [flattenedIssuesBrand]: I;
-	};
+export type FlattenedIssues<I extends Issues = Issues> = ReadonlyArray<{
+	readonly message: string;
+	readonly path?: ReadonlyArray<{ readonly key: PropertyKey } | PropertyKey>;
+}> & {
+	readonly [flattenedIssuesBrand]: I;
+};
 
 /**
  * Issue whose message is already formatted (e.g. after {@link unflattenIssues}).

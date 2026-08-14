@@ -34,7 +34,7 @@
 		"build": "bun run --filter katabami build && bun run --filter '@katabami/*' build",
 		"check": "biome check . && eslint .",
 		"check:fix": "biome check --write . && eslint . --fix",
-		"dpdm": "dpdm --exit-code circular:1 packages/*",
+		"dpdm": "dpdm --exit-code circular:1 \"packages/*/src/index.ts\"",
 		"format": "biome format . && eslint .",
 		"format:fix": "biome format --write . && eslint . --fix",
 		"lint": "biome lint . && eslint .",
