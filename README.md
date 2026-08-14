@@ -475,6 +475,20 @@ devbox run -- pnpm build
 devbox run -- pnpm check
 ```
 
+## Release
+
+Bump every workspace package, commit, and tag:
+
+```sh
+devbox run -- pnpm release -- patch
+devbox run -- pnpm release -- minor
+devbox run -- pnpm release -- prerelease --preid beta
+devbox run -- pnpm release -- 0.1.0 --push
+```
+
+`--push` also pushes the commit and tag. A `v*` tag triggers GitHub Actions
+to create the GitHub Release and publish to npm.
+
 ## License
 
 Copyright (C) 2025-2026 hallelujahdrive.

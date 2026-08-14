@@ -35,6 +35,7 @@
 		"lint": "biome lint . && eslint .",
 		"lint:fix": "biome lint --write . && eslint . --fix",
 		"prepare": "husky",
+		"release": "node scripts/release.mjs",
 		"test": "pnpm --filter './packages/*' run test",
 		"test:typecheck": "pnpm --filter './packages/*' run test:typecheck",
 		"types:check": "tsc --noEmit --pretty"
