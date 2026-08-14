@@ -535,7 +535,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
+			const restored = unflattenIssues(
 				flattenIssues(result.error.issues, formatter),
 			);
 
@@ -561,7 +561,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
+			const restored = unflattenIssues(
 				flattenIssues(result.error.issues, formatter),
 			);
 
@@ -586,7 +586,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
+			const restored = unflattenIssues(
 				flattenIssues(result.error.issues, formatter),
 			);
 
@@ -630,7 +630,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
+			const restored = unflattenIssues(
 				flattenIssues(result.error.issues, formatter),
 			);
 

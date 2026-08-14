@@ -5,12 +5,14 @@ import type {
 import type { IssueMessageKeys, TypeKeys } from "../types/format";
 import type {
 	_Issues,
+	FlattenedIssues,
 	FormattedIssue,
 	Formatter,
 	Issue,
 	Issues,
 	IssueType,
 	UnflattenedIssues,
+	UnflattenedIssuesFromFlattened,
 } from "../types/issue";
 import type { Primitive } from "../types/primitive";
 import type { StandardSchemaV1 } from "../types/standardSchema";
@@ -121,15 +123,22 @@ export function createIssues<
 
 /**
  * Flattens the issues into an array of Standard Schema issues.
- * @param {Issues} issues - The issues to flatten.
+ * The result is branded with the source issues type so
+ * {@link unflattenIssues} can restore typed paths without a generic.
+ * @template T - The source issues tree.
+ * @param {T} issues - The issues to flatten.
  * @param {Formatter} [formatter] - The formatter to use.
- * @returns {ReadonlyArray<StandardSchemaV1.Issue>} The flattened issues.
+ * @returns {FlattenedIssues<T>} The flattened issues.
  */
-export function flattenIssues(
-	issues: Issues,
+export function flattenIssues<T extends Issues>(
+	issues: T,
 	formatter?: Formatter,
-): ReadonlyArray<StandardSchemaV1.Issue> {
-	return flattenIssuesHelper(issues, undefined, formatter);
+): FlattenedIssues<T> {
+	return flattenIssuesHelper(
+		issues,
+		undefined,
+		formatter,
+	) as FlattenedIssues<T>;
 }
 
 /**
@@ -155,21 +164,28 @@ export function getIssueMessage<T extends object>(
  * Rebuilds an Issues tree from flattened Standard Schema issues and restores
  * WeakMap entries so getIssueMessage can read the pre-formatted messages.
  *
- * Pass the decoder type to restore typed paths:
+ * {@link flattenIssues} brands the array with the source issues type, so
+ * `unflattenIssues(flattened)` restores typed paths. A decoder generic is
+ * still accepted for untyped arrays:
  * `unflattenIssues<typeof decoder>(flattened)`.
  *
  * Messages are already formatter output, so
  * `getIssueMessage(issues)?.message` is always `string`.
  *
  * @template D - The decoder whose issue path structure should be preserved.
- * @param {ReadonlyArray<StandardSchemaV1.Issue>} flattened - The flattened issues.
- * @returns {UnflattenedIssuesFromDecoder<D>} The reconstructed issues tree.
+ * @template T - The flattened issues array (inferred from the argument).
+ * @param {T} flattened - The flattened issues.
+ * @returns The reconstructed issues tree.
  */
 export function unflattenIssues<
 	D extends IDecoder<unknown, Issues, boolean> = never,
+	T extends
+		ReadonlyArray<StandardSchemaV1.Issue> = ReadonlyArray<StandardSchemaV1.Issue>,
 >(
-	flattened: ReadonlyArray<StandardSchemaV1.Issue>,
-): [D] extends [never] ? UnflattenedIssues : UnflattenedIssuesFromDecoder<D> {
+	flattened: T,
+): [D] extends [never]
+	? UnflattenedIssuesFromFlattened<T>
+	: UnflattenedIssuesFromDecoder<D> {
 	const root: IssueTreeNode = { children: new Map(), messages: [] };
 
 	for (const issue of flattened) {
@@ -193,7 +209,7 @@ export function unflattenIssues<
 	}
 
 	return buildIssuesFromTree(root) as [D] extends [never]
-		? UnflattenedIssues
+		? UnflattenedIssuesFromFlattened<T>
 		: UnflattenedIssuesFromDecoder<D>;
 }
 

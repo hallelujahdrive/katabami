@@ -408,6 +408,9 @@ export type TupleSchemaHasPromise<T extends Array<Decoder<unknown>>> =
 /**
  * Restores typed issue paths from a {@link Decoder}'s issue type.
  *
+ * Prefer {@link unflattenIssues} without a generic when the input comes from
+ * {@link flattenIssues}; pass `typeof decoder` only for untyped arrays.
+ *
  * @example
  * ```ts
  * type Paths = UnflattenedIssuesFromDecoder<typeof decoder>;

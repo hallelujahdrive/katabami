@@ -260,8 +260,8 @@ if (!result.ok) {
 
 `flattenIssues` turns that tree into Standard Schema `{ message, path }[]`.
 Pass a formatter as the second argument to format messages while flattening.
-`unflattenIssues` rebuilds a tree from that list; messages stay pre-formatted.
-Give it the decoder type to restore typed paths:
+The flattened list keeps the source issues type, so `unflattenIssues` can
+rebuild typed paths without a generic. Messages stay pre-formatted.
 
 ```ts
 import * as katabami from "katabami";
@@ -282,7 +282,7 @@ if (!result.ok) {
 	//   { message: "Expected string, but received number.", path: ["foo", "bar"] },
 	// ]
 
-	const restored = katabami.unflattenIssues<typeof decoder>(flattened);
+	const restored = katabami.unflattenIssues(flattened);
 	katabami.getIssueMessage(restored)?.format();
 	// "One or more object properties failed validation."
 	katabami.getIssueMessage(restored.foo?.bar)?.format();

@@ -691,9 +691,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
-			);
+			const restored = unflattenIssues(flattenIssues(result.error.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more object properties failed validation.",
@@ -717,9 +715,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
-			);
+			const restored = unflattenIssues(flattenIssues(result.error.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more object properties failed validation.",
@@ -742,9 +738,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
-			);
+			const restored = unflattenIssues(flattenIssues(result.error.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more array elements failed validation.",
@@ -784,9 +778,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues<typeof decoder>(
-				flattenIssues(result.error.issues),
-			);
+			const restored = unflattenIssues(flattenIssues(result.error.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"Expected string, but received number.",

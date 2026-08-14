@@ -1,11 +1,13 @@
 import type { IssueMessageKeys, TypeKeys } from "./format";
 import type { Primitive } from "./primitive";
+import type { StandardSchemaV1 } from "./standardSchema";
 
 /**
  * The formatter function.
  */
 export type Formatter = (issue: Issue) => string;
 
+declare const flattenedIssuesBrand: unique symbol;
 declare const labelSymbol: unique symbol;
 
 export type _Issues<T, I> = T &
@@ -14,6 +16,16 @@ export type _Issues<T, I> = T &
 		: {
 				readonly [labelSymbol]?: I;
 			});
+
+/**
+ * Standard Schema issue list branded with the source {@link Issues} tree.
+ * Produced by {@link flattenIssues}; {@link unflattenIssues} reads the brand
+ * to restore typed paths without a decoder generic.
+ */
+export type FlattenedIssues<I extends Issues = Issues> =
+	ReadonlyArray<StandardSchemaV1.Issue> & {
+		readonly [flattenedIssuesBrand]: I;
+	};
 
 /**
  * Issue whose message is already formatted (e.g. after {@link unflattenIssues}).
@@ -96,6 +108,17 @@ export type UnflattenedIssues = _Issues<
 	{ readonly [key: string]: undefined | UnflattenedIssues },
 	FormattedIssue
 >;
+
+/**
+ * Restores typed issue paths from {@link FlattenedIssues}.
+ * Plain Standard Schema issue arrays fall back to {@link UnflattenedIssues}.
+ */
+export type UnflattenedIssuesFromFlattened<T> =
+	T extends FlattenedIssues<infer I>
+		? [Issues] extends [I]
+			? UnflattenedIssues
+			: UnflattenedIssuesOf<I>
+		: UnflattenedIssues;
 
 /**
  * Keeps the path structure of {@link Issues} while replacing every issue label
