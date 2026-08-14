@@ -1,0 +1,5 @@
+# dependencies (pnpm install)
+node_modules
+
+# distribution
+dist

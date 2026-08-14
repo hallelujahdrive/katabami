@@ -1,0 +1,51 @@
+{
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"dependencies": {
+		"katabami": "workspace:*"
+	},
+	"description": "i18next integration for Katabami",
+	"devDependencies": {
+		"i18next": "catalog:",
+		"rolldown": "catalog:",
+		"rolldown-plugin-dts": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"README.md",
+		"dist"
+	],
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"main": "./dist/index.js",
+	"name": "@katabami/i18next",
+	"peerDependencies": {
+		"i18next": ">=25.0.0 <27.0.0"
+	},
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"repository": {
+		"directory": "packages/i18next",
+		"type": "git",
+		"url": "https://github.com/hallelujahdrive/katabami.git"
+	},
+	"scripts": {
+		"build": "rolldown -c",
+		"test": "vitest",
+		"test:typecheck": "vitest --typecheck"
+	},
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "0.0.1-beta.1"
+}

@@ -1,4 +1,0 @@
-{
-  "src/**/*.{js|ts}": ["@biomejs/biome format --write"],
-  "*.": ["eslint --fix --max-warnings=0"]
-}

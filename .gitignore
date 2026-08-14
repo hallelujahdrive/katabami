@@ -1,5 +1,14 @@
 # Devbox
 .devbox
 
+# Cursor
+.cursor/
+
 # Dependency directories
 node_modules/
+
+# Packed packages
+*.tgz
+
+# pnpm
+pnpm-debug.log*

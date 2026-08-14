@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  HUSKY: "0"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify package versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag must be vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+
+          mismatch=0
+          for pkg in packages/*/package.json; do
+            name="$(jq -r .name "$pkg")"
+            version="$(jq -r .version "$pkg")"
+            if [[ "$version" != "$tag" ]]; then
+              echo "$name@$version does not match tag v$tag" >&2
+              mismatch=1
+            fi
+          done
+          exit "$mismatch"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
+
+      - name: Run tests
+        run: pnpm run test -- --run
+
+      - name: Run type tests
+        run: pnpm run test:typecheck -- --run
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra=()
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            extra+=(--prerelease)
+          fi
+
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists"
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --generate-notes \
+              --title "${GITHUB_REF_NAME}" \
+              "${extra[@]}"
+          fi
+
+      - name: Pack packages
+        run: |
+          mkdir -p "${RUNNER_TEMP}/packs"
+          pnpm --filter katabami pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/i18next pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/json-schema pack --pack-destination "${RUNNER_TEMP}/packs"
+
+      - name: Publish to npm
+        run: |
+          shopt -s nullglob
+          katabami_tgz=("${RUNNER_TEMP}/packs"/katabami-[0-9]*.tgz)
+          i18next_tgz=("${RUNNER_TEMP}/packs"/katabami-i18next-*.tgz)
+          json_schema_tgz=("${RUNNER_TEMP}/packs"/katabami-json-schema-*.tgz)
+
+          if [[ ${#katabami_tgz[@]} -ne 1 || ${#i18next_tgz[@]} -ne 1 || ${#json_schema_tgz[@]} -ne 1 ]]; then
+            echo "expected one tarball per package" >&2
+            ls -la "${RUNNER_TEMP}/packs"
+            exit 1
+          fi
+
+          extra=()
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            extra+=(--tag next)
+          fi
+
+          npm publish "${katabami_tgz[0]}" --access public "${extra[@]}"
+          npm publish "${i18next_tgz[0]}" --access public "${extra[@]}"
+          npm publish "${json_schema_tgz[0]}" --access public "${extra[@]}"

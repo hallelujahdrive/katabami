@@ -1,0 +1,49 @@
+{
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"dependencies": {
+		"katabami": "workspace:*"
+	},
+	"description": "JSON Schema generation for Katabami",
+	"devDependencies": {
+		"@hyperjump/json-schema": "catalog:",
+		"@standard-schema/spec": "catalog:",
+		"rolldown": "catalog:",
+		"rolldown-plugin-dts": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"README.md",
+		"dist"
+	],
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"main": "./dist/index.js",
+	"name": "@katabami/json-schema",
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"repository": {
+		"directory": "packages/json-schema",
+		"type": "git",
+		"url": "https://github.com/hallelujahdrive/katabami.git"
+	},
+	"scripts": {
+		"build": "rolldown -c",
+		"test": "vitest",
+		"test:typecheck": "vitest --typecheck"
+	},
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "0.0.1-beta.1"
+}

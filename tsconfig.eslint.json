@@ -1,4 +1,11 @@
 {
-  "extends": "./tsconfig.json",
-  "include": ["src/**/*.ts", "eslint.config.js"],
+	"extends": "./tsconfig.json",
+	"include": [
+		"packages/*/src",
+		"packages/*/test",
+		"packages/*/rolldown.config.ts",
+		"packages/*/vitest.config.ts",
+		"eslint.config.js",
+		"lint-staged.config.js"
+	]
 }

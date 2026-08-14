@@ -1,38 +1,45 @@
 {
-  "name": "katabami",
-  "version": "0.0.0",
-  "type": "module",
-  "description": "Katabami is a JSON decoding library",
-  "main": "index.js",
-  "scripts": {
-    "format": "npx @biomejs/biome format --write ./src && eslint --fix",
-    "lint": "npx @biomejs/biome lint --write ./src && eslint",
-    "check": "npx @biomejs/biome check --write ./src && eslint --fix",
-    "prepare": "husky",
-    "test": "vitest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
-  },
-  "author": "hallelujahdrive",
-  "license": "WTFPL",
-  "bugs": {
-    "url": "https://github.com/hallelujahdrive/katabami/issues"
-  },
-  "homepage": "https://github.com/hallelujahdrive/katabami#readme",
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@eslint/js": "^9.18.0",
-    "cspell": "^8.17.2",
-    "eslint": "^9.18.0",
-    "eslint-plugin-sort": "^4.0.0",
-    "globals": "^15.14.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.4.0",
-    "madge": "^8.0.0",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0",
-    "vitest": "^3.0.0"
-  }
+	"author": "hallelujahdrive",
+	"bugs": {
+		"url": "https://github.com/hallelujahdrive/katabami/issues"
+	},
+	"description": "Katabami is a JSON decoding library",
+	"devDependencies": {
+		"@biomejs/biome": "2.5.7",
+		"@types/node": "^24.2.0",
+		"@typescript-eslint/parser": "8.66.0",
+		"cspell": "^10.0.1",
+		"dpdm": "^4.3.0",
+		"eslint": "10.8.1",
+		"eslint-plugin-perfectionist": "5.10.1",
+		"husky": "9.1.7",
+		"lint-staged": "17.3.0",
+		"typescript": "catalog:"
+	},
+	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"license": "WTFPL",
+	"name": "katabami-monorepo",
+	"packageManager": "pnpm@11.20.0",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
+	},
+	"scripts": {
+		"build": "pnpm --filter katabami run build && pnpm --filter '@katabami/*' run build",
+		"check": "biome check . && eslint .",
+		"check:fix": "biome check --write . && eslint . --fix",
+		"dpdm": "dpdm --exit-code circular:1 \"packages/*/src/index.ts\"",
+		"format": "biome format . && eslint .",
+		"format:fix": "biome format --write . && eslint . --fix",
+		"lint": "biome lint . && eslint .",
+		"lint:fix": "biome lint --write . && eslint . --fix",
+		"prepare": "husky",
+		"release": "node scripts/release.mjs",
+		"test": "pnpm --filter './packages/*' run test",
+		"test:typecheck": "pnpm --filter './packages/*' run test:typecheck",
+		"types:check": "tsc --noEmit --pretty"
+	},
+	"type": "module",
+	"version": "0.0.1-beta.1"
 }

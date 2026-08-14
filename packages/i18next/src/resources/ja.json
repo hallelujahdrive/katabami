@@ -1,0 +1,29 @@
+{
+	"issue": {
+		"failedToDecode": "デコードに失敗しました。",
+		"invalidArrayElements": "1つ以上の配列要素のバリデーションに失敗しました。",
+		"invalidArrayIndex": "配列のインデックス\"{{index}}\"のバリデーションに失敗しました。",
+		"invalidArrayLength": "配列の長さは{{expected}}が期待されましたが、{{received}}でした。",
+		"invalidObject": "1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
+		"invalidObjectField": "オブジェクトプロパティ\"{{key}}\"のバリデーションに失敗しました。",
+		"invalidRecord": "1つ以上のレコードプロパティのバリデーションに失敗しました。",
+		"invalidUnion": "ユニオンのメンバーのいずれにも一致しませんでした。",
+		"unexpectedType": "{{expected}}が期待されましたが、{{received}}でした。",
+		"unexpectedValue": "{{expected, quoteString}}が期待されましたが、{{received, quoteString}}でした。"
+	},
+	"type": {
+		"array": "配列",
+		"bigint": "bigint",
+		"boolean": "真偽値",
+		"decimal": "小数",
+		"float": "浮動小数点数",
+		"function": "関数",
+		"integer": "整数",
+		"null": "null",
+		"number": "数値",
+		"object": "オブジェクト",
+		"string": "文字列",
+		"symbol": "シンボル",
+		"undefined": "undefined"
+	}
+}
