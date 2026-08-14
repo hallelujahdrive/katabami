@@ -487,7 +487,9 @@ devbox run -- pnpm release -- 0.1.0 --push
 ```
 
 `--push` also pushes the commit and tag. A `v*` tag triggers GitHub Actions
-to create the GitHub Release and publish to npm.
+to publish [Release Drafter](https://github.com/release-drafter/release-drafter)
+notes and the npm packages. Merges to `main` keep the next draft release up to
+date.
 
 ## License
 

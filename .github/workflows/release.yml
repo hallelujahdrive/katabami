@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: write
   id-token: write
+  pull-requests: read
 
 env:
   HUSKY: "0"
@@ -68,23 +69,16 @@ jobs:
       - name: Run type tests
         run: pnpm run test:typecheck -- --run
 
-      - name: Create GitHub Release
+      - name: Publish GitHub Release
+        uses: release-drafter/release-drafter@v7
+        with:
+          latest: ${{ !contains(github.ref_name, '-') }}
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          publish: true
+          tag: ${{ github.ref_name }}
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          extra=()
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            extra+=(--prerelease)
-          fi
-
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            echo "Release ${GITHUB_REF_NAME} already exists"
-          else
-            gh release create "${GITHUB_REF_NAME}" \
-              --generate-notes \
-              --title "${GITHUB_REF_NAME}" \
-              "${extra[@]}"
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pack packages
         run: |
