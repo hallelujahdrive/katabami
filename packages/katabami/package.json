@@ -4,6 +4,12 @@
 		"url": "https://github.com/hallelujahdrive/katabami/issues"
 	},
 	"description": "Katabami is a JSON decoding library",
+	"devDependencies": {
+		"rolldown": "catalog:",
+		"rolldown-plugin-dts": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
 	"exports": {
 		".": {
 			"import": "./dist/index.js",

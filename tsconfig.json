@@ -23,7 +23,7 @@
 		// Best practices
 		"strict": true,
 		"target": "ESNext",
-		"types": ["bun"],
+		"types": ["node"],
 		"verbatimModuleSyntax": true
 	}
 }

@@ -82,7 +82,7 @@ if (!result.ok) {
 
 ## Packages
 
-This repository is a Bun workspace:
+This repository is a pnpm workspace:
 
 | Package | Description |
 | --- | --- |
@@ -93,15 +93,15 @@ This repository is a Bun workspace:
 ## Install
 
 ```sh
-bun add katabami
+pnpm add katabami
 # npm install katabami
 ```
 
 Optional integrations:
 
 ```sh
-bun add @katabami/json-schema
-bun add @katabami/i18next i18next
+pnpm add @katabami/json-schema
+pnpm add @katabami/i18next i18next
 ```
 
 ## Quick start
@@ -466,11 +466,11 @@ Tooling is managed with [devbox](https://www.jetify.com/devbox). From the
 repository root:
 
 ```sh
-devbox run -- bun install
-devbox run -- bun run test -- --run
-devbox run -- bun run test:typecheck -- --run
-devbox run -- bun run build
-devbox run -- bun run check
+devbox run -- pnpm install
+devbox run -- pnpm test -- --run
+devbox run -- pnpm test:typecheck -- --run
+devbox run -- pnpm build
+devbox run -- pnpm check
 ```
 
 ## License

@@ -46,22 +46,27 @@ jobs:
           done
           exit "$mismatch"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: bun run build
+        run: pnpm run build
 
       - name: Run tests
-        run: bun run test -- --run
+        run: pnpm run test -- --run
 
       - name: Run type tests
-        run: bun run test:typecheck -- --run
+        run: pnpm run test:typecheck -- --run
 
       - name: Create GitHub Release
         env:
@@ -84,15 +89,9 @@ jobs:
       - name: Pack packages
         run: |
           mkdir -p "${RUNNER_TEMP}/packs"
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/katabami
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/i18next
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/json-schema
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
+          pnpm --filter katabami pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/i18next pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/json-schema pack --pack-destination "${RUNNER_TEMP}/packs"
 
       - name: Publish to npm
         run: |

@@ -24,28 +24,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build packages
-        run: bun run build
-
-      - name: Pack packages
-        run: |
-          mkdir -p "${RUNNER_TEMP}/packs"
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/katabami
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/i18next
-          bun pm pack --ignore-scripts --destination "${RUNNER_TEMP}/packs" --cwd packages/json-schema
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+          cache: pnpm
           node-version: lts/*
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
+
+      - name: Pack packages
+        run: |
+          mkdir -p "${RUNNER_TEMP}/packs"
+          pnpm --filter katabami pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/i18next pack --pack-destination "${RUNNER_TEMP}/packs"
+          pnpm --filter @katabami/json-schema pack --pack-destination "${RUNNER_TEMP}/packs"
 
       - name: Install packed packages with npm
         run: |
@@ -124,16 +123,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: lts/*
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: bun run build
+        run: pnpm run build
 
   test:
     name: Test
@@ -143,22 +146,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: lts/*
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: bun run build
+        run: pnpm run build
 
       - name: Run tests
-        run: bun run test -- --run
+        run: pnpm run test -- --run
 
       - name: Run type tests
-        run: bun run test:typecheck -- --run
+        run: pnpm run test:typecheck -- --run
 
   dpdm:
     name: Circular dependencies
@@ -168,16 +175,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: lts/*
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Check circular dependencies
-        run: bun run dpdm
+        run: pnpm run dpdm
 
   lint:
     name: Lint
@@ -187,16 +198,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: lts/*
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: bun run lint
+        run: pnpm run lint
 
   format:
     name: Format
@@ -206,14 +221,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          cache: pnpm
+          node-version: lts/*
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Format
-        run: bun run format
-
+        run: pnpm run format

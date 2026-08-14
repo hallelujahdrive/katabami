@@ -6,32 +6,27 @@
 	"description": "Katabami is a JSON decoding library",
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",
-		"@hyperjump/json-schema": "^1.17.8",
-		"@standard-schema/spec": "^1.1.0",
-		"@types/bun": "^1.3.14",
+		"@types/node": "^24.2.0",
 		"@typescript-eslint/parser": "8.66.0",
 		"cspell": "^10.0.1",
 		"dpdm": "^4.3.0",
 		"eslint": "10.8.1",
 		"eslint-plugin-perfectionist": "5.10.1",
 		"husky": "9.1.7",
-		"i18next": "^26.3.6",
 		"lint-staged": "17.3.0",
-		"rolldown": "^1.2.4",
-		"rolldown-plugin-dts": "^0.28.2",
-		"typescript": "6.0.3",
-		"vitest": "^4.1.10"
+		"typescript": "catalog:"
 	},
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
 	"license": "WTFPL",
-	"name": "katabami",
+	"name": "katabami-monorepo",
+	"packageManager": "pnpm@11.20.0",
 	"private": true,
 	"repository": {
 		"type": "git",
 		"url": "git+ssh://git@github.com/hallelujahdrive/katabami.git"
 	},
 	"scripts": {
-		"build": "bun run --filter katabami build && bun run --filter '@katabami/*' build",
+		"build": "pnpm --filter katabami run build && pnpm --filter '@katabami/*' run build",
 		"check": "biome check . && eslint .",
 		"check:fix": "biome check --write . && eslint . --fix",
 		"dpdm": "dpdm --exit-code circular:1 \"packages/*/src/index.ts\"",
@@ -40,13 +35,10 @@
 		"lint": "biome lint . && eslint .",
 		"lint:fix": "biome lint --write . && eslint . --fix",
 		"prepare": "husky",
-		"test": "bun run --filter './packages/*' test",
-		"test:typecheck": "bun run --filter './packages/*' test:typecheck",
+		"test": "pnpm --filter './packages/*' run test",
+		"test:typecheck": "pnpm --filter './packages/*' run test:typecheck",
 		"types:check": "tsc --noEmit --pretty"
 	},
 	"type": "module",
-	"version": "0.0.0",
-	"workspaces": [
-		"packages/*"
-	]
+	"version": "0.0.0"
 }

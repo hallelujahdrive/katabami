@@ -7,6 +7,14 @@
 		"katabami": "workspace:*"
 	},
 	"description": "JSON Schema generation for Katabami",
+	"devDependencies": {
+		"@hyperjump/json-schema": "catalog:",
+		"@standard-schema/spec": "catalog:",
+		"rolldown": "catalog:",
+		"rolldown-plugin-dts": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
 	"exports": {
 		".": {
 			"import": "./dist/index.js",

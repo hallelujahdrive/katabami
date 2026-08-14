@@ -7,6 +7,13 @@
 		"katabami": "workspace:*"
 	},
 	"description": "i18next integration for Katabami",
+	"devDependencies": {
+		"i18next": "catalog:",
+		"rolldown": "catalog:",
+		"rolldown-plugin-dts": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
 	"exports": {
 		".": {
 			"import": "./dist/index.js",
