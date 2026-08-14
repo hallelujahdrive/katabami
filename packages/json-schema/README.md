@@ -1,7 +1,8 @@
 # @katabami/json-schema
 
 JSON Schema generation for [Katabami](https://github.com/hallelujahdrive/katabami)
-decoders.
+decoders. Also implements
+[Standard JSON Schema](https://standardschema.dev/json-schema).
 
 Converts a decoder (or `getSchema()` output) to JSON Schema. Targets:
 `draft-2020-12` (default), `draft-07`, `openapi-3.0`.

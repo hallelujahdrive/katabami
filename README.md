@@ -80,7 +80,9 @@ if (!result.ok) {
 }
 ```
 
-
+- **[Standard Schema](https://standardschema.dev/) compatible.** Every decoder
+  implements Standard Schema v1 (`vendor: "katabami"`), so it works with any
+  Standard Schema consumer.
 
 ## Packages
 
@@ -89,7 +91,7 @@ This repository is a pnpm workspace:
 | Package | Description |
 | --- | --- |
 | [`katabami`](packages/katabami) | Core decoders, issues, and Standard Schema |
-| [`@katabami/json-schema`](packages/json-schema) | JSON Schema generation |
+| [`@katabami/json-schema`](packages/json-schema) | JSON Schema generation and Standard JSON Schema |
 | [`@katabami/i18next`](packages/i18next) | i18next message formatting (`en` / `ja`) |
 
 ## Install
@@ -397,6 +399,8 @@ user["~standard"].validate(input, {
 
 `@katabami/json-schema` converts a decoder (or `getSchema()` output) to JSON
 Schema. Targets: `draft-2020-12` (default), `draft-07`, `openapi-3.0`.
+`toStandardJsonSchema` implements
+[Standard JSON Schema](https://standardschema.dev/json-schema).
 
 ```ts
 import * as katabami from "katabami";
