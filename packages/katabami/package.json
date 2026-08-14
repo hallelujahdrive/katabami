@@ -17,6 +17,7 @@
 		}
 	},
 	"files": [
+		"README.md",
 		"dist"
 	],
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
