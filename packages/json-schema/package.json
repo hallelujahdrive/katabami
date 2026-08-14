@@ -20,6 +20,15 @@
 	"license": "WTFPL",
 	"main": "./dist/index.js",
 	"name": "@katabami/json-schema",
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"repository": {
+		"directory": "packages/json-schema",
+		"type": "git",
+		"url": "https://github.com/hallelujahdrive/katabami.git"
+	},
 	"scripts": {
 		"build": "rolldown -c",
 		"test": "vitest",
