@@ -1,0 +1,59 @@
+name-template: "v$RESOLVED_VERSION"
+tag-prefix: v
+tag-template: "v$RESOLVED_VERSION"
+categories:
+  - title: Features
+    exclusive: true
+    semver-increment: minor
+    when:
+      - conventional:
+          type: feat
+      - labels:
+          - enhancement
+          - feature
+  - title: Bug Fixes
+    exclusive: true
+    when:
+      - conventional:
+          type: fix
+      - labels:
+          - bug
+          - bugfix
+          - fix
+  - title: Documentation
+    exclusive: true
+    when:
+      - conventional:
+          type: docs
+      - labels:
+          - documentation
+  - title: Maintenance
+    exclusive: true
+    when:
+      - conventional:
+          type: chore
+      - conventional:
+          type: ci
+      - conventional:
+          type: refactor
+      - conventional:
+          type: test
+      - labels:
+          - chore
+  - type: pre-exclude
+    when:
+      label: skip-changelog
+  - type: version-resolver
+    semver-increment: major
+    when:
+      - conventional:
+          breaking: true
+      - label: major
+  - type: version-resolver
+    semver-increment: patch
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&'
+template: |
+  ## What’s Changed
+
+  $CHANGES
