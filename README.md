@@ -1,5 +1,7 @@
 # Katabami
 
+[![CI](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml/badge.svg)](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml)
+
 Katabami is a TypeScript JSON decoding library.
 
 Compose small decoders into a larger one, then turn unknown JSON into a typed
