@@ -41,7 +41,6 @@ Katabami is a decoder library.
 
 ```ts
 import * as katabami from "katabami";
-import { getIssueMessage } from "katabami";
 
 const decoder = katabami.object({
 	user: katabami.object({
@@ -53,7 +52,7 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ user: { age: "20", name: "Ada" } });
 
 if (!result.ok) {
-	getIssueMessage(result.error.issues.user?.age)?.format();
+	katabami.getIssueMessage(result.error.issues.user?.age)?.format();
 	// "Expected number, but received string."
 }
 ```
@@ -86,7 +85,6 @@ bun add @katabami/i18next i18next
 
 ```ts
 import * as katabami from "katabami";
-import { getIssueMessage } from "katabami";
 
 const user = katabami.object({
 	age: katabami.int(),
@@ -102,7 +100,7 @@ const result = user.decodeValue({ age: 20, name: "Ada" });
 if (result.ok) {
 	console.log(result.value.name);
 } else {
-	console.log(getIssueMessage(result.error.issues)?.format());
+	console.log(katabami.getIssueMessage(result.error.issues)?.format());
 }
 ```
 
@@ -130,6 +128,8 @@ user.decodeString('{"age":20,"name":"Ada"}');
 ### Structure
 
 ```ts
+import * as katabami from "katabami";
+
 katabami.array(katabami.string());
 katabami.oneOrMore(katabami.string()); // [string, ...string[]]
 katabami.tuple(katabami.string(), katabami.int());
@@ -142,6 +142,8 @@ katabami.optional(katabami.string()); // string | undefined (null/undefined → 
 `object` strips missing/`undefined` properties and keeps `null`:
 
 ```ts
+import * as katabami from "katabami";
+
 const decoder = katabami.object({
 	name: katabami.string(),
 	nickname: katabami.optional(katabami.string()),
@@ -156,6 +158,8 @@ decoder.decodeValue({ name: "Ada" });
 Read a nested field without decoding the whole object:
 
 ```ts
+import * as katabami from "katabami";
+
 katabami.field("name", katabami.string());
 katabami.at(["person", "name"], katabami.string());
 katabami.index(0, katabami.int());
@@ -170,6 +174,8 @@ katabami.index(0, katabami.int());
 results. `.map()` on a decoder transforms an already decoded value.
 
 ```ts
+import * as katabami from "katabami";
+
 const pair = katabami.map(
 	(foo, bar) => ({ bar, foo }),
 	katabami.field("foo", katabami.string()),
@@ -183,6 +189,8 @@ pair.decodeValue({ bar: 1, foo: "x" });
 `lazy` defers decoder construction (useful for recursive types):
 
 ```ts
+import * as katabami from "katabami";
+
 type Node = { children: Node[]; name: string };
 
 const node: katabami.Decoder<Node> = katabami.lazy(() =>
@@ -198,15 +206,19 @@ const node: katabami.Decoder<Node> = katabami.lazy(() =>
 `decodeValue` / `decodeString` return a `Result`:
 
 ```ts
+import * as katabami from "katabami";
+
 type Result<T, I> =
 	| { ok: true; value: T }
-	| { ok: false; error: DecodeError<I> };
+	| { ok: false; error: katabami.DecodeError<I> };
 ```
 
 Issues are a nested object (or array for unions) that follows the input shape.
 `getIssueMessage` reads the message attached to a node:
 
 ```ts
+import * as katabami from "katabami";
+
 const decoder = katabami.object({
 	foo: katabami.object({
 		bar: katabami.string(),
@@ -216,9 +228,9 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	getIssueMessage(result.error.issues)?.format();
+	katabami.getIssueMessage(result.error.issues)?.format();
 	// "One or more object properties failed validation."
-	getIssueMessage(result.error.issues.foo?.bar)?.format();
+	katabami.getIssueMessage(result.error.issues.foo?.bar)?.format();
 	// "Expected string, but received number."
 }
 ```
@@ -230,7 +242,6 @@ Give it the decoder type to restore typed paths:
 
 ```ts
 import * as katabami from "katabami";
-import { flattenIssues, getIssueMessage, unflattenIssues } from "katabami";
 
 const decoder = katabami.object({
 	foo: katabami.object({
@@ -241,19 +252,19 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	const flattened = flattenIssues(result.error.issues);
+	const flattened = katabami.flattenIssues(result.error.issues);
 	// [
 	//   { message: "One or more object properties failed validation.", path: undefined },
 	//   { message: "One or more object properties failed validation.", path: ["foo"] },
 	//   { message: "Expected string, but received number.", path: ["foo", "bar"] },
 	// ]
 
-	const restored = unflattenIssues<typeof decoder>(flattened);
-	getIssueMessage(restored)?.format();
+	const restored = katabami.unflattenIssues<typeof decoder>(flattened);
+	katabami.getIssueMessage(restored)?.format();
 	// "One or more object properties failed validation."
-	getIssueMessage(restored.foo?.bar)?.format();
+	katabami.getIssueMessage(restored.foo?.bar)?.format();
 	// "Expected string, but received number."
-	getIssueMessage(restored.foo?.bar)?.message;
+	katabami.getIssueMessage(restored.foo?.bar)?.message;
 	// already a formatted string
 }
 ```
@@ -261,22 +272,27 @@ if (!result.ok) {
 `unflattenIssues` also accepts Standard Schema `PathSegment` objects (`{ key }`):
 
 ```ts
-const restored = unflattenIssues([
+import * as katabami from "katabami";
+
+const restored = katabami.unflattenIssues([
 	{ message: "root failed", path: undefined },
 	{ message: "nested failed", path: [{ key: "foo" }] },
 ]);
 
-getIssueMessage(restored.foo)?.format();
+katabami.getIssueMessage(restored.foo)?.format();
 // "nested failed"
 ```
 
 Custom issues use `createIssues`:
 
 ```ts
-import { createIssues, DecodeError } from "katabami";
+import * as katabami from "katabami";
 
 const decoder = katabami.string().catch(() => ({
-	error: new DecodeError("Custom error", createIssues("custom", "Custom issue")),
+	error: new katabami.DecodeError(
+		"Custom error",
+		katabami.createIssues("custom", "Custom issue"),
+	),
 	ok: false,
 }));
 ```
@@ -295,6 +311,8 @@ const decoder = katabami.string().catch(() => ({
 | `getSchema()` | Accepted-value schema for plugins |
 
 ```ts
+import * as katabami from "katabami";
+
 const port = katabami
 	.string()
 	.map(Number)
@@ -307,6 +325,8 @@ If `map`, `andThen`, or `lazy` returns a `Promise`, the decoder becomes async:
 `decodeValue` / `decodeString` return `Promise<Result<...>>`.
 
 ```ts
+import * as katabami from "katabami";
+
 const decoder = katabami.string().map(async (id) => fetchUser(id));
 
 const result = await decoder.decodeValue("42");
@@ -317,6 +337,13 @@ const result = await decoder.decodeValue("42");
 Every decoder implements Standard Schema v1 (`vendor: "katabami"`):
 
 ```ts
+import * as katabami from "katabami";
+
+const user = katabami.object({
+	age: katabami.int(),
+	name: katabami.string(),
+});
+
 const result = user["~standard"].validate({ age: 20, name: "Ada" });
 
 if (result.issues) {
@@ -329,6 +356,13 @@ if (result.issues) {
 Pass a custom formatter through `libraryOptions`:
 
 ```ts
+import * as katabami from "katabami";
+
+const user = katabami.object({
+	age: katabami.int(),
+	name: katabami.string(),
+});
+
 user["~standard"].validate(input, {
 	libraryOptions: { formatter },
 });
@@ -376,7 +410,6 @@ formatter module (`quoteString`).
 ```ts
 import i18next from "i18next";
 import * as katabami from "katabami";
-import { flattenIssues, getIssueMessage, unflattenIssues } from "katabami";
 import { createFormatter, formatter, resources } from "@katabami/i18next";
 
 await i18next.use(formatter).init({
@@ -392,14 +425,14 @@ const format = createFormatter(i18next.t);
 const result = katabami.string().decodeValue(1);
 
 if (!result.ok) {
-	getIssueMessage(result.error.issues)?.format(format);
+	katabami.getIssueMessage(result.error.issues)?.format(format);
 	// 文字列が期待されましたが、数値でした。
 
-	const flattened = flattenIssues(result.error.issues, format);
+	const flattened = katabami.flattenIssues(result.error.issues, format);
 	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
 
-	const restored = unflattenIssues(flattened);
-	getIssueMessage(restored)?.format();
+	const restored = katabami.unflattenIssues(flattened);
+	katabami.getIssueMessage(restored)?.format();
 	// 文字列が期待されましたが、数値でした。
 }
 ```
