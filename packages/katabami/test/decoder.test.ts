@@ -1318,7 +1318,7 @@ describe("decoder", () => {
 
 	describe("record", () => {
 		describe("sync", () => {
-			const decoder = record(string());
+			const decoder = record(string(), string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -1350,6 +1350,33 @@ describe("decoder", () => {
 				});
 			});
 
+			describe("key decoder", () => {
+				test("literal keys", () => {
+					const keyed = record(union(constant("a"), constant("b")), int());
+
+					expect(keyed.decodeValue({ a: 1, b: 2 })).toStrictEqual({
+						ok: true,
+						value: { a: 1, b: 2 },
+					});
+					expect(keyed.decodeValue({ a: 1, c: 2 })).toStrictEqual({
+						error: expect.any(DecodeError),
+						ok: false,
+					});
+				});
+
+				test("maps keys", () => {
+					const keyed = record(
+						string().map((key) => key.toUpperCase()),
+						int(),
+					);
+
+					expect(keyed.decodeValue({ foo: 1 })).toStrictEqual({
+						ok: true,
+						value: { FOO: 1 },
+					});
+				});
+			});
+
 			describe("decode string", () => {
 				test("success", () => {
 					const result = decoder.decodeString('{"bar":"bar","foo":"foo"}');
@@ -1377,6 +1404,7 @@ describe("decoder", () => {
 
 		describe("async", () => {
 			const decoder = record(
+				string(),
 				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
 						resolve(succeed(value)),
@@ -1429,6 +1457,37 @@ describe("decoder", () => {
 					} as const;
 
 					await expect(result).resolves.toStrictEqual(expectedResult);
+				});
+			});
+		});
+
+		describe("async key", () => {
+			const decoder = record(
+				string().andThen((value) => {
+					return new Promise<Decoder<string, never>>((resolve) =>
+						resolve(
+							succeed(typeof value === "string" ? value.toUpperCase() : value),
+						),
+					);
+				}),
+				int(),
+			);
+
+			test("maps keys", async () => {
+				const result = decoder.decodeValue({ foo: 1 });
+
+				await expect(result).resolves.toStrictEqual({
+					ok: true,
+					value: { FOO: 1 },
+				});
+			});
+
+			test("fail", async () => {
+				const result = decoder.decodeValue({ foo: "bar" });
+
+				await expect(result).resolves.toStrictEqual({
+					error: expect.any(DecodeError),
+					ok: false,
 				});
 			});
 		});

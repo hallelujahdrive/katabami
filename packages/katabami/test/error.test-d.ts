@@ -50,7 +50,11 @@ type ExtractIssue<I> = I extends infer U
 			? Issue
 			: U extends ArrayDecodeIssues<Decoder<unknown>, infer Issue>
 				? Issue
-				: U extends RecordDecodeIssues<Decoder<unknown>, infer Issue>
+				: U extends RecordDecodeIssues<
+							Decoder<unknown>,
+							Decoder<unknown>,
+							infer Issue
+						>
 					? Issue
 					: U extends ObjectDecodeIssues<
 								Record<string, Decoder<unknown>>,
@@ -314,7 +318,7 @@ describe("DecodeError", () => {
 	});
 
 	describe("record", () => {
-		const _decoder = record(string());
+		const _decoder = record(string(), string());
 
 		test("issue message", () => {
 			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{

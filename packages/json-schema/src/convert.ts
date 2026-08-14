@@ -113,6 +113,23 @@ const convertObject = (
 	return result;
 };
 
+const convertRecord = (
+	key: DecoderSchema,
+	value: DecoderSchema,
+	target: SupportedTarget,
+): JsonSchema => {
+	const result: JsonSchema = {
+		additionalProperties: convertSchema(value, target),
+		type: "object",
+	};
+
+	if (target !== "openapi-3.0") {
+		result.propertyNames = convertSchema(key, target);
+	}
+
+	return result;
+};
+
 const convertMap = (
 	decoders: readonly DecoderSchema[],
 	target: SupportedTarget,
@@ -242,10 +259,7 @@ export const convertSchema = (
 		case "optional":
 			return convertNullable(schema.schema, target);
 		case "record":
-			return {
-				additionalProperties: convertSchema(schema.value, target),
-				type: "object",
-			};
+			return convertRecord(schema.key, schema.value, target);
 		case "string":
 			return { type: "string" };
 		case "tuple":

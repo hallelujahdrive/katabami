@@ -68,7 +68,7 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	optionalUnion: katabami.optional(
 		katabami.union(katabami.string(), katabami.int()),
 	),
-	record: katabami.record(katabami.int()),
+	record: katabami.record(katabami.string(), katabami.int()),
 	string: katabami.string(),
 	tuple: katabami.tuple(katabami.string(), katabami.int()),
 	tupleEmpty: { elements: [], kind: "tuple" },

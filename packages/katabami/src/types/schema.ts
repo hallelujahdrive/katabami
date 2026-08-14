@@ -119,9 +119,10 @@ export type OptionalDecoderSchema = {
 };
 
 /**
- * A decoder that accepts records with values of the given schema.
+ * A decoder that accepts records with keys and values of the given schemas.
  */
 export type RecordDecoderSchema = {
+	readonly key: DecoderSchema;
 	readonly kind: "record";
 	readonly value: DecoderSchema;
 };

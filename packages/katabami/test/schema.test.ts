@@ -133,7 +133,8 @@ describe("getSchema", () => {
 
 	describe("record", () => {
 		test("sync", () => {
-			expect(record(int()).getSchema()).toEqual({
+			expect(record(string(), int()).getSchema()).toEqual({
+				key: { kind: "string" },
 				kind: "record",
 				value: { kind: "integer" },
 			});
@@ -141,6 +142,7 @@ describe("getSchema", () => {
 
 		test("async", () => {
 			const decoder = record(
+				string(),
 				int().andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
 						resolve(succeed(value)),
@@ -149,6 +151,7 @@ describe("getSchema", () => {
 			);
 
 			expect(decoder.getSchema()).toEqual({
+				key: { kind: "string" },
 				kind: "record",
 				value: { kind: "integer" },
 			});

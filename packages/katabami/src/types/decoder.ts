@@ -314,21 +314,34 @@ export type OptionalDecodeResponse<T> =
  * The issues type of a record decoder.
  */
 export type RecordDecodeIssues<
-	T extends Decoder<unknown>,
+	K extends Decoder<unknown>,
+	V extends Decoder<unknown>,
 	I extends Issue = Issue,
 > =
-	T extends Decoder<unknown, infer A>
-		? _Issues<{ readonly [key: string]: A } | undefined, I>
+	K extends Decoder<unknown, infer KeyIssues>
+		? V extends Decoder<unknown, infer ValueIssues>
+			? _Issues<
+					{ readonly [key: string]: KeyIssues | ValueIssues } | undefined,
+					I
+				>
+			: never
 		: never;
 
 /**
  * The response type of a record decoder.
  */
-export type RecordDecodeResponse<T extends Decoder<unknown>> =
-	T extends Decoder<infer A>
-		? A extends Resolved<A>
-			? Record<string, A>
-			: Promise<Record<string, Resolved<A>>>
+export type RecordDecodeResponse<
+	K extends Decoder<unknown>,
+	V extends Decoder<unknown>,
+> =
+	K extends Decoder<infer Key>
+		? V extends Decoder<infer Value>
+			? [Key] extends [Resolved<Key>]
+				? [Value] extends [Resolved<Value>]
+					? Record<RecordKeyOf<Key>, Value>
+					: Promise<Record<RecordKeyOf<Key>, Resolved<Value>>>
+				: Promise<Record<RecordKeyOf<Resolved<Key>>, Resolved<Value>>>
+			: never
 		: never;
 
 export type RecordSchemaHasPromise<T extends Record<string, unknown>> =
@@ -466,6 +479,11 @@ type RecordHasPromise<T extends Record<string, unknown>> = T extends {
 }
 	? false
 	: true;
+
+/**
+ * Constrains a decoded record key to a valid object key type.
+ */
+type RecordKeyOf<K> = [K] extends [PropertyKey] ? K : string;
 
 /**
  * The helper type for the issues type of a tuple decoder.

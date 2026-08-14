@@ -450,7 +450,7 @@ describe("issues", () => {
 	});
 
 	describe("record decoder", () => {
-		const decoder = record(string());
+		const decoder = record(string(), string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -480,6 +480,24 @@ describe("issues", () => {
 			expect(
 				getIssueMessage(result.error?.issues?.foo)?.format(),
 			).toStrictEqual("Expected string, but received number.");
+		});
+
+		test("invalid record key", () => {
+			const keyed = record(union(constant("a"), constant("b")), int());
+			const result = keyed.decodeValue({ c: 1 });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"One or more record properties failed validation.",
+			);
+
+			expect(getIssueMessage(result.error?.issues?.c)?.format()).toStrictEqual(
+				"None of the union members matched.",
+			);
 		});
 	});
 

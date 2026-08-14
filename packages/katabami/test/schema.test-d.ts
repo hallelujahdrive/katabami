@@ -73,6 +73,7 @@ describe("getSchema", () => {
 
 	test("record with async decode preserves sync schema", () => {
 		const _decoder = record(
+			string(),
 			string().andThen(() => {
 				return new Promise<Decoder<string>>((resolve) =>
 					resolve(succeed("foo")),

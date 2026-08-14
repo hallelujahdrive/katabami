@@ -84,8 +84,20 @@ describe("toJsonSchema", () => {
 			type: "array",
 		});
 
-		expect(toJsonSchema(katabami.record(katabami.int()))).toEqual({
+		expect(
+			toJsonSchema(katabami.record(katabami.string(), katabami.int())),
+		).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
+			additionalProperties: { type: "integer" },
+			propertyNames: { type: "string" },
+			type: "object",
+		});
+
+		expect(
+			toJsonSchema(katabami.record(katabami.string(), katabami.int()), {
+				target: "openapi-3.0",
+			}),
+		).toEqual({
 			additionalProperties: { type: "integer" },
 			type: "object",
 		});

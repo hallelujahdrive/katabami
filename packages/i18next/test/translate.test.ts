@@ -310,7 +310,7 @@ describe("translate", () => {
 	});
 
 	describe("record decoder", () => {
-		const decoder = katabami.record(katabami.string());
+		const decoder = katabami.record(katabami.string(), katabami.string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);

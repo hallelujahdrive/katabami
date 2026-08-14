@@ -133,7 +133,7 @@ user.decodeString('{"age":20,"name":"Ada"}');
 katabami.array(katabami.string());
 katabami.oneOrMore(katabami.string()); // [string, ...string[]]
 katabami.tuple(katabami.string(), katabami.int());
-katabami.record(katabami.int()); // Record<string, number>
+katabami.record(katabami.string(), katabami.int()); // Record<string, number>
 katabami.union(katabami.string(), katabami.int());
 katabami.nullable(katabami.string()); // string | null
 katabami.optional(katabami.string()); // string | undefined (null/undefined → undefined)

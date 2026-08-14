@@ -1172,7 +1172,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("record", () => {
 		describe("sync", () => {
-			const decoder = record(string());
+			const decoder = record(string(), string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -1231,6 +1231,7 @@ describe("StandardSchemaV1", () => {
 
 		describe("async", () => {
 			const decoder = record(
+				string(),
 				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
 						resolve(succeed(value)),
@@ -1296,6 +1297,37 @@ describe("StandardSchemaV1", () => {
 						},
 					);
 				});
+			});
+		});
+
+		describe("key decoder", () => {
+			const decoder = record(union(constant("a"), constant("b")), int());
+
+			test("invalid key", () => {
+				expectValidateSync(
+					decoder,
+					{ c: 1 },
+					{
+						issues: [
+							{
+								message: "One or more record properties failed validation.",
+								path: undefined,
+							},
+							{
+								message: "None of the union members matched.",
+								path: ["c"],
+							},
+							{
+								message: 'Expected "a", but received "c".',
+								path: ["c"],
+							},
+							{
+								message: 'Expected "b", but received "c".',
+								path: ["c"],
+							},
+						],
+					},
+				);
 			});
 		});
 	});

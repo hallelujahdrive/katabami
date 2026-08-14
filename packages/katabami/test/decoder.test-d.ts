@@ -441,7 +441,7 @@ describe("Decoder", () => {
 
 	describe("record", () => {
 		test("fixed", () => {
-			const _decoder = record<number>(float());
+			const _decoder = record(string(), float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
@@ -449,18 +449,40 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = record(float());
+			const _decoder = record(string(), float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
 			>();
 		});
 
+		test("literal keys", () => {
+			const _decoder = record(union(constant("a"), constant("b")), float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<"a" | "b", number>
+			>();
+		});
+
 		test("has promise", () => {
 			const _decoder = record(
+				string(),
 				float().andThen(() => {
 					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
+			);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Promise<Record<string, number>>
+			>();
+		});
+
+		test("has promise from key", () => {
+			const _decoder = record(
+				string().andThen(() => {
+					return new Promise<Decoder<string>>((resolve) => resolve(string()));
+				}),
+				float(),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<

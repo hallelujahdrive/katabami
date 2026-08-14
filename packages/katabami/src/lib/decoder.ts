@@ -86,7 +86,11 @@ const objectSchema = (
 	properties,
 });
 
-const recordSchema = (value: DecoderSchema): DecoderSchema => ({
+const recordSchema = (
+	key: DecoderSchema,
+	value: DecoderSchema,
+): DecoderSchema => ({
+	key,
 	kind: "record",
 	value,
 });
@@ -216,9 +220,19 @@ const oneOrMoreSchemaDescriptor =
 		mapAwaitable(decoder.getSchema(), (schema) => arraySchema(schema, 1));
 
 const recordSchemaDescriptor =
-	(decoder: SchemaDecoder): SchemaDescriptor =>
+	(key: SchemaDecoder, value: SchemaDecoder): SchemaDescriptor =>
 	() =>
-		mapAwaitable(decoder.getSchema(), (schema) => recordSchema(schema));
+		mapAwaitable(
+			allAwaitable([key.getSchema(), value.getSchema()]),
+			(schemas) => {
+				const [keySchema, valueSchema] = schemas as [
+					DecoderSchema,
+					DecoderSchema,
+				];
+
+				return recordSchema(keySchema, valueSchema);
+			},
+		);
 
 const tupleSchemaDescriptor =
 	(decoders: readonly SchemaDecoder[]): SchemaDescriptor =>
@@ -1160,18 +1174,44 @@ const decodeObjectFunc =
 
 /**
  * Helper function to decode a record.
- * @template T - The type of the record values.
- * @template {IDecoder<T>} U - The decoder to use for values.
- * @param {Array<[string, Result<unknown, Issues>]>} results - The results of the decoders.
- * @returns {Result<RecordDecodeResponse<U>, RecordDecodeIssues<U, Issue<"record", "issue.invalidRecord", undefined>>>} The result of the record decoder.
+ * @template {IDecoder<unknown>} K - The decoder to use for keys.
+ * @template {IDecoder<unknown>} V - The decoder to use for values.
+ * @param {Array<[string, Result<unknown, Issues>, Result<unknown, Issues>]>} results - The key and value decode results.
+ * @returns {Result<RecordDecodeResponse<K, V>, RecordDecodeIssues<K, V, Issue<"record", "issue.invalidRecord", undefined>>>} The result of the record decoder.
  */
-const decodeRecordHelper = <T, U extends IDecoder<T>>(
-	results: Array<[string, Result<unknown, Issues>]>,
+const decodeRecordHelper = <
+	K extends IDecoder<unknown>,
+	V extends IDecoder<unknown>,
+>(
+	results: Array<[string, Result<unknown, Issues>, Result<unknown, Issues>]>,
 ): Result<
-	RecordDecodeResponse<U>,
-	RecordDecodeIssues<U, Issue<"record", "issue.invalidRecord", undefined>>
+	RecordDecodeResponse<K, V>,
+	RecordDecodeIssues<K, V, Issue<"record", "issue.invalidRecord", undefined>>
 > => {
-	const issues = results.filter(([_, result]) => !result.ok);
+	const issues = results.reduce<Array<[string, Issues]>>(
+		(accumulator, [originalKey, keyResult, valueResult]) => {
+			if (keyResult.ok && valueResult.ok) return accumulator;
+
+			if (!keyResult.ok && !valueResult.ok) {
+				accumulator.push([
+					originalKey,
+					[keyResult.error.issues, valueResult.error.issues] as Issues,
+				]);
+
+				return accumulator;
+			}
+
+			accumulator.push([
+				originalKey,
+				(keyResult.ok
+					? valueResult.error?.issues
+					: keyResult.error?.issues) as Issues,
+			]);
+
+			return accumulator;
+		},
+		[],
+	);
 
 	if (issues.length > 0) {
 		return {
@@ -1181,11 +1221,10 @@ const decodeRecordHelper = <T, U extends IDecoder<T>>(
 					"record",
 					"issue.invalidRecord",
 					undefined,
-					Object.fromEntries(
-						issues.map(([key, result]) => [key, result.error?.issues]),
-					),
+					Object.fromEntries(issues),
 				) as RecordDecodeIssues<
-					U,
+					K,
+					V,
 					Issue<"record", "issue.invalidRecord", undefined>
 				>,
 			),
@@ -1196,32 +1235,39 @@ const decodeRecordHelper = <T, U extends IDecoder<T>>(
 	return {
 		ok: true,
 		value: Object.fromEntries(
-			results.reduce<Array<[string, unknown]>>((accumulator, [key, result]) => {
-				// remove undefined values, keep null values
-				if (typeof result.value === "undefined") return accumulator;
+			results.reduce<Array<[PropertyKey, unknown]>>(
+				(accumulator, [_originalKey, keyResult, valueResult]) => {
+					// remove undefined keys and values, keep null values
+					if (typeof keyResult.value === "undefined") return accumulator;
+					if (typeof valueResult.value === "undefined") return accumulator;
 
-				accumulator.push([key, result.value]);
+					accumulator.push([keyResult.value as PropertyKey, valueResult.value]);
 
-				return accumulator;
-			}, []),
-		) as RecordDecodeResponse<U>,
+					return accumulator;
+				},
+				[],
+			),
+		) as RecordDecodeResponse<K, V>,
 	};
 };
 
 /**
  * Creates a decoder that decodes a record.
- * @template T - The type of the record values.
- * @template {IDecoder<T>} U - The decoder to use for values.
- * @param {U} decoder - The decoder to use for values.
- * @returns {DecodeFunction<RecordDecodeResponse<U>, RecordDecodeIssues<U, Issue<"record", "issue.invalidRecord", undefined> | Issue<"record", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a record.
+ * @template {IDecoder<unknown>} K - The decoder to use for keys.
+ * @template {IDecoder<unknown>} V - The decoder to use for values.
+ * @param {K} keyDecoder - The decoder to use for keys.
+ * @param {V} valueDecoder - The decoder to use for values.
+ * @returns {DecodeFunction<RecordDecodeResponse<K, V>, RecordDecodeIssues<K, V, Issue<"record", "issue.invalidRecord", undefined> | Issue<"record", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a record.
  */
 const decodeRecordFunc =
-	<T, U extends IDecoder<T>>(
-		decoder: U,
+	<K extends IDecoder<unknown>, V extends IDecoder<unknown>>(
+		keyDecoder: K,
+		valueDecoder: V,
 	): DecodeFunction<
-		RecordDecodeResponse<U>,
+		RecordDecodeResponse<K, V>,
 		RecordDecodeIssues<
-			U,
+			K,
+			V,
 			| Issue<"record", "issue.invalidRecord", undefined>
 			| Issue<
 					"record",
@@ -1239,7 +1285,8 @@ const decodeRecordFunc =
 						expected: "type.object",
 						received: typeOf(value),
 					}) as RecordDecodeIssues<
-						U,
+						K,
+						V,
 						Issue<
 							"record",
 							"issue.unexpectedType",
@@ -1250,12 +1297,25 @@ const decodeRecordFunc =
 				ok: false,
 			};
 
-		const results = Object.entries(value).map<
-			[string, Awaitable<Result<unknown, Issues>>]
-		>(([key, entry]) => [key, decoder.decodeValue(entry)]);
+		const results = Object.entries(value).map((entry) => {
+			const [originalKey, originalValue] = entry;
 
-		return mapAwaitable(resolveAwaitablePairs(results), (resolved) =>
-			decodeRecordHelper(resolved),
+			return mapAwaitable(
+				allAwaitable([
+					keyDecoder.decodeValue(originalKey),
+					valueDecoder.decodeValue(originalValue),
+				]),
+				([keyResult, valueResult]) =>
+					[originalKey, keyResult, valueResult] as [
+						string,
+						Result<unknown, Issues>,
+						Result<unknown, Issues>,
+					],
+			);
+		});
+
+		return mapAwaitable(allAwaitable(results), (resolved) =>
+			decodeRecordHelper<K, V>(resolved),
 		);
 	};
 
@@ -1974,17 +2034,23 @@ export function optional<
 /**
  * Creates a decoder that decodes a record.
  *
- * @template T The type of the record values.
- * @template {IDecoder<T>} U The decoder to use for values.
- * @param {U} decoder The decoder to use for values.
- * @returns {IDecoder<RecordDecodeResponse<U>, RecordDecodeIssues<U, Issue<"record", "issue.invalidRecord", undefined> | Issue<"record", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a record.
+ * @template {IDecoder<unknown>} K The decoder to use for keys.
+ * @template {IDecoder<unknown>} V The decoder to use for values.
+ * @param {K} key The decoder to use for keys.
+ * @param {V} value The decoder to use for values.
+ * @returns {IDecoder<RecordDecodeResponse<K, V>, RecordDecodeIssues<K, V, Issue<"record", "issue.invalidRecord", undefined> | Issue<"record", "issue.unexpectedType", { expected: "type.object"; received: TypeKeys }>>>} A decoder that decodes a record.
  */
-export function record<T, U extends IDecoder<T> = IDecoder<T>>(
-	decoder: U,
+export function record<
+	K extends IDecoder<unknown>,
+	V extends IDecoder<unknown>,
+>(
+	key: K,
+	value: V,
 ): IDecoder<
-	RecordDecodeResponse<U>,
+	RecordDecodeResponse<K, V>,
 	RecordDecodeIssues<
-		U,
+		K,
+		V,
 		| Issue<"record", "issue.invalidRecord", undefined>
 		| Issue<
 				"record",
@@ -1992,12 +2058,13 @@ export function record<T, U extends IDecoder<T> = IDecoder<T>>(
 				{ expected: "type.object"; received: TypeKeys }
 		  >
 	>,
-	SchemaAsyncOf<U>
+	[SchemaAsyncOf<K>, SchemaAsyncOf<V>] extends [false, false] ? false : true
 > {
 	return new Decoder<
-		RecordDecodeResponse<U>,
+		RecordDecodeResponse<K, V>,
 		RecordDecodeIssues<
-			U,
+			K,
+			V,
 			| Issue<"record", "issue.invalidRecord", undefined>
 			| Issue<
 					"record",
@@ -2005,12 +2072,12 @@ export function record<T, U extends IDecoder<T> = IDecoder<T>>(
 					{ expected: "type.object"; received: TypeKeys }
 			  >
 		>,
-		SchemaAsyncOf<U>
+		[SchemaAsyncOf<K>, SchemaAsyncOf<V>] extends [false, false] ? false : true
 	>(
-		decodeRecordFunc(decoder),
+		decodeRecordFunc(key, value),
 		undefined,
-		recordSchemaDescriptor(decoder),
-		isDecoderAsync(decoder),
+		recordSchemaDescriptor(key, value),
+		isDecoderAsync(key) || isDecoderAsync(value),
 	);
 }
 
