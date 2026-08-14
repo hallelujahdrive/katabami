@@ -1,5 +1,5 @@
-import type { IssueMessageKeys, TypeKeys } from "./format.js";
-import type { Primitive } from "./primitive.js";
+import type { IssueMessageKeys, TypeKeys } from "./format";
+import type { Primitive } from "./primitive";
 
 /**
  * The formatter function.

@@ -1,19 +1,20 @@
 import { describe, expectTypeOf, test } from "vitest";
-import * as katabami from "../src/index.js";
 import {
 	type FormattedIssue,
 	flattenIssues,
 	getIssueMessage,
 	type IssuesFromDecoder,
+	object,
+	string,
 	type UnflattenedIssuesFromDecoder,
 	unflattenIssues,
-} from "../src/index.js";
+} from "../src";
 
 describe("unflattenIssues", () => {
 	test("preserves nested object paths from decoder type", () => {
-		const decoder = katabami.object({
-			foo: katabami.object({
-				bar: katabami.string(),
+		const decoder = object({
+			foo: object({
+				bar: string(),
 			}),
 		});
 
@@ -53,9 +54,9 @@ describe("unflattenIssues", () => {
 	});
 
 	test("original issues type is preserved", () => {
-		const decoder = katabami.object({
-			foo: katabami.object({
-				bar: katabami.string(),
+		const decoder = object({
+			foo: object({
+				bar: string(),
 			}),
 		});
 

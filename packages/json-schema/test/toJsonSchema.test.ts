@@ -4,7 +4,7 @@ import {
 	type StandardJSONSchemaV1,
 	toJsonSchema,
 	toStandardJsonSchema,
-} from "../src/index.js";
+} from "../src";
 
 describe("toJsonSchema", () => {
 	test("converts primitives", () => {

@@ -1,5 +1,5 @@
 import type { DecoderSchema } from "katabami";
-import type { JsonSchema, SupportedTarget } from "./types/jsonSchema.js";
+import type { JsonSchema, SupportedTarget } from "./types/jsonSchema";
 
 const isOptional = (
 	schema: DecoderSchema,

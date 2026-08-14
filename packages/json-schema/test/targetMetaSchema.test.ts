@@ -7,12 +7,12 @@ import { BASIC } from "@hyperjump/json-schema/experimental";
 import "@hyperjump/json-schema/openapi-3-0";
 import * as katabami from "katabami";
 import { describe, expect, test } from "vitest";
-import { toJsonSchema, toStandardJsonSchema } from "../src/index.js";
+import { toJsonSchema, toStandardJsonSchema } from "../src";
 import {
 	type JsonSchema,
 	SUPPORTED_TARGETS,
 	type SupportedTarget,
-} from "../src/types/jsonSchema.js";
+} from "../src/types/jsonSchema";
 
 const META_SCHEMA_URI = {
 	"draft-07": "http://json-schema.org/draft-07/schema#",

@@ -1,23 +1,45 @@
 import { describe, expect, test } from "vitest";
-import type { Decoder } from "../src/index.js";
-import * as katabami from "../src/index.js";
+import {
+	array,
+	at,
+	boolean,
+	constant,
+	type Decoder,
+	failed,
+	field,
+	float,
+	index,
+	int,
+	lazy,
+	map,
+	nullable,
+	object,
+	oneOrMore,
+	optional,
+	record,
+	string,
+	succeed,
+	tuple,
+	union,
+	value,
+} from "../src";
 
 describe("getSchema", () => {
 	test("primitives", () => {
-		expect(katabami.string().getSchema()).toEqual({ kind: "string" });
-		expect(katabami.boolean().getSchema()).toEqual({ kind: "boolean" });
-		expect(katabami.int().getSchema()).toEqual({ kind: "integer" });
-		expect(katabami.float().getSchema()).toEqual({ kind: "number" });
-		expect(katabami.value().getSchema()).toEqual({ kind: "unknown" });
-		expect(katabami.failed().getSchema()).toEqual({ kind: "never" });
+		expect(string().getSchema()).toEqual({ kind: "string" });
+		expect(boolean().getSchema()).toEqual({ kind: "boolean" });
+		expect(int().getSchema()).toEqual({ kind: "integer" });
+		expect(float().getSchema()).toEqual({ kind: "number" });
+		expect(value().getSchema()).toEqual({ kind: "unknown" });
+		expect(failed().getSchema()).toEqual({ kind: "never" });
 	});
 
 	test("constant", () => {
-		expect(katabami.constant("foo").getSchema()).toEqual({
+		expect(constant("foo").getSchema()).toEqual({
 			kind: "constant",
 			value: "foo",
 		});
-		expect(katabami.constant(null).getSchema()).toEqual({
+		expect(constant(null).getSchema()).toEqual({
 			kind: "constant",
 			value: null,
 		});
@@ -25,17 +47,17 @@ describe("getSchema", () => {
 
 	describe("array", () => {
 		test("sync", () => {
-			expect(katabami.array(katabami.int()).getSchema()).toEqual({
+			expect(array(int()).getSchema()).toEqual({
 				element: { kind: "integer" },
 				kind: "array",
 			});
 		});
 
 		test("async", () => {
-			const decoder = katabami.array(
-				katabami.int().andThen((value) => {
+			const decoder = array(
+				int().andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -49,7 +71,7 @@ describe("getSchema", () => {
 
 	describe("oneOrMore", () => {
 		test("sync", () => {
-			expect(katabami.oneOrMore(katabami.int()).getSchema()).toEqual({
+			expect(oneOrMore(int()).getSchema()).toEqual({
 				element: { kind: "integer" },
 				kind: "array",
 				minItems: 1,
@@ -57,10 +79,10 @@ describe("getSchema", () => {
 		});
 
 		test("async", () => {
-			const decoder = katabami.oneOrMore(
-				katabami.int().andThen((value) => {
+			const decoder = oneOrMore(
+				int().andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -76,12 +98,10 @@ describe("getSchema", () => {
 	describe("object", () => {
 		test("sync", () => {
 			expect(
-				katabami
-					.object({
-						age: katabami.int(),
-						name: katabami.string(),
-					})
-					.getSchema(),
+				object({
+					age: int(),
+					name: string(),
+				}).getSchema(),
 			).toEqual({
 				kind: "object",
 				properties: {
@@ -92,13 +112,13 @@ describe("getSchema", () => {
 		});
 
 		test("async", () => {
-			const decoder = katabami.object({
-				age: katabami.int().andThen((value) => {
+			const decoder = object({
+				age: int().andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
-				name: katabami.string(),
+				name: string(),
 			});
 
 			expect(decoder.getSchema()).toEqual({
@@ -113,17 +133,17 @@ describe("getSchema", () => {
 
 	describe("record", () => {
 		test("sync", () => {
-			expect(katabami.record(katabami.int()).getSchema()).toEqual({
+			expect(record(int()).getSchema()).toEqual({
 				kind: "record",
 				value: { kind: "integer" },
 			});
 		});
 
 		test("async", () => {
-			const decoder = katabami.record(
-				katabami.int().andThen((value) => {
+			const decoder = record(
+				int().andThen((value) => {
 					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -136,41 +156,35 @@ describe("getSchema", () => {
 	});
 
 	test("tuple", () => {
-		expect(
-			katabami.tuple(katabami.string(), katabami.int()).getSchema(),
-		).toEqual({
+		expect(tuple(string(), int()).getSchema()).toEqual({
 			elements: [{ kind: "string" }, { kind: "integer" }],
 			kind: "tuple",
 		});
 	});
 
 	test("union", () => {
-		expect(
-			katabami.union(katabami.string(), katabami.int()).getSchema(),
-		).toEqual({
+		expect(union(string(), int()).getSchema()).toEqual({
 			kind: "union",
 			variants: [{ kind: "string" }, { kind: "integer" }],
 		});
 	});
 
 	test("nullable", () => {
-		expect(katabami.nullable(katabami.string()).getSchema()).toEqual({
+		expect(nullable(string()).getSchema()).toEqual({
 			kind: "nullable",
 			schema: { kind: "string" },
 		});
 	});
 
 	test("optional", () => {
-		expect(katabami.optional(katabami.string()).getSchema()).toEqual({
+		expect(optional(string()).getSchema()).toEqual({
 			kind: "optional",
 			schema: { kind: "string" },
 		});
 	});
 
 	test("lazy", () => {
-		const decoder = katabami.lazy(() =>
-			katabami.object({ name: katabami.string() }),
-		);
+		const decoder = lazy(() => object({ name: string() }));
 
 		expect(decoder.getSchema()).toEqual({
 			kind: "object",
@@ -181,9 +195,7 @@ describe("getSchema", () => {
 	});
 
 	test("lazy async", async () => {
-		const decoder = katabami.lazy(() =>
-			Promise.resolve(katabami.object({ name: katabami.string() })),
-		);
+		const decoder = lazy(() => Promise.resolve(object({ name: string() })));
 
 		await expect(decoder.getSchema()).resolves.toEqual({
 			kind: "object",
@@ -194,12 +206,12 @@ describe("getSchema", () => {
 	});
 
 	test("field and index", () => {
-		expect(katabami.field("name", katabami.string()).getSchema()).toEqual({
+		expect(field("name", string()).getSchema()).toEqual({
 			key: "name",
 			kind: "field",
 			schema: { kind: "string" },
 		});
-		expect(katabami.index(0, katabami.int()).getSchema()).toEqual({
+		expect(index(0, int()).getSchema()).toEqual({
 			index: 0,
 			kind: "index",
 			schema: { kind: "integer" },
@@ -207,9 +219,7 @@ describe("getSchema", () => {
 	});
 
 	test("at", () => {
-		expect(
-			katabami.at(["person", "name"], katabami.string()).getSchema(),
-		).toEqual({
+		expect(at(["person", "name"], string()).getSchema()).toEqual({
 			key: "person",
 			kind: "field",
 			schema: {
@@ -221,10 +231,10 @@ describe("getSchema", () => {
 	});
 
 	test("map", () => {
-		const decoder = katabami.map(
+		const decoder = map(
 			(name, age) => ({ age, name }),
-			katabami.field("name", katabami.string()),
-			katabami.field("age", katabami.int()),
+			field("name", string()),
+			field("age", int()),
 		);
 
 		expect(decoder.getSchema()).toEqual({
@@ -245,10 +255,9 @@ describe("getSchema", () => {
 	});
 
 	test("map and andThen preserve schema", () => {
-		const decoder = katabami
-			.string()
+		const decoder = string()
 			.map((value) => value.length)
-			.andThen((length) => katabami.succeed(length));
+			.andThen((length) => succeed(length));
 
 		expect(decoder.getSchema()).toEqual({ kind: "string" });
 	});

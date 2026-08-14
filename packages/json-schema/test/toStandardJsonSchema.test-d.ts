@@ -1,10 +1,7 @@
 import type { StandardJSONSchemaV1 as SpecStandardJSONSchemaV1 } from "@standard-schema/spec";
 import * as katabami from "katabami";
 import { describe, expectTypeOf, test } from "vitest";
-import {
-	type StandardJSONSchemaV1,
-	toStandardJsonSchema,
-} from "../src/index.js";
+import { type StandardJSONSchemaV1, toStandardJsonSchema } from "../src";
 
 describe("toStandardJsonSchema types", () => {
 	test("satisfies StandardJSONSchemaV1", () => {

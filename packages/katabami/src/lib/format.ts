@@ -1,6 +1,6 @@
-import type { MessageResources } from "../types/format.js";
-import type { Formatter } from "../types/issue.js";
-import type { Primitive } from "../types/primitive.js";
+import type { MessageResources } from "../types/format";
+import type { Formatter } from "../types/issue";
+import type { Primitive } from "../types/primitive";
 
 /**
  * The resource type.

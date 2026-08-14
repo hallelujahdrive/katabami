@@ -12,6 +12,8 @@ import type {
 	Decoder as IDecoder,
 	IndexDecodeIssues,
 	IndexDecodeResponse,
+	Issue,
+	Issues,
 	MapDecodeFunction,
 	MapDecodeFunctionParams,
 	MapDecodeIssues,
@@ -31,6 +33,7 @@ import type {
 	Result,
 	SchemaAsyncOf,
 	SchemaResult,
+	StandardSchemaV1,
 	TupleDecodeIssues,
 	TupleDecodeResponse,
 	TupleDecoders,
@@ -40,12 +43,10 @@ import type {
 	UnionDecodeIssues,
 	UnionDecodeResponse,
 	UnionDecoders,
-} from "../types/index.js";
-import type { Issue, Issues } from "../types/issue.js";
-import type { StandardSchemaV1 } from "../types/standardSchema.js";
-import { isRecord } from "../utils/index.js";
-import { DecodeError } from "./error.js";
-import { createIssues, flattenIssues, getIssueMessage } from "./issue.js";
+} from "../types";
+import { isRecord } from "../utils";
+import { DecodeError } from "./error";
+import { createIssues, flattenIssues, getIssueMessage } from "./issue";
 
 /**
  * The decode function for a decoder.

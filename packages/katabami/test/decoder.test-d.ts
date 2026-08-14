@@ -1,36 +1,53 @@
 import { describe, expectTypeOf, test } from "vitest";
-import * as katabami from "../src/index.js";
 import {
+	array,
+	at,
+	boolean,
+	constant,
 	createIssues,
 	DecodeError,
 	type Decoder,
+	failed,
+	field,
+	float,
 	type Infer,
 	type Issue,
 	type Issues,
+	index,
+	int,
+	map,
+	nullable,
+	object,
+	oneOrMore,
+	optional,
 	type Primitive,
+	record,
+	string,
+	succeed,
+	tuple,
 	type UnionDecodeIssues,
-} from "../src/index.js";
+	union,
+	value,
+} from "../src";
 
 describe("Decoder", () => {
 	describe("array", () => {
 		test("fixed", () => {
-			const _decoder = katabami.array<number>(katabami.float());
+			const _decoder = array<number>(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.array(katabami.float());
+			const _decoder = array(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.array(
-				katabami.float().andThen(() => {
-					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.int()),
-					);
+			const _decoder = array(
+				float().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
 
@@ -43,23 +60,20 @@ describe("Decoder", () => {
 	describe("at", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = katabami.at<string>(["foo", "bar"], katabami.string());
+				const _decoder = at<string>(["foo", "bar"], string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.at(["foo", "bar"], katabami.string());
+				const _decoder = at(["foo", "bar"], string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
 
 			test("equivalent to nested field", () => {
-				const _at = katabami.at(["foo", "bar"], katabami.string());
-				const _field = katabami.field(
-					"foo",
-					katabami.field("bar", katabami.string()),
-				);
+				const _at = at(["foo", "bar"], string());
+				const _field = field("foo", field("bar", string()));
 
 				expectTypeOf<Infer<typeof _at>>().toEqualTypeOf<Infer<typeof _field>>();
 			});
@@ -67,25 +81,23 @@ describe("Decoder", () => {
 
 		describe("async", () => {
 			test("fixed", () => {
-				const _decoder = katabami
-					.at<string>(["foo", "bar"], katabami.string())
-					.andThen((value) => {
+				const _decoder = at<string>(["foo", "bar"], string()).andThen(
+					(value) => {
 						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
-					});
+					},
+				);
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami
-					.at(["foo", "bar"], katabami.string())
-					.andThen((value) => {
-						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const _decoder = at(["foo", "bar"], string()).andThen((value) => {
+					return new Promise<Decoder<string>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
@@ -94,15 +106,15 @@ describe("Decoder", () => {
 
 	describe("boolean", () => {
 		test("fixed", () => {
-			const _decoder = katabami.boolean();
+			const _decoder = boolean();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<boolean>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.boolean().andThen((value) => {
+			const _decoder = boolean().andThen((value) => {
 				return new Promise<Decoder<boolean>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -112,21 +124,21 @@ describe("Decoder", () => {
 
 	describe("constant", () => {
 		test("sync", () => {
-			const _decoder = katabami.constant("foo");
+			const _decoder = constant("foo");
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"foo">();
 		});
 
 		test("null", () => {
-			const _decoder = katabami.constant(null);
+			const _decoder = constant(null);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.constant("foo").andThen((value) => {
+			const _decoder = constant("foo").andThen((value) => {
 				return new Promise<Decoder<"foo">>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -136,15 +148,15 @@ describe("Decoder", () => {
 
 	describe("failed", () => {
 		test("sync", () => {
-			const _decoder = katabami.failed();
+			const _decoder = failed();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<never>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.failed().andThen((value) => {
+			const _decoder = failed().andThen((value) => {
 				return new Promise<Decoder<never>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -155,13 +167,13 @@ describe("Decoder", () => {
 	describe("field", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = katabami.field<string>("foo", katabami.string());
+				const _decoder = field<string>("foo", string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.field("foo", katabami.string());
+				const _decoder = field("foo", string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
@@ -169,25 +181,21 @@ describe("Decoder", () => {
 
 		describe("async", () => {
 			test("fixed", () => {
-				const _decoder = katabami
-					.field<string>("foo", katabami.string())
-					.andThen((value) => {
-						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const _decoder = field<string>("foo", string()).andThen((value) => {
+					return new Promise<Decoder<string>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami
-					.field("foo", katabami.string())
-					.andThen((value) => {
-						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const _decoder = field("foo", string()).andThen((value) => {
+					return new Promise<Decoder<string>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
@@ -196,15 +204,15 @@ describe("Decoder", () => {
 
 	describe("float", () => {
 		test("sync", () => {
-			const _decoder = katabami.float();
+			const _decoder = float();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.float().andThen((value) => {
+			const _decoder = float().andThen((value) => {
 				return new Promise<Decoder<number>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -215,13 +223,13 @@ describe("Decoder", () => {
 	describe("index", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = katabami.index<string>(0, katabami.string());
+				const _decoder = index<string>(0, string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.index(0, katabami.string());
+				const _decoder = index(0, string());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 			});
@@ -229,25 +237,21 @@ describe("Decoder", () => {
 
 		describe("async", () => {
 			test("fixed", () => {
-				const _decoder = katabami
-					.index<string>(0, katabami.string())
-					.andThen((value) => {
-						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const _decoder = index<string>(0, string()).andThen((value) => {
+					return new Promise<Decoder<string>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami
-					.index(0, katabami.string())
-					.andThen((value) => {
-						return new Promise<Decoder<string>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const _decoder = index(0, string()).andThen((value) => {
+					return new Promise<Decoder<string>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<string>>();
 			});
@@ -256,21 +260,21 @@ describe("Decoder", () => {
 
 	describe("int", () => {
 		test("fixed", () => {
-			const _decoder = katabami.int();
+			const _decoder = int();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.int();
+			const _decoder = int();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.int().andThen((value) => {
+			const _decoder = int().andThen((value) => {
 				return new Promise<Decoder<number>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -280,13 +284,13 @@ describe("Decoder", () => {
 
 	describe("map", () => {
 		test("fixed", () => {
-			const _decoder = katabami.map<
+			const _decoder = map<
 				{ bar: number; foo: number },
 				[Decoder<number>, Decoder<number>]
 			>(
 				(foo, bar) => ({ bar, foo }),
-				katabami.field("foo", katabami.float()),
-				katabami.field("bar", katabami.float()),
+				field("foo", float()),
+				field("bar", float()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -296,10 +300,10 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.map(
+			const _decoder = map(
 				(foo, bar) => ({ bar, foo }),
-				katabami.field("foo", katabami.float()),
-				katabami.field("bar", katabami.float()),
+				field("foo", float()),
+				field("bar", float()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -309,17 +313,17 @@ describe("Decoder", () => {
 		});
 
 		test("has promise decoder", () => {
-			const _decoder = katabami.map(
+			const _decoder = map(
 				(foo, bar) => ({ bar, foo }),
-				katabami.field(
+				field(
 					"foo",
-					katabami.float().andThen((value) => {
+					float().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				),
-				katabami.field("bar", katabami.float()),
+				field("bar", float()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -331,13 +335,13 @@ describe("Decoder", () => {
 		});
 
 		test("has promise map function", () => {
-			const _decoder = katabami.map(
+			const _decoder = map(
 				async (foo, bar) => {
 					await new Promise((resolve) => setTimeout(resolve, 100));
 					return { bar, foo };
 				},
-				katabami.field("foo", katabami.float()),
-				katabami.field("bar", katabami.float()),
+				field("foo", float()),
+				field("bar", float()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -351,9 +355,9 @@ describe("Decoder", () => {
 
 	describe("object", () => {
 		test("fixed", () => {
-			const _decoder = katabami.object<{ num: number; optionalStr?: string }>({
-				num: katabami.float(),
-				optionalStr: katabami.optional(katabami.string()),
+			const _decoder = object<{ num: number; optionalStr?: string }>({
+				num: float(),
+				optionalStr: optional(string()),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -363,9 +367,9 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.object({
-				num: katabami.float(),
-				optionalStr: katabami.optional(katabami.string()),
+			const _decoder = object({
+				num: float(),
+				optionalStr: optional(string()),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -375,13 +379,13 @@ describe("Decoder", () => {
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.object({
-				num: katabami.float().andThen((value) => {
+			const _decoder = object({
+				num: float().andThen((value) => {
 					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
-				optionalStr: katabami.optional(katabami.string()),
+				optionalStr: optional(string()),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -393,9 +397,9 @@ describe("Decoder", () => {
 		});
 
 		test("nullable field", () => {
-			const _decoder = katabami.object({
-				nullableStr: katabami.nullable(katabami.string()),
-				num: katabami.float(),
+			const _decoder = object({
+				nullableStr: nullable(string()),
+				num: float(),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -407,7 +411,7 @@ describe("Decoder", () => {
 
 	describe("oneOrMore", () => {
 		test("fixed", () => {
-			const _decoder = katabami.oneOrMore<number>(katabami.float());
+			const _decoder = oneOrMore<number>(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				[number, ...number[]]
@@ -415,7 +419,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.oneOrMore(katabami.float());
+			const _decoder = oneOrMore(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				[number, ...number[]]
@@ -423,11 +427,9 @@ describe("Decoder", () => {
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.oneOrMore(
-				katabami.float().andThen(() => {
-					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.int()),
-					);
+			const _decoder = oneOrMore(
+				float().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
 
@@ -439,7 +441,7 @@ describe("Decoder", () => {
 
 	describe("record", () => {
 		test("fixed", () => {
-			const _decoder = katabami.record<number>(katabami.float());
+			const _decoder = record<number>(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
@@ -447,7 +449,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.record(katabami.float());
+			const _decoder = record(float());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
@@ -455,11 +457,9 @@ describe("Decoder", () => {
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.record(
-				katabami.float().andThen(() => {
-					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.int()),
-					);
+			const _decoder = record(
+				float().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
 
@@ -472,13 +472,13 @@ describe("Decoder", () => {
 	describe("nullable", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = katabami.nullable<number>(katabami.float());
+				const _decoder = nullable<number>(float());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.nullable(katabami.float());
+				const _decoder = nullable(float());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
 			});
@@ -486,10 +486,10 @@ describe("Decoder", () => {
 
 		describe("async", () => {
 			test("fixed", () => {
-				const _decoder = katabami.nullable<Promise<number>>(
-					katabami.float().andThen((value) => {
+				const _decoder = nullable<Promise<number>>(
+					float().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -500,10 +500,10 @@ describe("Decoder", () => {
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.nullable(
-					katabami.float().andThen((value) => {
+				const _decoder = nullable(
+					float().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -518,7 +518,7 @@ describe("Decoder", () => {
 	describe("optional", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = katabami.optional<number>(katabami.float());
+				const _decoder = optional<number>(float());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 					number | undefined
@@ -526,7 +526,7 @@ describe("Decoder", () => {
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.optional(katabami.float());
+				const _decoder = optional(float());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 					number | undefined
@@ -536,10 +536,10 @@ describe("Decoder", () => {
 
 		describe("async", () => {
 			test("fixed", () => {
-				const _decoder = katabami.optional<Promise<number>>(
-					katabami.float().andThen((value) => {
+				const _decoder = optional<Promise<number>>(
+					float().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -550,10 +550,10 @@ describe("Decoder", () => {
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.optional(
-					katabami.float().andThen((value) => {
+				const _decoder = optional(
+					float().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -567,15 +567,15 @@ describe("Decoder", () => {
 
 	describe("string", () => {
 		test("sync", () => {
-			const _decoder = katabami.string();
+			const _decoder = string();
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<string>();
 		});
 
 		test("promise", () => {
-			const _decoder = katabami.string().andThen((value) => {
+			const _decoder = string().andThen((value) => {
 				return new Promise<Decoder<string>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			});
 
@@ -585,31 +585,25 @@ describe("Decoder", () => {
 
 	describe("tuple", () => {
 		test("fixed", () => {
-			const _decoder = katabami.tuple<["foo", "bar"]>(
-				katabami.constant("foo"),
-				katabami.constant("bar"),
-			);
+			const _decoder = tuple<["foo", "bar"]>(constant("foo"), constant("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.tuple(
-				katabami.constant("foo"),
-				katabami.constant("bar"),
-			);
+			const _decoder = tuple(constant("foo"), constant("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.tuple(
-				katabami.constant("foo").andThen((value) => {
+			const _decoder = tuple(
+				constant("foo").andThen((value) => {
 					return new Promise<Decoder<"foo">>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
-				katabami.constant("bar"),
+				constant("bar"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -620,31 +614,25 @@ describe("Decoder", () => {
 
 	describe("union", () => {
 		test("fixed", () => {
-			const _decoder = katabami.union(
-				katabami.constant("foo"),
-				katabami.constant("bar"),
-			);
+			const _decoder = union(constant("foo"), constant("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
 
 		test("complement", () => {
-			const _decoder = katabami.union(
-				katabami.constant("bar"),
-				katabami.constant("foo"),
-			);
+			const _decoder = union(constant("bar"), constant("foo"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
 
 		test("has promise", () => {
-			const _decoder = katabami.union(
-				katabami.constant("bar").andThen((value) => {
+			const _decoder = union(
+				constant("bar").andThen((value) => {
 					return new Promise<Decoder<"bar">>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
-				katabami.constant("foo"),
+				constant("foo"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -704,22 +692,20 @@ describe("Decoder", () => {
 	describe("decoder method", () => {
 		describe("andThen", () => {
 			test("fixed", () => {
-				const _decoder = katabami.value().andThen<number>(() => katabami.int());
+				const _decoder = value().andThen<number>(() => int());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.value().andThen(() => katabami.int());
+				const _decoder = value().andThen(() => int());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("promise", () => {
-				const _decoder = katabami.value().andThen(() => {
-					return new Promise<Decoder<number>>((resolve) =>
-						resolve(katabami.int()),
-					);
+				const _decoder = value().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
@@ -728,25 +714,23 @@ describe("Decoder", () => {
 
 		describe("catch", () => {
 			test("fixed", () => {
-				const _decoder = katabami
-					.int()
-					.catch<Issues<"custom", Issue<"custom", "Custom issue", undefined>>>(
-						() => {
-							return {
-								error: new DecodeError(
-									"Custom error",
-									createIssues("custom", "Custom issue"),
-								),
-								ok: false,
-							};
-						},
-					);
+				const _decoder = int().catch<
+					Issues<"custom", Issue<"custom", "Custom issue", undefined>>
+				>(() => {
+					return {
+						error: new DecodeError(
+							"Custom error",
+							createIssues("custom", "Custom issue"),
+						),
+						ok: false,
+					};
+				});
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.int().catch(() => {
+				const _decoder = int().catch(() => {
 					return {
 						error: new DecodeError(
 							"Custom error",
@@ -762,21 +746,19 @@ describe("Decoder", () => {
 
 		describe("map", () => {
 			test("fixed", () => {
-				const _decoder = katabami
-					.string()
-					.map<number>((value) => Number(value));
+				const _decoder = string().map<number>((value) => Number(value));
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("complement", () => {
-				const _decoder = katabami.string().map((value) => Number(value));
+				const _decoder = string().map((value) => Number(value));
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
 			});
 
 			test("promise", () => {
-				const _decoder = katabami.string().map((value) => {
+				const _decoder = string().map((value) => {
 					return new Promise<number>((resolve) => resolve(Number(value)));
 				});
 

@@ -1,3 +1,3 @@
-export * from "./decoder.js";
-export * from "./error.js";
-export * from "./issue.js";
+export * from "./decoder";
+export * from "./error";
+export * from "./issue";

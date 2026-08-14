@@ -1,6 +1,23 @@
 import { describe, expect, test } from "vitest";
-import type { Decoder } from "../src/index.js";
-import * as katabami from "../src/index.js";
+import {
+	array,
+	at,
+	boolean,
+	constant,
+	type Decoder,
+	field,
+	float,
+	index,
+	int,
+	map,
+	object,
+	oneOrMore,
+	record,
+	string,
+	succeed,
+	tuple,
+	union,
+} from "../src";
 
 async function expectValidateAsync(
 	decoder: Decoder<unknown>,
@@ -29,7 +46,7 @@ function validate(decoder: Decoder<unknown>, value: unknown) {
 describe("StandardSchemaV1", () => {
 	describe("array", () => {
 		describe("sync", () => {
-			const decoder = katabami.array(katabami.string());
+			const decoder = array(string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -81,10 +98,10 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.array(
-				katabami.string().andThen((value) => {
+			const decoder = array(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -141,7 +158,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("at", () => {
 		describe("sync", () => {
-			const decoder = katabami.at(["foo", "bar"], katabami.string());
+			const decoder = at(["foo", "bar"], string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -203,11 +220,11 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.at(
+			const decoder = at(
 				["foo", "bar"],
-				katabami.string().andThen((value) => {
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -281,7 +298,7 @@ describe("StandardSchemaV1", () => {
 	});
 
 	describe("boolean", () => {
-		const decoder = katabami.boolean();
+		const decoder = boolean();
 
 		describe("validate value", () => {
 			test("success", () => {
@@ -322,7 +339,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("constant", () => {
 		describe("string", () => {
-			const decoder = katabami.constant("foo");
+			const decoder = constant("foo");
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -362,7 +379,7 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("null", () => {
-			const decoder = katabami.constant(null);
+			const decoder = constant(null);
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -385,7 +402,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("field", () => {
 		describe("sync", () => {
-			const decoder = katabami.field("foo", katabami.string());
+			const decoder = field("foo", string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -439,20 +456,18 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami
-				.field(
-					"foo",
-					katabami.string().andThen((value) => {
-						return new Promise<Decoder<string, never>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					}),
-				)
-				.andThen((value) => {
-					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+			const decoder = field(
+				"foo",
+				string().andThen((value) => {
+					return new Promise<Decoder<string, never>>((resolve) =>
+						resolve(succeed(value)),
 					);
-				});
+				}),
+			).andThen((value) => {
+				return new Promise<Decoder<typeof value, never>>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
 
 			describe("validate value", () => {
 				test("success", async () => {
@@ -508,7 +523,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("index", () => {
 		describe("sync", () => {
-			const decoder = katabami.index(1, katabami.string());
+			const decoder = index(1, string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -558,16 +573,14 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami
-				.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
-				})
-				.andThen((value) => {
-					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
-					);
-				});
+			const decoder = object({
+				bar: int(),
+				foo: string(),
+			}).andThen((value) => {
+				return new Promise<Decoder<typeof value, never>>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
 
 			describe("validate value", () => {
 				test("success", async () => {
@@ -633,10 +646,10 @@ describe("StandardSchemaV1", () => {
 
 	describe("map", () => {
 		describe("sync", () => {
-			const decoder = katabami.map(
+			const decoder = map(
 				(foo, bar) => ({ bar, foo }),
-				katabami.field("foo", katabami.string()),
-				katabami.field("bar", katabami.int()),
+				field("foo", string()),
+				field("bar", int()),
 			);
 
 			describe("validate value", () => {
@@ -694,12 +707,12 @@ describe("StandardSchemaV1", () => {
 
 		describe("async", () => {
 			describe("async decoder", () => {
-				const decoder = katabami.map(
+				const decoder = map(
 					(foo, bar) => ({ bar, foo }),
-					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.int()).andThen((value) => {
+					field("foo", string()),
+					field("bar", int()).andThen((value) => {
 						return new Promise<Decoder<number, never>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -764,13 +777,13 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async map function", () => {
-				const decoder = katabami.map(
+				const decoder = map(
 					(foo, bar) =>
 						new Promise<{ bar: number; foo: string }>((resolve) =>
 							resolve({ bar, foo }),
 						),
-					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.int()),
+					field("foo", string()),
+					field("bar", int()),
 				);
 
 				describe("validate value", () => {
@@ -833,9 +846,9 @@ describe("StandardSchemaV1", () => {
 	describe("object", () => {
 		describe("flattened object", () => {
 			describe("sync", () => {
-				const decoder = katabami.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
+				const decoder = object({
+					bar: int(),
+					foo: string(),
 				});
 
 				describe("validate value", () => {
@@ -898,16 +911,14 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.object({
-						bar: katabami.int(),
-						foo: katabami.string(),
-					})
-					.andThen((value) => {
-						return new Promise<Decoder<typeof value, never>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const decoder = object({
+					bar: int(),
+					foo: string(),
+				}).andThen((value) => {
+					return new Promise<Decoder<typeof value, never>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				describe("validate value", () => {
 					test("success", async () => {
@@ -973,9 +984,9 @@ describe("StandardSchemaV1", () => {
 
 		describe("nested object", () => {
 			describe("sync", () => {
-				const decoder = katabami.object({
-					bar: katabami.object({
-						foo: katabami.string(),
+				const decoder = object({
+					bar: object({
+						foo: string(),
 					}),
 				});
 
@@ -1040,11 +1051,11 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami.object({
-					bar: katabami.object({
-						foo: katabami.string().andThen((value) => {
+				const decoder = object({
+					bar: object({
+						foo: string().andThen((value) => {
 							return new Promise<Decoder<typeof value, never>>((resolve) =>
-								resolve(katabami.succeed(value)),
+								resolve(succeed(value)),
 							);
 						}),
 					}),
@@ -1120,7 +1131,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("oneOrMore", () => {
 		describe("sync", () => {
-			const decoder = katabami.oneOrMore(katabami.string());
+			const decoder = oneOrMore(string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -1161,7 +1172,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("record", () => {
 		describe("sync", () => {
-			const decoder = katabami.record(katabami.string());
+			const decoder = record(string());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -1219,10 +1230,10 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.record(
-				katabami.string().andThen((value) => {
+			const decoder = record(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1290,7 +1301,7 @@ describe("StandardSchemaV1", () => {
 	});
 
 	describe("string", () => {
-		const decoder = katabami.string();
+		const decoder = string();
 
 		describe("validate value", () => {
 			test("success", () => {
@@ -1331,7 +1342,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("tuple", () => {
 		describe("sync", () => {
-			const decoder = katabami.tuple(katabami.string(), katabami.int());
+			const decoder = tuple(string(), int());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -1379,11 +1390,11 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.tuple(
-				katabami.string(),
-				katabami.int().andThen((value) => {
+			const decoder = tuple(
+				string(),
+				int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1436,7 +1447,7 @@ describe("StandardSchemaV1", () => {
 
 	describe("union", () => {
 		describe("sync", () => {
-			const decoder = katabami.union(katabami.string(), katabami.int());
+			const decoder = union(string(), int());
 
 			describe("validate value", () => {
 				test("success", () => {
@@ -1492,11 +1503,11 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.union(
-				katabami.string(),
-				katabami.int().andThen((value) => {
+			const decoder = union(
+				string(),
+				int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1558,7 +1569,7 @@ describe("StandardSchemaV1", () => {
 	describe("decoder method", () => {
 		describe("andThen", () => {
 			describe("sync", () => {
-				const decoder = katabami.float().andThen(() => katabami.int());
+				const decoder = float().andThen(() => int());
 
 				describe("validate value", () => {
 					test("success", () => {
@@ -1596,14 +1607,9 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.float()
-					.andThen(
-						() =>
-							new Promise<Decoder<number>>((resolve) =>
-								resolve(katabami.int()),
-							),
-					);
+				const decoder = float().andThen(
+					() => new Promise<Decoder<number>>((resolve) => resolve(int())),
+				);
 
 				describe("validate value", () => {
 					test("success", async () => {
@@ -1645,7 +1651,7 @@ describe("StandardSchemaV1", () => {
 
 		describe("map", () => {
 			describe("sync", () => {
-				const decoder = katabami.string().map((value) => Number(value));
+				const decoder = string().map((value) => Number(value));
 
 				describe("validate value", () => {
 					test("success", () => {
@@ -1685,11 +1691,9 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.string()
-					.map(
-						(value) => new Promise<number>((resolve) => resolve(Number(value))),
-					);
+				const decoder = string().map(
+					(value) => new Promise<number>((resolve) => resolve(Number(value))),
+				);
 
 				describe("validate value", () => {
 					test("success", async () => {

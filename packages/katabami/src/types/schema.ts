@@ -1,4 +1,4 @@
-import type { Primitive } from "./primitive.js";
+import type { Primitive } from "./primitive";
 
 /**
  * A decoder that accepts arrays.

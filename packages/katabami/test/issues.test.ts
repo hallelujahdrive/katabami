@@ -1,16 +1,33 @@
 import { describe, expect, test } from "vitest";
-import * as katabami from "../src/index.js";
 import {
+	array,
+	at,
+	boolean,
+	constant,
 	createIssues,
 	DecodeError,
+	failed,
+	field,
 	flattenIssues,
+	float,
 	getIssueMessage,
+	index,
+	int,
+	map,
+	nullable,
+	object,
+	oneOrMore,
+	optional,
+	record,
+	string,
+	tuple,
 	unflattenIssues,
-} from "../src/index.js";
+	union,
+} from "../src";
 
 describe("issues", () => {
 	describe("array decoder", () => {
-		const decoder = katabami.array(katabami.string());
+		const decoder = array(string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -40,7 +57,7 @@ describe("issues", () => {
 	});
 
 	describe("oneOrMore decoder", () => {
-		const decoder = katabami.oneOrMore(katabami.string());
+		const decoder = oneOrMore(string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -70,7 +87,7 @@ describe("issues", () => {
 	});
 
 	describe("boolean decoder", () => {
-		const decoder = katabami.boolean();
+		const decoder = boolean();
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue("foo");
@@ -87,7 +104,7 @@ describe("issues", () => {
 	});
 
 	describe("constant decoder", () => {
-		const decoder = katabami.constant("foo");
+		const decoder = constant("foo");
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -103,7 +120,7 @@ describe("issues", () => {
 		});
 
 		test("null constant", () => {
-			const result = katabami.constant(null).decodeValue("foo");
+			const result = constant(null).decodeValue("foo");
 
 			expect(result).toStrictEqual({
 				error: expect.any(DecodeError),
@@ -117,7 +134,7 @@ describe("issues", () => {
 	});
 
 	describe("failed decoder", () => {
-		const decoder = katabami.failed();
+		const decoder = failed();
 
 		test("default message", () => {
 			const result = decoder.decodeValue("foo");
@@ -134,7 +151,7 @@ describe("issues", () => {
 	});
 
 	describe("field decoder", () => {
-		const decoder = katabami.field("foo", katabami.string());
+		const decoder = field("foo", string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -163,10 +180,7 @@ describe("issues", () => {
 		});
 
 		describe("optional field", () => {
-			const decoder = katabami.field(
-				"foo",
-				katabami.optional(katabami.string()),
-			);
+			const decoder = field("foo", optional(string()));
 
 			test("missing field", () => {
 				const result = decoder.decodeValue({});
@@ -179,10 +193,7 @@ describe("issues", () => {
 		});
 
 		describe("nullable field", () => {
-			const decoder = katabami.field(
-				"foo",
-				katabami.nullable(katabami.string()),
-			);
+			const decoder = field("foo", nullable(string()));
 
 			test("null field", () => {
 				const result = decoder.decodeValue({ foo: null });
@@ -205,7 +216,7 @@ describe("issues", () => {
 	});
 
 	describe("at decoder", () => {
-		const decoder = katabami.at(["foo", "bar"], katabami.string());
+		const decoder = at(["foo", "bar"], string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -238,7 +249,7 @@ describe("issues", () => {
 	});
 
 	describe("float decoder", () => {
-		const decoder = katabami.float();
+		const decoder = float();
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue("foo");
@@ -255,7 +266,7 @@ describe("issues", () => {
 	});
 
 	describe("index decoder", () => {
-		const decoder = katabami.index(0, katabami.string());
+		const decoder = index(0, string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -306,7 +317,7 @@ describe("issues", () => {
 	});
 
 	describe("integer decoder", () => {
-		const decoder = katabami.int();
+		const decoder = int();
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue("foo");
@@ -336,10 +347,10 @@ describe("issues", () => {
 	});
 
 	describe("map decoder", () => {
-		const decoder = katabami.map(
+		const decoder = map(
 			(foo, bar) => ({ bar, foo }),
-			katabami.field("foo", katabami.string()),
-			katabami.field("bar", katabami.string()),
+			field("foo", string()),
+			field("bar", string()),
 		);
 
 		test("unexpected type", () => {
@@ -370,7 +381,7 @@ describe("issues", () => {
 	});
 
 	describe("at decoder", () => {
-		const decoder = katabami.at(["foo", "bar"], katabami.string());
+		const decoder = at(["foo", "bar"], string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -403,8 +414,8 @@ describe("issues", () => {
 	});
 
 	describe("object decoder", () => {
-		const decoder = katabami.object({
-			foo: katabami.string(),
+		const decoder = object({
+			foo: string(),
 		});
 
 		test("unexpected type", () => {
@@ -439,7 +450,7 @@ describe("issues", () => {
 	});
 
 	describe("record decoder", () => {
-		const decoder = katabami.record(katabami.string());
+		const decoder = record(string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -473,7 +484,7 @@ describe("issues", () => {
 	});
 
 	describe("string decoder", () => {
-		const decoder = katabami.string();
+		const decoder = string();
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -490,7 +501,7 @@ describe("issues", () => {
 	});
 
 	describe("tuple decoder", () => {
-		const decoder = katabami.tuple(katabami.string(), katabami.int());
+		const decoder = tuple(string(), int());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -541,7 +552,7 @@ describe("issues", () => {
 	});
 
 	describe("union decoder", () => {
-		const decoder = katabami.union(katabami.string(), katabami.int());
+		const decoder = union(string(), int());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(true);
@@ -565,9 +576,9 @@ describe("issues", () => {
 		});
 
 		describe("nested union", () => {
-			const decoder = katabami.union(
-				katabami.constant("foo"),
-				katabami.union(katabami.constant("bar"), katabami.constant("baz")),
+			const decoder = union(
+				constant("foo"),
+				union(constant("bar"), constant("baz")),
 			);
 
 			test("unexpected type", () => {
@@ -599,7 +610,7 @@ describe("issues", () => {
 
 	describe("Decoder methods", () => {
 		test("andThen", () => {
-			const decoder = katabami.string().andThen(() => katabami.constant("foo"));
+			const decoder = string().andThen(() => constant("foo"));
 
 			const result = decoder.decodeValue("bar");
 
@@ -614,7 +625,7 @@ describe("issues", () => {
 		});
 
 		test("catch", () => {
-			const decoder = katabami.string().catch(() => {
+			const decoder = string().catch(() => {
 				return {
 					error: new DecodeError(
 						"Custom error",
@@ -637,7 +648,7 @@ describe("issues", () => {
 		});
 
 		test("map", () => {
-			const decoder = katabami.string().map((value) => value.toUpperCase());
+			const decoder = string().map((value) => value.toUpperCase());
 
 			const result = decoder.decodeValue(1);
 
@@ -654,8 +665,8 @@ describe("issues", () => {
 
 	describe("unflattenIssues", () => {
 		test("round-trips object issues", () => {
-			const decoder = katabami.object({
-				foo: katabami.string(),
+			const decoder = object({
+				foo: string(),
 			});
 			const result = decoder.decodeValue({ foo: 1 });
 
@@ -678,9 +689,9 @@ describe("issues", () => {
 		});
 
 		test("round-trips nested object issues", () => {
-			const decoder = katabami.object({
-				foo: katabami.object({
-					bar: katabami.string(),
+			const decoder = object({
+				foo: object({
+					bar: string(),
 				}),
 			});
 			const result = decoder.decodeValue({ foo: { bar: 1 } });
@@ -707,7 +718,7 @@ describe("issues", () => {
 		});
 
 		test("round-trips array issues", () => {
-			const decoder = katabami.array(katabami.string());
+			const decoder = array(string());
 			const result = decoder.decodeValue([1, true]);
 
 			expect(result.ok).toBe(false);
@@ -729,7 +740,7 @@ describe("issues", () => {
 		});
 
 		test("round-trips union issues", () => {
-			const decoder = katabami.union(katabami.string(), katabami.int());
+			const decoder = union(string(), int());
 			const result = decoder.decodeValue(true);
 
 			expect(result.ok).toBe(false);
@@ -749,7 +760,7 @@ describe("issues", () => {
 		});
 
 		test("round-trips primitive issues", () => {
-			const decoder = katabami.string();
+			const decoder = string();
 			const result = decoder.decodeValue(1);
 
 			expect(result.ok).toBe(false);

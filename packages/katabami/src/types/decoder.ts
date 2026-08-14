@@ -1,8 +1,8 @@
-import type { TypeKeys } from "./format.js";
-import type { Resolved, UnionToTuple } from "./helpers.js";
-import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue.js";
-import type { DecoderSchema } from "./schema.js";
-import type { StandardSchemaV1 } from "./standardSchema.js";
+import type { TypeKeys } from "./format";
+import type { Resolved, UnionToTuple } from "./helpers";
+import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue";
+import type { DecoderSchema } from "./schema";
+import type { StandardSchemaV1 } from "./standardSchema";
 
 /**
  * The issues type of an array decoder.

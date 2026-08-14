@@ -1,8 +1,8 @@
 import type {
 	Decoder as IDecoder,
 	UnflattenedIssuesFromDecoder,
-} from "../types/decoder.js";
-import type { IssueMessageKeys, TypeKeys } from "../types/format.js";
+} from "../types/decoder";
+import type { IssueMessageKeys, TypeKeys } from "../types/format";
 import type {
 	_Issues,
 	FormattedIssue,
@@ -11,10 +11,10 @@ import type {
 	Issues,
 	IssueType,
 	UnflattenedIssues,
-} from "../types/issue.js";
-import type { Primitive } from "../types/primitive.js";
-import type { StandardSchemaV1 } from "../types/standardSchema.js";
-import { defaultFormatter } from "./format.js";
+} from "../types/issue";
+import type { Primitive } from "../types/primitive";
+import type { StandardSchemaV1 } from "../types/standardSchema";
+import { defaultFormatter } from "./format";
 
 /**
  * A weak map to store the issue message string representations.

@@ -224,17 +224,50 @@ if (!result.ok) {
 ```
 
 `flattenIssues` turns that tree into Standard Schema `{ message, path }[]`.
-`unflattenIssues` rebuilds a tree from flattened issues (messages stay
-pre-formatted):
+Pass a formatter as the second argument to format messages while flattening.
+`unflattenIssues` rebuilds a tree from that list; messages stay pre-formatted.
+Give it the decoder type to restore typed paths:
 
 ```ts
-import { flattenIssues, unflattenIssues } from "katabami";
+import * as katabami from "katabami";
+import { flattenIssues, getIssueMessage, unflattenIssues } from "katabami";
+
+const decoder = katabami.object({
+	foo: katabami.object({
+		bar: katabami.string(),
+	}),
+});
+
+const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
 	const flattened = flattenIssues(result.error.issues);
+	// [
+	//   { message: "One or more object properties failed validation.", path: undefined },
+	//   { message: "One or more object properties failed validation.", path: ["foo"] },
+	//   { message: "Expected string, but received number.", path: ["foo", "bar"] },
+	// ]
+
 	const restored = unflattenIssues<typeof decoder>(flattened);
+	getIssueMessage(restored)?.format();
+	// "One or more object properties failed validation."
 	getIssueMessage(restored.foo?.bar)?.format();
+	// "Expected string, but received number."
+	getIssueMessage(restored.foo?.bar)?.message;
+	// already a formatted string
 }
+```
+
+`unflattenIssues` also accepts Standard Schema `PathSegment` objects (`{ key }`):
+
+```ts
+const restored = unflattenIssues([
+	{ message: "root failed", path: undefined },
+	{ message: "nested failed", path: [{ key: "foo" }] },
+]);
+
+getIssueMessage(restored.foo)?.format();
+// "nested failed"
 ```
 
 Custom issues use `createIssues`:
@@ -343,7 +376,7 @@ formatter module (`quoteString`).
 ```ts
 import i18next from "i18next";
 import * as katabami from "katabami";
-import { getIssueMessage } from "katabami";
+import { flattenIssues, getIssueMessage, unflattenIssues } from "katabami";
 import { createFormatter, formatter, resources } from "@katabami/i18next";
 
 await i18next.use(formatter).init({
@@ -361,10 +394,15 @@ const result = katabami.string().decodeValue(1);
 if (!result.ok) {
 	getIssueMessage(result.error.issues)?.format(format);
 	// 文字列が期待されましたが、数値でした。
+
+	const flattened = flattenIssues(result.error.issues, format);
+	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
+
+	const restored = unflattenIssues(flattened);
+	getIssueMessage(restored)?.format();
+	// 文字列が期待されましたが、数値でした。
 }
 ```
-
-`flattenIssues(issues, format)` uses the same formatter.
 
 ## Development
 

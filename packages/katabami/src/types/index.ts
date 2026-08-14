@@ -1,7 +1,7 @@
-export type * from "./decoder.js";
-export type * from "./format.js";
-export type * from "./helpers.js";
-export type * from "./issue.js";
-export type * from "./primitive.js";
-export type * from "./schema.js";
-export type * from "./standardSchema.js";
+export type * from "./decoder";
+export type * from "./format";
+export type * from "./helpers";
+export type * from "./issue";
+export type * from "./primitive";
+export type * from "./schema";
+export type * from "./standardSchema";

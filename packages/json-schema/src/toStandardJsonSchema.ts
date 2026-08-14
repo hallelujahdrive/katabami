@@ -1,6 +1,6 @@
 import type { Decoder, Issues, StandardSchemaV1 } from "katabami";
-import { toJsonSchema } from "./toJsonSchema.js";
-import type { StandardJSONSchemaV1 } from "./types/standardJsonSchema.js";
+import { toJsonSchema } from "./toJsonSchema";
+import type { StandardJSONSchemaV1 } from "./types/standardJsonSchema";
 
 /**
  * An object that implements both Standard Schema and Standard JSON Schema.

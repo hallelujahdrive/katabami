@@ -1,11 +1,30 @@
 import { describe, expect, test } from "vitest";
-import * as katabami from "../src";
-import { DecodeError, type Decoder } from "../src";
+import {
+	array,
+	at,
+	boolean,
+	constant,
+	DecodeError,
+	type Decoder,
+	field,
+	float,
+	index,
+	int,
+	map,
+	nullable,
+	object,
+	oneOrMore,
+	record,
+	string,
+	succeed,
+	tuple,
+	union,
+} from "../src";
 
 describe("decoder", () => {
 	describe("array", () => {
 		describe("sync", () => {
-			const decoder = katabami.array(katabami.string());
+			const decoder = array(string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -51,10 +70,10 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.array(
-				katabami.string().andThen((value) => {
+			const decoder = array(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -105,7 +124,7 @@ describe("decoder", () => {
 
 	describe("at", () => {
 		describe("sync", () => {
-			const decoder = katabami.at(["foo", "bar"], katabami.string());
+			const decoder = at(["foo", "bar"], string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -157,11 +176,11 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.at(
+			const decoder = at(
 				["foo", "bar"],
-				katabami.string().andThen((value) => {
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -217,7 +236,7 @@ describe("decoder", () => {
 	});
 
 	describe("boolean", () => {
-		const decoder = katabami.boolean();
+		const decoder = boolean();
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -264,7 +283,7 @@ describe("decoder", () => {
 
 	describe("constant", () => {
 		describe("string", () => {
-			const decoder = katabami.constant("foo");
+			const decoder = constant("foo");
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -310,7 +329,7 @@ describe("decoder", () => {
 		});
 
 		describe("null", () => {
-			const decoder = katabami.constant(null);
+			const decoder = constant(null);
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -358,7 +377,7 @@ describe("decoder", () => {
 
 	describe("field", () => {
 		describe("sync", () => {
-			const decoder = katabami.field("foo", katabami.string());
+			const decoder = field("foo", string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -410,16 +429,14 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami
-				.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
-				})
-				.andThen((value) => {
-					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
-					);
-				});
+			const decoder = object({
+				bar: int(),
+				foo: string(),
+			}).andThen((value) => {
+				return new Promise<Decoder<typeof value, never>>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
 
 			describe("decode value", () => {
 				test("success", async () => {
@@ -479,7 +496,7 @@ describe("decoder", () => {
 
 	describe("index", () => {
 		describe("sync", () => {
-			const decoder = katabami.index(1, katabami.string());
+			const decoder = index(1, string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -531,16 +548,14 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami
-				.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
-				})
-				.andThen((value) => {
-					return new Promise<Decoder<typeof value, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
-					);
-				});
+			const decoder = object({
+				bar: int(),
+				foo: string(),
+			}).andThen((value) => {
+				return new Promise<Decoder<typeof value, never>>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
 
 			describe("decode value", () => {
 				test("success", async () => {
@@ -600,10 +615,10 @@ describe("decoder", () => {
 
 	describe("map", () => {
 		describe("sync", () => {
-			const decoder = katabami.map(
+			const decoder = map(
 				(foo, bar) => ({ bar, foo }),
-				katabami.field("foo", katabami.string()),
-				katabami.field("bar", katabami.int()),
+				field("foo", string()),
+				field("bar", int()),
 			);
 
 			describe("decode value", () => {
@@ -651,12 +666,12 @@ describe("decoder", () => {
 
 		describe("async", () => {
 			describe("async decoder", () => {
-				const decoder = katabami.map(
+				const decoder = map(
 					(foo, bar) => ({ bar, foo }),
-					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.int()).andThen((value) => {
+					field("foo", string()),
+					field("bar", int()).andThen((value) => {
 						return new Promise<Decoder<number, never>>((resolve) =>
-							resolve(katabami.succeed(value)),
+							resolve(succeed(value)),
 						);
 					}),
 				);
@@ -705,13 +720,13 @@ describe("decoder", () => {
 			});
 
 			describe("async map function", () => {
-				const decoder = katabami.map(
+				const decoder = map(
 					(foo, bar) =>
 						new Promise<{ bar: number; foo: string }>((resolve) =>
 							resolve({ bar, foo }),
 						),
-					katabami.field("foo", katabami.string()),
-					katabami.field("bar", katabami.int()),
+					field("foo", string()),
+					field("bar", int()),
 				);
 
 				describe("decode value", () => {
@@ -763,7 +778,7 @@ describe("decoder", () => {
 
 	describe("nullable", () => {
 		describe("sync", () => {
-			const decoder = katabami.nullable(katabami.string());
+			const decoder = nullable(string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -825,10 +840,10 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.nullable(
-				katabami.string().andThen((value) => {
+			const decoder = nullable(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -896,9 +911,9 @@ describe("decoder", () => {
 	describe("object", () => {
 		describe("flattened object", () => {
 			describe("sync", () => {
-				const decoder = katabami.object({
-					bar: katabami.int(),
-					foo: katabami.string(),
+				const decoder = object({
+					bar: int(),
+					foo: string(),
 				});
 
 				describe("decode value", () => {
@@ -957,16 +972,14 @@ describe("decoder", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.object({
-						bar: katabami.int(),
-						foo: katabami.string(),
-					})
-					.andThen((value) => {
-						return new Promise<Decoder<typeof value, never>>((resolve) =>
-							resolve(katabami.succeed(value)),
-						);
-					});
+				const decoder = object({
+					bar: int(),
+					foo: string(),
+				}).andThen((value) => {
+					return new Promise<Decoder<typeof value, never>>((resolve) =>
+						resolve(succeed(value)),
+					);
+				});
 
 				describe("decode value", () => {
 					test("success", async () => {
@@ -1028,9 +1041,9 @@ describe("decoder", () => {
 
 		describe("nested object", () => {
 			describe("sync", () => {
-				const decoder = katabami.object({
-					bar: katabami.object({
-						foo: katabami.string(),
+				const decoder = object({
+					bar: object({
+						foo: string(),
 					}),
 				});
 
@@ -1091,11 +1104,11 @@ describe("decoder", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami.object({
-					bar: katabami.object({
-						foo: katabami.string().andThen((value) => {
+				const decoder = object({
+					bar: object({
+						foo: string().andThen((value) => {
 							return new Promise<Decoder<typeof value, never>>((resolve) =>
-								resolve(katabami.succeed(value)),
+								resolve(succeed(value)),
 							);
 						}),
 					}),
@@ -1161,7 +1174,7 @@ describe("decoder", () => {
 
 	describe("oneOrMore", () => {
 		describe("sync", () => {
-			const decoder = katabami.oneOrMore(katabami.string());
+			const decoder = oneOrMore(string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -1229,10 +1242,10 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.oneOrMore(
-				katabami.string().andThen((value) => {
+			const decoder = oneOrMore(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1305,7 +1318,7 @@ describe("decoder", () => {
 
 	describe("record", () => {
 		describe("sync", () => {
-			const decoder = katabami.record(katabami.string());
+			const decoder = record(string());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -1363,10 +1376,10 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.record(
-				katabami.string().andThen((value) => {
+			const decoder = record(
+				string().andThen((value) => {
 					return new Promise<Decoder<string, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1422,7 +1435,7 @@ describe("decoder", () => {
 	});
 
 	describe("string", () => {
-		const decoder = katabami.string();
+		const decoder = string();
 
 		describe("decode value", () => {
 			test("success", () => {
@@ -1469,7 +1482,7 @@ describe("decoder", () => {
 
 	describe("tuple", () => {
 		describe("sync", () => {
-			const decoder = katabami.tuple(katabami.string(), katabami.int());
+			const decoder = tuple(string(), int());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -1521,11 +1534,11 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.tuple(
-				katabami.string(),
-				katabami.int().andThen((value) => {
+			const decoder = tuple(
+				string(),
+				int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1582,7 +1595,7 @@ describe("decoder", () => {
 
 	describe("union", () => {
 		describe("sync", () => {
-			const decoder = katabami.union(katabami.string(), katabami.int());
+			const decoder = union(string(), int());
 
 			describe("decode value", () => {
 				test("success", () => {
@@ -1628,11 +1641,11 @@ describe("decoder", () => {
 		});
 
 		describe("async", () => {
-			const decoder = katabami.union(
-				katabami.string(),
-				katabami.int().andThen((value) => {
+			const decoder = union(
+				string(),
+				int().andThen((value) => {
 					return new Promise<Decoder<number, never>>((resolve) =>
-						resolve(katabami.succeed(value)),
+						resolve(succeed(value)),
 					);
 				}),
 			);
@@ -1684,7 +1697,7 @@ describe("decoder", () => {
 	describe("decoder method", () => {
 		describe("andThen", () => {
 			describe("sync", () => {
-				const decoder = katabami.float().andThen(() => katabami.int());
+				const decoder = float().andThen(() => int());
 
 				describe("decode value", () => {
 					test("success", () => {
@@ -1730,14 +1743,9 @@ describe("decoder", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.float()
-					.andThen(
-						() =>
-							new Promise<Decoder<number>>((resolve) =>
-								resolve(katabami.int()),
-							),
-					);
+				const decoder = float().andThen(
+					() => new Promise<Decoder<number>>((resolve) => resolve(int())),
+				);
 
 				describe("decode value", () => {
 					test("success", async () => {
@@ -1785,7 +1793,7 @@ describe("decoder", () => {
 
 		describe("map", () => {
 			describe("sync", () => {
-				const decoder = katabami.string().map((value) => Number(value));
+				const decoder = string().map((value) => Number(value));
 
 				describe("decode value", () => {
 					test("success", () => {
@@ -1831,11 +1839,9 @@ describe("decoder", () => {
 			});
 
 			describe("async", () => {
-				const decoder = katabami
-					.string()
-					.map(
-						(value) => new Promise<number>((resolve) => resolve(Number(value))),
-					);
+				const decoder = string().map(
+					(value) => new Promise<number>((resolve) => resolve(Number(value))),
+				);
 
 				describe("decode value", () => {
 					test("success", async () => {

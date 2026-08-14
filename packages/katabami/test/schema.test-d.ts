@@ -1,13 +1,19 @@
 import { describe, expectTypeOf, test } from "vitest";
-import type {
-	Decoder,
-	DecoderSchema,
-	Infer,
-	Issues,
-	SchemaAsyncOf,
-	SchemaResult,
-} from "../src/index.js";
-import * as katabami from "../src/index.js";
+import {
+	array,
+	type Decoder,
+	type DecoderSchema,
+	type Infer,
+	type Issues,
+	int,
+	lazy,
+	object,
+	record,
+	type SchemaAsyncOf,
+	type SchemaResult,
+	string,
+	succeed,
+} from "../src";
 
 type GetSchema<T extends Decoder<unknown, Issues, boolean>> = ReturnType<
 	T["getSchema"]
@@ -15,7 +21,7 @@ type GetSchema<T extends Decoder<unknown, Issues, boolean>> = ReturnType<
 
 describe("getSchema", () => {
 	test("sync decoder", () => {
-		const _decoder = katabami.string();
+		const _decoder = string();
 
 		expectTypeOf<SchemaAsyncOf<typeof _decoder>>().toEqualTypeOf<false>();
 		expectTypeOf<GetSchema<typeof _decoder>>().toEqualTypeOf<DecoderSchema>();
@@ -23,9 +29,7 @@ describe("getSchema", () => {
 	});
 
 	test("async decoder", () => {
-		const _decoder = katabami.lazy(() =>
-			Promise.resolve(katabami.object({ name: katabami.string() })),
-		);
+		const _decoder = lazy(() => Promise.resolve(object({ name: string() })));
 
 		expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 			Promise<{ name: string }>
@@ -38,10 +42,10 @@ describe("getSchema", () => {
 	});
 
 	test("array with async decode preserves sync schema", () => {
-		const _decoder = katabami.array(
-			katabami.string().andThen(() => {
+		const _decoder = array(
+			string().andThen(() => {
 				return new Promise<Decoder<string>>((resolve) =>
-					resolve(katabami.succeed("foo")),
+					resolve(succeed("foo")),
 				);
 			}),
 		);
@@ -54,13 +58,13 @@ describe("getSchema", () => {
 	});
 
 	test("object with async decode preserves sync schema", () => {
-		const _decoder = katabami.object({
-			age: katabami.int().andThen((value) => {
+		const _decoder = object({
+			age: int().andThen((value) => {
 				return new Promise<Decoder<typeof value, never>>((resolve) =>
-					resolve(katabami.succeed(value)),
+					resolve(succeed(value)),
 				);
 			}),
-			name: katabami.string(),
+			name: string(),
 		});
 
 		expectTypeOf<SchemaAsyncOf<typeof _decoder>>().toEqualTypeOf<false>();
@@ -68,10 +72,10 @@ describe("getSchema", () => {
 	});
 
 	test("record with async decode preserves sync schema", () => {
-		const _decoder = katabami.record(
-			katabami.string().andThen(() => {
+		const _decoder = record(
+			string().andThen(() => {
 				return new Promise<Decoder<string>>((resolve) =>
-					resolve(katabami.succeed("foo")),
+					resolve(succeed("foo")),
 				);
 			}),
 		);
