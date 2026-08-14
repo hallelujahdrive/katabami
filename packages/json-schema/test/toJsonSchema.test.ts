@@ -77,6 +77,13 @@ describe("toJsonSchema", () => {
 			type: "array",
 		});
 
+		expect(toJsonSchema(katabami.oneOrMore(katabami.string()))).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			items: { type: "string" },
+			minItems: 1,
+			type: "array",
+		});
+
 		expect(toJsonSchema(katabami.record(katabami.int()))).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			additionalProperties: { type: "integer" },

@@ -295,6 +295,16 @@ export type ObjectDecoders<T extends Record<string, unknown>> = {
 export type Ok<T> = { error?: never; ok: true; value: T };
 
 /**
+ * The response type of a oneOrMore decoder.
+ */
+export type OneOrMoreDecodeResponse<T extends Decoder<unknown>> =
+	T extends Decoder<infer A>
+		? A extends Resolved<A>
+			? [A, ...A[]]
+			: Promise<[Resolved<A>, ...Resolved<A>[]]>
+		: never;
+
+/**
  * The response type of an optional decoder.
  */
 export type OptionalDecodeResponse<T> =

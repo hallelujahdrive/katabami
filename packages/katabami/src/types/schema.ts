@@ -6,6 +6,7 @@ import type { Primitive } from "./primitive.js";
 export type ArrayDecoderSchema = {
 	readonly element: DecoderSchema;
 	readonly kind: "array";
+	readonly minItems?: number;
 };
 
 /**

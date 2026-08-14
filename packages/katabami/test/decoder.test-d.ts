@@ -405,6 +405,38 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("oneOrMore", () => {
+		test("fixed", () => {
+			const _decoder = katabami.oneOrMore<number>(katabami.float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				[number, ...number[]]
+			>();
+		});
+
+		test("complement", () => {
+			const _decoder = katabami.oneOrMore(katabami.float());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				[number, ...number[]]
+			>();
+		});
+
+		test("has promise", () => {
+			const _decoder = katabami.oneOrMore(
+				katabami.float().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) =>
+						resolve(katabami.int()),
+					);
+				}),
+			);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Promise<[number, ...number[]]>
+			>();
+		});
+	});
+
 	describe("record", () => {
 		test("fixed", () => {
 			const _decoder = katabami.record<number>(katabami.float());

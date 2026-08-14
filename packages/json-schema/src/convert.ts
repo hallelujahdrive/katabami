@@ -207,11 +207,18 @@ export const convertSchema = (
 	target: SupportedTarget,
 ): JsonSchema => {
 	switch (schema.kind) {
-		case "array":
-			return {
+		case "array": {
+			const result: JsonSchema = {
 				items: convertSchema(schema.element, target),
 				type: "array",
 			};
+
+			if (schema.minItems !== undefined) {
+				result.minItems = schema.minItems;
+			}
+
+			return result;
+		}
 		case "boolean":
 			return { type: "boolean" };
 		case "constant":

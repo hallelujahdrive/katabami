@@ -98,6 +98,21 @@ describe("DecodeError", () => {
 		});
 	});
 
+	test("oneOrMore", () => {
+		const _decoder = katabami.oneOrMore(katabami.int());
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			| {
+					expected: "type.array";
+					received: TypeKeys;
+			  }
+			| {
+					expected: 1;
+					received: number;
+			  }
+		>();
+	});
+
 	test("at", () => {
 		const _decoder = katabami.at(["foo", "bar"], katabami.string());
 		const _field = katabami.field(

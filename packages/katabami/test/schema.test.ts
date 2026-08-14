@@ -47,6 +47,32 @@ describe("getSchema", () => {
 		});
 	});
 
+	describe("oneOrMore", () => {
+		test("sync", () => {
+			expect(katabami.oneOrMore(katabami.int()).getSchema()).toEqual({
+				element: { kind: "integer" },
+				kind: "array",
+				minItems: 1,
+			});
+		});
+
+		test("async", () => {
+			const decoder = katabami.oneOrMore(
+				katabami.int().andThen((value) => {
+					return new Promise<Decoder<typeof value, never>>((resolve) =>
+						resolve(katabami.succeed(value)),
+					);
+				}),
+			);
+
+			expect(decoder.getSchema()).toEqual({
+				element: { kind: "integer" },
+				kind: "array",
+				minItems: 1,
+			});
+		});
+	});
+
 	describe("object", () => {
 		test("sync", () => {
 			expect(

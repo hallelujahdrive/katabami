@@ -1118,6 +1118,47 @@ describe("StandardSchemaV1", () => {
 		});
 	});
 
+	describe("oneOrMore", () => {
+		describe("sync", () => {
+			const decoder = katabami.oneOrMore(katabami.string());
+
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, ["foo", "bar"], {
+						value: ["foo", "bar"],
+					});
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, [true, 1], {
+						issues: [
+							{
+								message: "One or more array elements failed validation.",
+								path: undefined,
+							},
+							{
+								message: "Expected string, but received boolean.",
+								path: ["0"],
+							},
+							{ message: "Expected string, but received number.", path: ["1"] },
+						],
+					});
+				});
+
+				test("empty", () => {
+					expectValidateSync(decoder, [], {
+						issues: [
+							{
+								message: "Expected array length 1, but received 0.",
+								path: undefined,
+							},
+						],
+					});
+				});
+			});
+		});
+	});
+
 	describe("record", () => {
 		describe("sync", () => {
 			const decoder = katabami.record(katabami.string());

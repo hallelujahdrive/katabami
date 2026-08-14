@@ -21,6 +21,7 @@ import type {
 	ObjectDecodeResponse,
 	ObjectDecoders,
 	Ok,
+	OneOrMoreDecodeResponse,
 	OptionalDecodeResponse,
 	Primitive,
 	RecordDecodeIssues,
@@ -69,10 +70,13 @@ const constantSchema = <T extends Primitive>(value: T): DecoderSchema => ({
 	value,
 });
 
-const arraySchema = (element: DecoderSchema): DecoderSchema => ({
-	element,
-	kind: "array",
-});
+const arraySchema = (
+	element: DecoderSchema,
+	minItems?: number,
+): DecoderSchema =>
+	minItems === undefined
+		? { element, kind: "array" }
+		: { element, kind: "array", minItems };
 
 const objectSchema = (
 	properties: Readonly<Record<string, DecoderSchema>>,
@@ -204,6 +208,11 @@ const objectSchemaDescriptor =
 			objectSchema(Object.fromEntries(resolved)),
 		);
 	};
+
+const oneOrMoreSchemaDescriptor =
+	(decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => arraySchema(schema, 1));
 
 const recordSchemaDescriptor =
 	(decoder: SchemaDecoder): SchemaDescriptor =>
@@ -736,6 +745,75 @@ const decodeArrayHelper = <T, U extends IDecoder<T>>(
 		value: results.map(([_, result]) => result.value) as ArrayDecodeResponse<U>,
 	};
 };
+
+/**
+ * Creates a decoder that decodes a non-empty array.
+ * @template T - The type of the array elements.
+ * @template {IDecoder<T>} U - The decoder to use.
+ * @param {U} decoder - The decoder to use.
+ * @returns {DecodeFunction<OneOrMoreDecodeResponse<U>, ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined> | Issue<"array", "issue.invalidArrayLength", { expected: 1; received: number }> | Issue<"array", "issue.unexpectedType", { expected: "type.array"; received: TypeKeys }>>>} A decoder that decodes a non-empty array.
+ */
+const decodeOneOrMoreFunc =
+	<T, U extends IDecoder<T>>(
+		decoder: U,
+	): DecodeFunction<
+		OneOrMoreDecodeResponse<U>,
+		ArrayDecodeIssues<
+			U,
+			| Issue<"array", "issue.invalidArrayElements", undefined>
+			| Issue<
+					"array",
+					"issue.invalidArrayLength",
+					{ expected: 1; received: number }
+			  >
+			| Issue<
+					"array",
+					"issue.unexpectedType",
+					{ expected: "type.array"; received: TypeKeys }
+			  >
+		>
+	> =>
+	(value) => {
+		if (Array.isArray(value) && value.length === 0) {
+			return {
+				error: new DecodeError(
+					"Array expected",
+					createIssues("array", "issue.invalidArrayLength", {
+						expected: 1,
+						received: 0,
+					}) as ArrayDecodeIssues<
+						U,
+						Issue<
+							"array",
+							"issue.invalidArrayLength",
+							{ expected: 1; received: number }
+						>
+					>,
+				),
+				ok: false,
+			};
+		}
+
+		return decodeArrayFunc(decoder)(value) as Awaitable<
+			Result<
+				OneOrMoreDecodeResponse<U>,
+				ArrayDecodeIssues<
+					U,
+					| Issue<"array", "issue.invalidArrayElements", undefined>
+					| Issue<
+							"array",
+							"issue.invalidArrayLength",
+							{ expected: 1; received: number }
+					  >
+					| Issue<
+							"array",
+							"issue.unexpectedType",
+							{ expected: "type.array"; received: TypeKeys }
+					  >
+				>
+			>
+		>;
+	};
 
 /**
  * Creates a decoder that always returns the same value.
@@ -1805,6 +1883,59 @@ export function object<
 		undefined,
 		objectSchemaDescriptor(decoders),
 		recordDecoderAsync(decoders),
+	);
+}
+
+/**
+ * Create a decoder that decodes a non-empty array.
+ *
+ * @template T The type of the array elements.
+ * @template {IDecoder<T>} U The decoder to use.
+ * @param {IDecoder<T>} decoder The decoder to use for elements.
+ * @returns {IDecoder<OneOrMoreDecodeResponse<U>, ArrayDecodeIssues<U, Issue<"array", "issue.invalidArrayElements", undefined> | Issue<"array", "issue.invalidArrayLength", { expected: 1; received: number }> | Issue<"array", "issue.unexpectedType", { expected: "type.array"; received: TypeKeys }>>>} A decoder that decodes a non-empty array.
+ */
+export function oneOrMore<T, U extends IDecoder<T> = IDecoder<T>>(
+	decoder: U,
+): IDecoder<
+	OneOrMoreDecodeResponse<U>,
+	ArrayDecodeIssues<
+		U,
+		| Issue<"array", "issue.invalidArrayElements", undefined>
+		| Issue<
+				"array",
+				"issue.invalidArrayLength",
+				{ expected: 1; received: number }
+		  >
+		| Issue<
+				"array",
+				"issue.unexpectedType",
+				{ expected: "type.array"; received: TypeKeys }
+		  >
+	>,
+	SchemaAsyncOf<U>
+> {
+	return new Decoder<
+		OneOrMoreDecodeResponse<U>,
+		ArrayDecodeIssues<
+			U,
+			| Issue<"array", "issue.invalidArrayElements", undefined>
+			| Issue<
+					"array",
+					"issue.invalidArrayLength",
+					{ expected: 1; received: number }
+			  >
+			| Issue<
+					"array",
+					"issue.unexpectedType",
+					{ expected: "type.array"; received: TypeKeys }
+			  >
+		>,
+		SchemaAsyncOf<U>
+	>(
+		decodeOneOrMoreFunc(decoder),
+		undefined,
+		oneOrMoreSchemaDescriptor(decoder),
+		isDecoderAsync(decoder),
 	);
 }
 

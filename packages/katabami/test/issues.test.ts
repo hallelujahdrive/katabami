@@ -39,6 +39,36 @@ describe("issues", () => {
 		});
 	});
 
+	describe("oneOrMore decoder", () => {
+		const decoder = katabami.oneOrMore(katabami.string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected array, but received number.",
+			);
+		});
+
+		test("empty array", () => {
+			const result = decoder.decodeValue([]);
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				"Expected array length 1, but received 0.",
+			);
+		});
+	});
+
 	describe("boolean decoder", () => {
 		const decoder = katabami.boolean();
 

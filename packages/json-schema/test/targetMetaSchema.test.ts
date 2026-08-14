@@ -63,6 +63,7 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 		age: katabami.int(),
 		name: katabami.nullable(katabami.string()),
 	}),
+	oneOrMore: katabami.oneOrMore(katabami.string()),
 	optional: katabami.optional(katabami.string()),
 	optionalUnion: katabami.optional(
 		katabami.union(katabami.string(), katabami.int()),

@@ -33,6 +33,18 @@ describe("translate", () => {
 		});
 	});
 
+	describe("oneOrMore decoder", () => {
+		const decoder = katabami.oneOrMore(katabami.string());
+
+		test("empty array", () => {
+			const result = decoder.decodeValue([]);
+
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual("配列の長さは1が期待されましたが、0でした。");
+		});
+	});
+
 	describe("boolean decoder", () => {
 		const decoder = katabami.boolean();
 
