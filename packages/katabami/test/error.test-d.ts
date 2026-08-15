@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, test } from "vitest";
 import {
 	type ArrayDecodeIssues,
+	type Awaitable,
 	array,
 	at,
 	boolean,
@@ -51,7 +52,7 @@ type ExtractIssue<I> = I extends infer U
 			: U extends ArrayDecodeIssues<Decoder<unknown>, infer Issue>
 				? Issue
 				: U extends RecordDecodeIssues<
-							Decoder<unknown>,
+							Decoder<Awaitable<PropertyKey>>,
 							Decoder<unknown>,
 							infer Issue
 						>
@@ -321,16 +322,45 @@ describe("DecodeError", () => {
 		const _decoder = record(string(), string());
 
 		test("issue message", () => {
-			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-				expected: "type.object";
-				received: TypeKeys;
-			}>();
+			expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+				| {
+						expected: "type.object";
+						received: TypeKeys;
+				  }
+				| { key: string }
+			>();
 		});
 
 		test("record decode issues", () => {
 			expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toExtend<{
 				readonly [key: string]: Record<never, never>;
 			}>();
+		});
+
+		describe("literal keys", () => {
+			const _keyed = record(union(constant("a"), constant("b")), int());
+
+			test("issue message", () => {
+				expectTypeOf<GetVars<typeof _keyed>>().toEqualTypeOf<
+					| {
+							expected: "type.object";
+							received: TypeKeys;
+					  }
+					| { key: string }
+				>();
+			});
+
+			test("invalid keys are not issue paths", () => {
+				expectTypeOf<GetIssues<DecodeResult<typeof _keyed>>>().toHaveProperty(
+					"a",
+				);
+				expectTypeOf<GetIssues<DecodeResult<typeof _keyed>>>().toHaveProperty(
+					"b",
+				);
+				expectTypeOf<
+					GetIssues<DecodeResult<typeof _keyed>>
+				>().not.toHaveProperty("c");
+			});
 		});
 	});
 

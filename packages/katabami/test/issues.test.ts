@@ -477,9 +477,9 @@ describe("issues", () => {
 				"One or more record properties failed validation.",
 			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual("Expected string, but received number.");
+			expect(getIssueMessage(result.error?.issues.foo)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
 		});
 
 		test("invalid record key", () => {
@@ -492,12 +492,9 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
-				"One or more record properties failed validation.",
+				'Record key "c" failed validation.',
 			);
-
-			expect(getIssueMessage(result.error?.issues?.c)?.format()).toStrictEqual(
-				"None of the union members matched.",
-			);
+			expect(Object.keys(result.error?.issues ?? {})).toStrictEqual([]);
 		});
 	});
 

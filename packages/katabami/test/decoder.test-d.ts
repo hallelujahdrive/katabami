@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 import {
+	type Awaitable,
 	array,
 	at,
 	boolean,
@@ -488,6 +489,14 @@ describe("Decoder", () => {
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Promise<Record<string, number>>
 			>();
+		});
+
+		test("key decoder must decode PropertyKey", () => {
+			expectTypeOf<Parameters<typeof record>[0]>().toEqualTypeOf<
+				Decoder<Awaitable<PropertyKey>>
+			>();
+			expectTypeOf(string()).toExtend<Parameters<typeof record>[0]>();
+			expectTypeOf(boolean()).not.toExtend<Parameters<typeof record>[0]>();
 		});
 	});
 

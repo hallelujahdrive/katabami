@@ -343,6 +343,23 @@ describe("translate", () => {
 				getIssueMessage(result.error?.issues?.foo)?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
+
+		test("invalid record key", () => {
+			const keyed = katabami.record(
+				katabami.union(katabami.constant("a"), katabami.constant("b")),
+				katabami.int(),
+			);
+			const result = keyed.decodeValue({ c: 1 });
+
+			expect(result).toStrictEqual({
+				error: expect.any(DecodeError),
+				ok: false,
+			});
+
+			expect(
+				getIssueMessage(result.error?.issues)?.format(formatter),
+			).toStrictEqual('レコードキー"c"のバリデーションに失敗しました。');
+		});
 	});
 
 	describe("string decoder", () => {

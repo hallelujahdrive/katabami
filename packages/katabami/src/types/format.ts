@@ -40,6 +40,10 @@ export type MessageResources = {
 		 */
 		invalidRecord: string;
 		/**
+		 * The message for the issue when the key of the record is invalid.
+		 */
+		invalidRecordKey: string;
+		/**
 		 * The message for the issue when none of the union members match.
 		 */
 		invalidUnion: string;
