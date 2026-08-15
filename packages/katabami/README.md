@@ -42,7 +42,7 @@ const result = user.decodeValue({ age: 20, name: "Ada" });
 if (result.ok) {
 	console.log(result.value.name);
 } else {
-	console.log(katabami.getIssueMessage(result.error.issues)?.format());
+	console.log(katabami.getIssueMessage(result.issues)?.format());
 }
 ```
 
@@ -69,14 +69,16 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ user: { age: "20", name: "Ada" } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.error.issues.user?.age)?.format();
+	katabami.getIssueMessage(result.issues.user?.age)?.format();
 	// "Expected number, but received string."
 }
 ```
 
 ## Documentation
 
-Full decoder list, `flattenIssues` / `unflattenIssues`, Standard Schema, JSON
+Full decoder list, `flattenIssues` / `unflattenIssues`,
+`serializeDecodeResult` / `deserializeDecodeResult`, `unwrapDecodeResult`,
+Standard Schema, JSON
 Schema, and i18next usage:
 
 https://github.com/hallelujahdrive/katabami

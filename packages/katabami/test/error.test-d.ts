@@ -7,7 +7,6 @@ import {
 	boolean,
 	constant,
 	createIssues,
-	DecodeError,
 	type Decoder,
 	failed,
 	field,
@@ -101,7 +100,7 @@ type GetVars<T extends Decoder<unknown>> =
 type IssueVars<I> =
 	I extends Issue<infer _, infer __, infer Vars> ? Vars : never;
 
-describe("DecodeError", () => {
+describe("decode issues", () => {
 	describe("array", () => {
 		const _decoder = array(int());
 
@@ -493,10 +492,7 @@ describe("DecodeError", () => {
 			test("issue message", () => {
 				const _decoder = int().catch(() => {
 					return {
-						error: new DecodeError(
-							"Custom error",
-							createIssues("custom", "Custom issue"),
-						),
+						issues: createIssues("custom", "Custom issue"),
 						ok: false as const,
 					};
 				});

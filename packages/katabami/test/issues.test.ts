@@ -5,7 +5,6 @@ import {
 	boolean,
 	constant,
 	createIssues,
-	DecodeError,
 	failed,
 	field,
 	flattenIssues,
@@ -33,11 +32,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array, but received number.",
 			);
 		});
@@ -46,13 +45,13 @@ describe("issues", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received number.");
+			expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
 		});
 	});
 
@@ -63,11 +62,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array, but received number.",
 			);
 		});
@@ -76,11 +75,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue([]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array length 1, but received 0.",
 			);
 		});
@@ -93,11 +92,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected boolean, but received string.",
 			);
 		});
@@ -110,11 +109,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Expected "foo", but received 1.',
 			);
 		});
@@ -123,11 +122,11 @@ describe("issues", () => {
 			const result = constant(null).decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Expected null, but received "foo".',
 			);
 		});
@@ -140,11 +139,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Failed to decode.",
 			);
 		});
@@ -157,11 +156,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -170,11 +169,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue({});
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
 			);
 		});
@@ -208,7 +207,7 @@ describe("issues", () => {
 				const result = decoder.decodeValue({});
 
 				expect(result).toStrictEqual({
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				});
 			});
@@ -222,11 +221,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -235,16 +234,16 @@ describe("issues", () => {
 			const result = decoder.decodeValue({ foo: {} });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
 			);
-			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual('Object property "bar" failed validation.');
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
+				'Object property "bar" failed validation.',
+			);
 		});
 	});
 
@@ -255,11 +254,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected float, but received string.",
 			);
 		});
@@ -272,11 +271,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array, but received number.",
 			);
 		});
@@ -285,34 +284,34 @@ describe("issues", () => {
 			const result = decoder.decodeValue([]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Array index "0" failed validation.',
 			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received undefined.");
+			expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
+				"Expected string, but received undefined.",
+			);
 		});
 
 		test("unexpected value", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Array index "0" failed validation.',
 			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received number.");
+			expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
 		});
 	});
 
@@ -323,11 +322,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected number, but received string.",
 			);
 		});
@@ -336,11 +335,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1.5);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected integer, but received float.",
 			);
 		});
@@ -357,11 +356,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -370,11 +369,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue({});
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
 			);
 		});
@@ -387,11 +386,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -400,16 +399,16 @@ describe("issues", () => {
 			const result = decoder.decodeValue({ foo: {} });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
 			);
-			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual('Object property "bar" failed validation.');
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
+				'Object property "bar" failed validation.',
+			);
 		});
 	});
 
@@ -422,11 +421,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -435,17 +434,17 @@ describe("issues", () => {
 			const result = decoder.decodeValue({ foo: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"One or more object properties failed validation.",
 			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(),
-			).toStrictEqual("Expected string, but received number.");
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
 		});
 	});
 
@@ -456,11 +455,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
 			);
 		});
@@ -469,15 +468,15 @@ describe("issues", () => {
 			const result = decoder.decodeValue({ foo: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"One or more record properties failed validation.",
 			);
 
-			expect(getIssueMessage(result.error?.issues.foo)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
 				"Expected string, but received number.",
 			);
 		});
@@ -487,14 +486,14 @@ describe("issues", () => {
 			const result = keyed.decodeValue({ c: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Record key "c" failed validation.',
 			);
-			expect(Object.keys(result.error?.issues ?? {})).toStrictEqual([]);
+			expect(Object.keys(result.issues ?? {})).toStrictEqual([]);
 		});
 	});
 
@@ -505,11 +504,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected string, but received number.",
 			);
 		});
@@ -522,11 +521,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array, but received number.",
 			);
 		});
@@ -535,11 +534,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected array length 2, but received 1.",
 			);
 		});
@@ -548,21 +547,21 @@ describe("issues", () => {
 			const result = decoder.decodeValue([undefined, 1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"One or more array elements failed validation.",
 			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(),
-			).toStrictEqual("Expected string, but received undefined.");
+			expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
+				"Expected string, but received undefined.",
+			);
 
-			expect(
-				getIssueMessage(result.error?.issues?.[1])?.format(),
-			).toStrictEqual(undefined);
+			expect(getIssueMessage(result.issues?.[1])?.format()).toStrictEqual(
+				undefined,
+			);
 		});
 	});
 
@@ -573,19 +572,19 @@ describe("issues", () => {
 			const result = decoder.decodeValue(true);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"None of the union members matched.",
 			);
 
-			expect(getIssueMessage(result.error?.issues[0])?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
 				"Expected string, but received boolean.",
 			);
 
-			expect(getIssueMessage(result.error?.issues[1])?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues?.[1])?.format()).toStrictEqual(
 				"Expected number, but received boolean.",
 			);
 		});
@@ -600,25 +599,25 @@ describe("issues", () => {
 				const result = decoder.decodeValue(1);
 
 				expect(result).toStrictEqual({
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				});
 
-				expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+				expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 					"None of the union members matched.",
 				);
 
-				expect(
-					getIssueMessage(result.error?.issues[0])?.format(),
-				).toStrictEqual('Expected "foo", but received 1.');
+				expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
+					'Expected "foo", but received 1.',
+				);
 
-				expect(
-					getIssueMessage(result.error?.issues[1])?.format(),
-				).toStrictEqual('Expected "bar", but received 1.');
+				expect(getIssueMessage(result.issues?.[1])?.format()).toStrictEqual(
+					'Expected "bar", but received 1.',
+				);
 
-				expect(
-					getIssueMessage(result.error?.issues[2])?.format(),
-				).toStrictEqual('Expected "baz", but received 1.');
+				expect(getIssueMessage(result.issues?.[2])?.format()).toStrictEqual(
+					'Expected "baz", but received 1.',
+				);
 			});
 		});
 	});
@@ -630,11 +629,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue("bar");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Expected "foo", but received "bar".',
 			);
 		});
@@ -642,10 +641,7 @@ describe("issues", () => {
 		test("catch", () => {
 			const decoder = string().catch(() => {
 				return {
-					error: new DecodeError(
-						"Custom error",
-						createIssues("custom", "Custom issue"),
-					),
+					issues: createIssues("custom", "Custom issue"),
 					ok: false,
 				};
 			});
@@ -653,11 +649,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Custom issue",
 			);
 		});
@@ -668,11 +664,11 @@ describe("issues", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(getIssueMessage(result.error?.issues)?.format()).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected string, but received number.",
 			);
 		});
@@ -688,7 +684,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(flattenIssues(result.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more object properties failed validation.",
@@ -712,7 +708,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(flattenIssues(result.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more object properties failed validation.",
@@ -735,7 +731,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(flattenIssues(result.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"One or more array elements failed validation.",
@@ -755,7 +751,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(flattenIssues(result.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"None of the union members matched.",
@@ -775,7 +771,7 @@ describe("issues", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(flattenIssues(result.error.issues));
+			const restored = unflattenIssues(flattenIssues(result.issues));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"Expected string, but received number.",

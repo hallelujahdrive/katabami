@@ -1,6 +1,13 @@
 import type { TypeKeys } from "./format";
 import type { Awaitable, Resolved, UnionToTuple } from "./helpers";
-import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue";
+import type {
+	_Issues,
+	FlattenedIssues,
+	Issue,
+	Issues,
+	UnflattenedIssuesFromFlattened,
+	UnflattenedIssuesOf,
+} from "./issue";
 import type { DecoderSchema } from "./schema";
 import type { StandardSchemaV1 } from "./standardSchema";
 
@@ -152,10 +159,28 @@ export type DecodeResult<T, I extends Issues> = [T] extends [never]
 		: Result<T, I>;
 
 /**
+ * Restores a {@link Result} from {@link SerializedDecodeResult}.
+ * Pass `typeof decoder` when the flattened list has lost its source brand
+ * (e.g. after `JSON.parse`).
+ */
+export type DeserializedDecodeResult<
+	S,
+	D extends Decoder<unknown, Issues, boolean> = never,
+> = S extends { ok: true; value: infer T }
+	? Ok<T>
+	: S extends { issues: infer F; ok: false }
+		? Err<
+				[D] extends [never]
+					? UnflattenedIssuesFromFlattened<F>
+					: UnflattenedIssuesFromDecoder<D>
+			>
+		: never;
+
+/**
  * Err type
  */
 export type Err<I extends Issues = Issues> = {
-	error: DecodeErrorInterface<I>;
+	issues: I;
 	ok: false;
 	value?: never;
 };
@@ -292,7 +317,7 @@ export type ObjectDecoders<T extends Record<string, unknown>> = {
 /**
  * Ok type
  */
-export type Ok<T> = { error?: never; ok: true; value: T };
+export type Ok<T> = { issues?: never; ok: true; value: T };
 
 /**
  * The response type of a oneOrMore decoder.
@@ -372,6 +397,13 @@ export type SchemaAsyncOf<D extends Decoder<unknown, Issues, boolean>> =
 export type SchemaResult<S extends boolean = false> = S extends true
 	? Promise<DecoderSchema>
 	: DecoderSchema;
+
+/**
+ * JSON-safe {@link Result}. Failed issues are a flattened Standard Schema list.
+ */
+export type SerializedDecodeResult<T, I extends Issues = Issues> =
+	| { issues: FlattenedIssues<I>; ok: false; value?: never }
+	| { issues?: never; ok: true; value: T };
 
 /**
  * The issues type of a tuple decoder.
