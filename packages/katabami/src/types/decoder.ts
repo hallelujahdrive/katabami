@@ -1,5 +1,5 @@
 import type { TypeKeys } from "./format";
-import type { Resolved, UnionToTuple } from "./helpers";
+import type { Awaitable, Resolved, UnionToTuple } from "./helpers";
 import type { _Issues, Issue, Issues, UnflattenedIssuesOf } from "./issue";
 import type { DecoderSchema } from "./schema";
 import type { StandardSchemaV1 } from "./standardSchema";
@@ -314,16 +314,18 @@ export type OptionalDecodeResponse<T> =
  * The issues type of a record decoder.
  */
 export type RecordDecodeIssues<
-	K extends Decoder<unknown>,
+	K extends Decoder<Awaitable<PropertyKey>>,
 	V extends Decoder<unknown>,
 	I extends Issue = Issue,
 > =
-	K extends Decoder<unknown, infer KeyIssues>
-		? V extends Decoder<unknown, infer ValueIssues>
-			? _Issues<
-					{ readonly [key: string]: KeyIssues | ValueIssues } | undefined,
-					I
-				>
+	K extends Decoder<infer Key>
+		? [Key] extends [Awaitable<PropertyKey>]
+			? V extends Decoder<unknown, infer ValueIssues>
+				? _Issues<
+						{ readonly [key in Resolved<Key>]: ValueIssues } | undefined,
+						I
+					>
+				: never
 			: never
 		: never;
 
@@ -331,7 +333,7 @@ export type RecordDecodeIssues<
  * The response type of a record decoder.
  */
 export type RecordDecodeResponse<
-	K extends Decoder<unknown>,
+	K extends Decoder<Awaitable<PropertyKey>>,
 	V extends Decoder<unknown>,
 > =
 	K extends Decoder<infer Key>

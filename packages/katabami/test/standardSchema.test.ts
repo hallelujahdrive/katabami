@@ -1310,20 +1310,8 @@ describe("StandardSchemaV1", () => {
 					{
 						issues: [
 							{
-								message: "One or more record properties failed validation.",
+								message: 'Record key "c" failed validation.',
 								path: undefined,
-							},
-							{
-								message: "None of the union members matched.",
-								path: ["c"],
-							},
-							{
-								message: 'Expected "a", but received "c".',
-								path: ["c"],
-							},
-							{
-								message: 'Expected "b", but received "c".',
-								path: ["c"],
 							},
 						],
 					},

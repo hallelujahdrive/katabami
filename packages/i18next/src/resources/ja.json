@@ -7,6 +7,7 @@
 		"invalidObject": "1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 		"invalidObjectField": "オブジェクトプロパティ\"{{key}}\"のバリデーションに失敗しました。",
 		"invalidRecord": "1つ以上のレコードプロパティのバリデーションに失敗しました。",
+		"invalidRecordKey": "レコードキー\"{{key}}\"のバリデーションに失敗しました。",
 		"invalidUnion": "ユニオンのメンバーのいずれにも一致しませんでした。",
 		"unexpectedType": "{{expected}}が期待されましたが、{{received}}でした。",
 		"unexpectedValue": "{{expected, quoteString}}が期待されましたが、{{received, quoteString}}でした。"
