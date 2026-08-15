@@ -33,10 +33,10 @@ const format = createFormatter(i18next.t);
 const result = katabami.string().decodeValue(1);
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.error.issues)?.format(format);
+	katabami.getIssueMessage(result.issues)?.format(format);
 	// 文字列が期待されましたが、数値でした。
 
-	const flattened = katabami.flattenIssues(result.error.issues, format);
+	const flattened = katabami.flattenIssues(result.issues, format);
 	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
 
 	const restored = katabami.unflattenIssues(flattened);

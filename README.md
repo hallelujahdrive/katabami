@@ -58,7 +58,7 @@ const fromType = katabami.object<User>({
   exactly like a synchronous one. Decoding still goes through `decodeValue` /
   `decodeString`; the result is a `Promise` only when the decoder is async.
 - **Issues follow the value’s structure.** Decode failures are not a flat list
-  first. `error.issues` is a nested object you can read like the input:
+  first. `issues` is a nested object you can read like the input:
   `issues.user?.address?.zip`. `getIssueMessage` pulls the message off any
   node.
 
@@ -75,7 +75,7 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ user: { age: "20", name: "Ada" } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.error.issues.user?.age)?.format();
+	katabami.getIssueMessage(result.issues.user?.age)?.format();
 	// "Expected number, but received string."
 }
 ```
@@ -127,7 +127,7 @@ const result = user.decodeValue({ age: 20, name: "Ada" });
 if (result.ok) {
 	console.log(result.value.name);
 } else {
-	console.log(katabami.getIssueMessage(result.error.issues)?.format());
+	console.log(katabami.getIssueMessage(result.issues)?.format());
 }
 ```
 
@@ -237,7 +237,7 @@ import * as katabami from "katabami";
 
 type Result<T, I> =
 	| { ok: true; value: T }
-	| { ok: false; error: katabami.DecodeError<I> };
+	| { ok: false; issues: I };
 ```
 
 Issues are a nested object (or array for unions) that follows the input shape.
@@ -255,11 +255,21 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.error.issues)?.format();
+	katabami.getIssueMessage(result.issues)?.format();
 	// "One or more object properties failed validation."
-	katabami.getIssueMessage(result.error.issues.foo?.bar)?.format();
+	katabami.getIssueMessage(result.issues.foo?.bar)?.format();
 	// "Expected string, but received number."
 }
+```
+
+`unwrapDecodeResult` returns the value, or throws `DecodeError`.
+The second argument can be a message string or a formatter; omitted, the
+error message is `"Failed to decode"`.
+
+```ts
+const value = katabami.unwrapDecodeResult(
+	decoder.decodeValue({ foo: { bar: "ok" } }),
+);
 ```
 
 `flattenIssues` turns that tree into Standard Schema `{ message, path }[]`.
@@ -279,7 +289,7 @@ const decoder = katabami.object({
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	const flattened = katabami.flattenIssues(result.error.issues);
+	const flattened = katabami.flattenIssues(result.issues);
 	// [
 	//   { message: "One or more object properties failed validation.", path: undefined },
 	//   { message: "One or more object properties failed validation.", path: ["foo"] },
@@ -293,6 +303,30 @@ if (!result.ok) {
 	// "Expected string, but received number."
 	katabami.getIssueMessage(restored.foo?.bar)?.message;
 	// already a formatted string
+}
+```
+
+`serializeDecodeResult` / `deserializeDecodeResult` apply that to a whole `Result`.
+Success is passed through; failure issues are flattened so the value is JSON-safe.
+After `JSON.parse`, pass `typeof decoder` to restore typed paths.
+
+```ts
+import * as katabami from "katabami";
+
+const decoder = katabami.object({
+	foo: katabami.object({
+		bar: katabami.string(),
+	}),
+});
+
+const result = decoder.decodeValue({ foo: { bar: 1 } });
+const serialized = katabami.serializeDecodeResult(result);
+const parsed = JSON.parse(JSON.stringify(serialized));
+const restored = katabami.deserializeDecodeResult<typeof decoder>(parsed);
+
+if (!restored.ok) {
+	katabami.getIssueMessage(restored.issues.foo?.bar)?.format();
+	// "Expected string, but received number."
 }
 ```
 
@@ -316,10 +350,7 @@ Custom issues use `createIssues`:
 import * as katabami from "katabami";
 
 const decoder = katabami.string().catch(() => ({
-	error: new katabami.DecodeError(
-		"Custom error",
-		katabami.createIssues("custom", "Custom issue"),
-	),
+	issues: katabami.createIssues("custom", "Custom issue"),
 	ok: false,
 }));
 ```
@@ -454,10 +485,10 @@ const format = createFormatter(i18next.t);
 const result = katabami.string().decodeValue(1);
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.error.issues)?.format(format);
+	katabami.getIssueMessage(result.issues)?.format(format);
 	// 文字列が期待されましたが、数値でした。
 
-	const flattened = katabami.flattenIssues(result.error.issues, format);
+	const flattened = katabami.flattenIssues(result.issues, format);
 	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
 
 	const restored = katabami.unflattenIssues(flattened);

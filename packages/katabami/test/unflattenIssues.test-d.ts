@@ -25,9 +25,9 @@ describe("unflattenIssues", () => {
 
 		if (result.ok) return;
 
-		const flattened = flattenIssues(result.error.issues);
+		const flattened = flattenIssues(result.issues);
 		expectTypeOf(flattened).toEqualTypeOf<
-			FlattenedIssues<typeof result.error.issues>
+			FlattenedIssues<typeof result.issues>
 		>();
 
 		const restored = unflattenIssues(flattened);
@@ -64,7 +64,7 @@ describe("unflattenIssues", () => {
 		if (result.ok) return;
 
 		const restored = unflattenIssues<typeof decoder>(
-			flattenIssues(result.error.issues),
+			flattenIssues(result.issues),
 		);
 
 		expectTypeOf(restored).toExtend<{
@@ -104,7 +104,7 @@ describe("unflattenIssues", () => {
 		const result = decoder.decodeValue({ foo: { bar: 1 } });
 		if (result.ok) return;
 
-		const restored = unflattenIssues(flattenIssues(result.error.issues));
+		const restored = unflattenIssues(flattenIssues(result.issues));
 
 		const issues:
 			| IssuesFromDecoder<typeof decoder>
@@ -132,7 +132,7 @@ describe("unflattenIssues", () => {
 		const result = decoder.decodeValue([1]);
 		if (result.ok) return;
 
-		const restored = unflattenIssues(flattenIssues(result.error.issues));
+		const restored = unflattenIssues(flattenIssues(result.issues));
 
 		expectTypeOf(getIssueMessage(restored[0])).toEqualTypeOf<
 			FormattedIssue | undefined

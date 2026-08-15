@@ -4,7 +4,6 @@ import {
 	at,
 	boolean,
 	constant,
-	DecodeError,
 	type Decoder,
 	field,
 	float,
@@ -39,7 +38,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -60,7 +59,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -91,7 +90,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -112,7 +111,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -142,7 +141,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ foo: { baz: "baz" } });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -166,7 +165,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"foo":{"baz":"baz"}}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -201,7 +200,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ foo: { baz: "baz" } });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -225,7 +224,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"foo":{"baz":"baz"}}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -251,7 +250,7 @@ describe("decoder", () => {
 				const result = decoder.decodeValue("foo");
 
 				const expectedResult = {
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				} as const;
 
@@ -272,7 +271,7 @@ describe("decoder", () => {
 				const result = decoder.decodeString('"foo"');
 
 				const expectedResult = {
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				} as const;
 
@@ -298,7 +297,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue("bar");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -319,7 +318,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('"bar"');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -344,7 +343,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue("foo");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -365,7 +364,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('"foo"');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -395,7 +394,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ bar: "bar" });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -419,7 +418,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"bar":"bar"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -460,7 +459,7 @@ describe("decoder", () => {
 					});
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -484,7 +483,7 @@ describe("decoder", () => {
 					const result = await decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -514,7 +513,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue(["foo"]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -538,7 +537,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('["foo"]');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -579,7 +578,7 @@ describe("decoder", () => {
 					});
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -603,7 +602,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -634,7 +633,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ bar: "1", foo: "foo" });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -655,7 +654,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -689,7 +688,7 @@ describe("decoder", () => {
 						const result = decoder.decodeValue({ bar: "1", foo: "foo" });
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -710,7 +709,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -742,7 +741,7 @@ describe("decoder", () => {
 						const result = decoder.decodeValue({ bar: "1", foo: "foo" });
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -765,7 +764,7 @@ describe("decoder", () => {
 						);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -801,7 +800,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue(1);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -830,7 +829,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("1");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -869,7 +868,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue(1);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -898,7 +897,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("1");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -938,7 +937,7 @@ describe("decoder", () => {
 						});
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -962,7 +961,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1003,7 +1002,7 @@ describe("decoder", () => {
 						});
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1029,7 +1028,7 @@ describe("decoder", () => {
 						);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1070,7 +1069,7 @@ describe("decoder", () => {
 						});
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1094,7 +1093,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1137,7 +1136,7 @@ describe("decoder", () => {
 						});
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1161,7 +1160,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString('{"bar":"1","foo":"foo"}');
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1189,7 +1188,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1200,7 +1199,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1221,7 +1220,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1232,7 +1231,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1263,7 +1262,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1274,7 +1273,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1295,7 +1294,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1306,7 +1305,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1342,7 +1341,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ bar: 1, foo: "foo" });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1359,7 +1358,7 @@ describe("decoder", () => {
 						value: { a: 1, b: 2 },
 					});
 					expect(keyed.decodeValue({ a: 1, c: 2 })).toStrictEqual({
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					});
 				});
@@ -1393,7 +1392,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1428,7 +1427,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue({ bar: 1, foo: "foo" });
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1452,7 +1451,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString('{"bar":1,"foo":"foo"}');
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1486,7 +1485,7 @@ describe("decoder", () => {
 				const result = decoder.decodeValue({ foo: "bar" });
 
 				await expect(result).resolves.toStrictEqual({
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				});
 			});
@@ -1509,7 +1508,7 @@ describe("decoder", () => {
 				const result = decoder.decodeValue(true);
 
 				const expectedResult = {
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				} as const;
 
@@ -1530,7 +1529,7 @@ describe("decoder", () => {
 				const result = decoder.decodeString("true");
 
 				const expectedResult = {
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				} as const;
 
@@ -1559,7 +1558,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1583,7 +1582,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1618,7 +1617,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue([true, 1]);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1642,7 +1641,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("[true,1]");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1669,7 +1668,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue(true);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1690,7 +1689,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("true");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1722,7 +1721,7 @@ describe("decoder", () => {
 					const result = decoder.decodeValue(true);
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1743,7 +1742,7 @@ describe("decoder", () => {
 					const result = decoder.decodeString("true");
 
 					const expectedResult = {
-						error: expect.any(DecodeError),
+						issues: expect.anything(),
 						ok: false,
 					} as const;
 
@@ -1771,7 +1770,7 @@ describe("decoder", () => {
 						const result = decoder.decodeValue(1.5);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1792,7 +1791,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString("1.5");
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1819,7 +1818,7 @@ describe("decoder", () => {
 						const result = await decoder.decodeValue(1.5);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1840,7 +1839,7 @@ describe("decoder", () => {
 						const result = await decoder.decodeString("1.5");
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1867,7 +1866,7 @@ describe("decoder", () => {
 						const result = decoder.decodeValue(1);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1888,7 +1887,7 @@ describe("decoder", () => {
 						const result = decoder.decodeString("1");
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1915,7 +1914,7 @@ describe("decoder", () => {
 						const result = decoder.decodeValue(1);
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 
@@ -1936,7 +1935,7 @@ describe("decoder", () => {
 						const result = await decoder.decodeString("1");
 
 						const expectedResult = {
-							error: expect.any(DecodeError),
+							issues: expect.anything(),
 							ok: false,
 						} as const;
 

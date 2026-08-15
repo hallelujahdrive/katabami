@@ -2,7 +2,6 @@ import i18next from "i18next";
 import * as katabami from "katabami";
 import {
 	createIssues,
-	DecodeError,
 	flattenIssues,
 	getIssueMessage,
 	unflattenIssues,
@@ -19,16 +18,16 @@ describe("translate", () => {
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("配列が期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列が期待されましたが、数値でした。",
+			);
 		});
 
 		test("unexpected value", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+				getIssueMessage(result.issues?.[0])?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
@@ -39,9 +38,9 @@ describe("translate", () => {
 		test("empty array", () => {
 			const result = decoder.decodeValue([]);
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("配列の長さは1が期待されましたが、0でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列の長さは1が期待されましたが、0でした。",
+			);
 		});
 	});
 
@@ -51,9 +50,9 @@ describe("translate", () => {
 		test("unexpected type", () => {
 			const result = decoder.decodeValue("foo");
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("真偽値が期待されましたが、文字列でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"真偽値が期待されましたが、文字列でした。",
+			);
 		});
 	});
 
@@ -63,17 +62,17 @@ describe("translate", () => {
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('"foo"が期待されましたが、1でした。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'"foo"が期待されましたが、1でした。',
+			);
 		});
 
 		test("null constant", () => {
 			const result = katabami.constant(null).decodeValue("foo");
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('nullが期待されましたが、"foo"でした。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'nullが期待されましたが、"foo"でした。',
+			);
 		});
 	});
 
@@ -83,9 +82,9 @@ describe("translate", () => {
 		test("default message", () => {
 			const result = decoder.decodeValue("foo");
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("デコードに失敗しました。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"デコードに失敗しました。",
+			);
 		});
 	});
 
@@ -96,26 +95,24 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"オブジェクトが期待されましたが、数値でした。",
+			);
 		});
 
 		test("missing field", () => {
 			const result = decoder.decodeValue({});
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				'オブジェクトプロパティ"foo"のバリデーションに失敗しました。',
 			);
 		});
@@ -144,13 +141,13 @@ describe("translate", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("浮動小数点数が期待されましたが、文字列でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"浮動小数点数が期待されましたが、文字列でした。",
+			);
 		});
 	});
 
@@ -161,29 +158,29 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("配列が期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列が期待されましたが、数値でした。",
+			);
 		});
 
 		test("out of bounds", () => {
 			const result = decoder.decodeValue([]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('配列のインデックス"0"のバリデーションに失敗しました。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'配列のインデックス"0"のバリデーションに失敗しました。',
+			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+				getIssueMessage(result.issues?.[0])?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、undefinedでした。");
 		});
 
@@ -191,16 +188,16 @@ describe("translate", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('配列のインデックス"0"のバリデーションに失敗しました。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'配列のインデックス"0"のバリデーションに失敗しました。',
+			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+				getIssueMessage(result.issues?.[0])?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
@@ -212,26 +209,26 @@ describe("translate", () => {
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("数値が期待されましたが、文字列でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"数値が期待されましたが、文字列でした。",
+			);
 		});
 
 		test("value is not an integer", () => {
 			const result = decoder.decodeValue(1.5);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("整数が期待されましたが、浮動小数点数でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"整数が期待されましたが、浮動小数点数でした。",
+			);
 		});
 	});
 
@@ -246,26 +243,24 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"オブジェクトが期待されましたが、数値でした。",
+			);
 		});
 
 		test("missing field", () => {
 			const result = decoder.decodeValue({});
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				'オブジェクトプロパティ"foo"のバリデーションに失敗しました。',
 			);
 		});
@@ -280,31 +275,29 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"オブジェクトが期待されましたが、数値でした。",
+			);
 		});
 
 		test("invalid object", () => {
 			const result = decoder.decodeValue({ foo: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
 			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(formatter),
+				getIssueMessage(result.issues?.foo)?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 	});
@@ -316,31 +309,29 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("オブジェクトが期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"オブジェクトが期待されましたが、数値でした。",
+			);
 		});
 
 		test("invalid record", () => {
 			const result = decoder.decodeValue({ foo: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual(
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				"1つ以上のレコードプロパティのバリデーションに失敗しました。",
 			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.foo)?.format(formatter),
+				getIssueMessage(result.issues?.foo)?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、数値でした。");
 		});
 
@@ -352,13 +343,13 @@ describe("translate", () => {
 			const result = keyed.decodeValue({ c: 1 });
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('レコードキー"c"のバリデーションに失敗しました。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'レコードキー"c"のバリデーションに失敗しました。',
+			);
 		});
 	});
 
@@ -369,13 +360,13 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("文字列が期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"文字列が期待されましたが、数値でした。",
+			);
 		});
 	});
 
@@ -386,46 +377,46 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("配列が期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列が期待されましたが、数値でした。",
+			);
 		});
 
 		test("invalid array length", () => {
 			const result = decoder.decodeValue([1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("配列の長さは2が期待されましたが、1でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列の長さは2が期待されましたが、1でした。",
+			);
 		});
 
 		test("unexpected element type", () => {
 			const result = decoder.decodeValue([undefined, 1]);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("1つ以上の配列要素のバリデーションに失敗しました。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"1つ以上の配列要素のバリデーションに失敗しました。",
+			);
 
 			expect(
-				getIssueMessage(result.error?.issues?.[0])?.format(formatter),
+				getIssueMessage(result.issues?.[0])?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、undefinedでした。");
 
 			expect(
-				getIssueMessage(result.error?.issues?.[1])?.format(formatter),
+				getIssueMessage(result.issues?.[1])?.format(formatter),
 			).toStrictEqual(undefined);
 		});
 	});
@@ -437,20 +428,20 @@ describe("translate", () => {
 			const result = decoder.decodeValue(true);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("ユニオンのメンバーのいずれにも一致しませんでした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"ユニオンのメンバーのいずれにも一致しませんでした。",
+			);
 
 			expect(
-				getIssueMessage(result.error?.issues[0])?.format(formatter),
+				getIssueMessage(result.issues?.[0])?.format(formatter),
 			).toStrictEqual("文字列が期待されましたが、真偽値でした。");
 
 			expect(
-				getIssueMessage(result.error?.issues[1])?.format(formatter),
+				getIssueMessage(result.issues?.[1])?.format(formatter),
 			).toStrictEqual("数値が期待されましたが、真偽値でした。");
 		});
 
@@ -464,24 +455,24 @@ describe("translate", () => {
 				const result = decoder.decodeValue(1);
 
 				expect(result).toStrictEqual({
-					error: expect.any(DecodeError),
+					issues: expect.anything(),
 					ok: false,
 				});
 
-				expect(
-					getIssueMessage(result.error?.issues)?.format(formatter),
-				).toStrictEqual("ユニオンのメンバーのいずれにも一致しませんでした。");
+				expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+					"ユニオンのメンバーのいずれにも一致しませんでした。",
+				);
 
 				expect(
-					getIssueMessage(result.error?.issues[0])?.format(formatter),
+					getIssueMessage(result.issues?.[0])?.format(formatter),
 				).toStrictEqual('"foo"が期待されましたが、1でした。');
 
 				expect(
-					getIssueMessage(result.error?.issues[1])?.format(formatter),
+					getIssueMessage(result.issues?.[1])?.format(formatter),
 				).toStrictEqual('"bar"が期待されましたが、1でした。');
 
 				expect(
-					getIssueMessage(result.error?.issues[2])?.format(formatter),
+					getIssueMessage(result.issues?.[2])?.format(formatter),
 				).toStrictEqual('"baz"が期待されましたが、1でした。');
 			});
 		});
@@ -494,22 +485,19 @@ describe("translate", () => {
 			const result = decoder.decodeValue("bar");
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual('"foo"が期待されましたが、"bar"でした。');
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'"foo"が期待されましたが、"bar"でした。',
+			);
 		});
 
 		test("catch", () => {
 			const decoder = katabami.string().catch(() => {
 				return {
-					error: new DecodeError(
-						"Custom error",
-						createIssues("custom", "Custom issue"),
-					),
+					issues: createIssues("custom", "Custom issue"),
 					ok: false,
 				};
 			});
@@ -517,13 +505,13 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("Custom issue");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"Custom issue",
+			);
 		});
 
 		test("map", () => {
@@ -532,13 +520,13 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
-				error: expect.any(DecodeError),
+				issues: expect.anything(),
 				ok: false,
 			});
 
-			expect(
-				getIssueMessage(result.error?.issues)?.format(formatter),
-			).toStrictEqual("文字列が期待されましたが、数値でした。");
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"文字列が期待されましたが、数値でした。",
+			);
 		});
 	});
 
@@ -552,9 +540,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(
-				flattenIssues(result.error.issues, formatter),
-			);
+			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
@@ -578,9 +564,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(
-				flattenIssues(result.error.issues, formatter),
-			);
+			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"1つ以上のオブジェクトプロパティのバリデーションに失敗しました。",
@@ -603,9 +587,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(
-				flattenIssues(result.error.issues, formatter),
-			);
+			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"1つ以上の配列要素のバリデーションに失敗しました。",
@@ -625,9 +607,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(
-				flattenIssues(result.error.issues, formatter),
-			);
+			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"ユニオンのメンバーのいずれにも一致しませんでした。",
@@ -647,9 +627,7 @@ describe("translate", () => {
 			expect(result.ok).toBe(false);
 			if (result.ok) return;
 
-			const restored = unflattenIssues(
-				flattenIssues(result.error.issues, formatter),
-			);
+			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"文字列が期待されましたが、数値でした。",

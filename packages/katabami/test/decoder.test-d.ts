@@ -6,7 +6,6 @@ import {
 	boolean,
 	constant,
 	createIssues,
-	DecodeError,
 	type Decoder,
 	failed,
 	field,
@@ -749,10 +748,7 @@ describe("Decoder", () => {
 					Issues<"custom", Issue<"custom", "Custom issue", undefined>>
 				>(() => {
 					return {
-						error: new DecodeError(
-							"Custom error",
-							createIssues("custom", "Custom issue"),
-						),
+						issues: createIssues("custom", "Custom issue"),
 						ok: false,
 					};
 				});
@@ -763,10 +759,7 @@ describe("Decoder", () => {
 			test("complement", () => {
 				const _decoder = int().catch(() => {
 					return {
-						error: new DecodeError(
-							"Custom error",
-							createIssues("custom", "Custom issue"),
-						),
+						issues: createIssues("custom", "Custom issue"),
 						ok: false,
 					};
 				});
