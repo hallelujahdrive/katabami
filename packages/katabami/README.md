@@ -1,5 +1,8 @@
 # Katabami
 
+![Logo](../../assets/logo-light.svg#gh-light-mode-only)
+![Logo](../../assets/logo-dark.svg#gh-dark-mode-only)
+
 [![CI](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml/badge.svg)](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml)
 
 Katabami is a TypeScript JSON decoding library.
