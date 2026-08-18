@@ -10,7 +10,7 @@
     />
     <img
       src="./assets/logo-light.svg"
-      alt="Package name"
+      alt="Katabami"
       width="300"
     />
   </picture>
