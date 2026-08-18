@@ -6,6 +6,8 @@ const input = globSync("src/**/*.ts").filter(
 	(file) => !file.includes("/@types/"),
 );
 
+const isTestBuild = process.env.npm_lifecycle_event === "build:test";
+
 export default defineConfig({
 	external: ["i18next", "katabami"],
 	input,
@@ -15,7 +17,7 @@ export default defineConfig({
 		format: "esm",
 		preserveModules: true,
 		preserveModulesRoot: "src",
-		sourcemap: true,
+		sourcemap: isTestBuild,
 	},
 	platform: "neutral",
 	plugins: [

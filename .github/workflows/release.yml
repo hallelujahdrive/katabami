@@ -60,14 +60,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm run build
+      - name: Build test packages
+        run: pnpm run build:test
 
       - name: Run tests
         run: pnpm run test -- --run
 
       - name: Run type tests
         run: pnpm run test:typecheck -- --run
+
+      - name: Build packages
+        run: pnpm run build
 
       - name: Publish GitHub Release
         uses: release-drafter/release-drafter@v7

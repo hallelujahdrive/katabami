@@ -50,6 +50,7 @@
 	},
 	"scripts": {
 		"build": "rolldown -c",
+		"build:test": "rolldown -c",
 		"test": "vitest",
 		"test:typecheck": "vitest --typecheck"
 	},
