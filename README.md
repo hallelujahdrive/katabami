@@ -249,8 +249,6 @@ const node: katabami.Decoder<Node> = katabami.lazy(() =>
 `decodeValue` / `decodeString` return a `Result`:
 
 ```ts
-import * as katabami from "katabami";
-
 type Result<T, I> =
 	| { ok: true; value: T }
 	| { ok: false; issues: I };
