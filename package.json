@@ -35,6 +35,7 @@
 	},
 	"scripts": {
 		"build": "pnpm --filter katabami run build && pnpm --filter '@katabami/*' run build",
+		"build:test": "pnpm --filter katabami run build:test && pnpm --filter '@katabami/*' run build:test",
 		"check": "biome check . && eslint .",
 		"check:fix": "biome check --write . && eslint . --fix",
 		"dpdm": "dpdm --exit-code circular:1 \"packages/*/src/index.ts\"",
