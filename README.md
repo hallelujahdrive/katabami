@@ -1,7 +1,7 @@
-# Katabami
-
-![Logo](./assets/logo-light.svg#gh-light-mode-only)
-![Logo](./assets/logo-dark.svg#gh-dark-mode-only)
+<p align="center">
+  <img src="./assets/logo-light.svg#gh-light-mode-only" alt="Katabami" width="300">
+  <img src="./assets/logo-dark.svg#gh-dark-mode-only" alt="Katabami" width="300">
+</p>
 
 [![CI](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml/badge.svg)](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml)
 
