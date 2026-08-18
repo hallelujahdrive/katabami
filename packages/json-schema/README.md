@@ -18,14 +18,14 @@ pnpm add katabami @katabami/json-schema
 
 ```ts
 import * as katabami from "katabami";
-import { toJsonSchema, toStandardJsonSchema } from "@katabami/json-schema";
+import * as katabamiJsonSchema from "@katabami/json-schema";
 
 const decoder = katabami.object({
 	age: katabami.int(),
 	name: katabami.optional(katabami.string()),
 });
 
-toJsonSchema(decoder);
+katabamiJsonSchema.toJsonSchema(decoder);
 // {
 //   $schema: "https://json-schema.org/draft/2020-12/schema",
 //   type: "object",
@@ -33,8 +33,8 @@ toJsonSchema(decoder);
 //   required: ["age"]
 // }
 
-toJsonSchema(decoder, { target: "draft-07" });
-toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
+katabamiJsonSchema.toJsonSchema(decoder, { target: "draft-07" });
+katabamiJsonSchema.toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
 	target: "openapi-3.0",
 });
 ```

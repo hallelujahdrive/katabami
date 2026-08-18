@@ -18,25 +18,25 @@ pnpm add katabami @katabami/i18next i18next
 ```ts
 import i18next from "i18next";
 import * as katabami from "katabami";
-import { createFormatter, formatter, resources } from "@katabami/i18next";
+import * as katabamiI18next from "@katabami/i18next";
 
-await i18next.use(formatter).init({
+await i18next.use(katabamiI18next.formatter).init({
 	interpolation: { escapeValue: false },
 	lng: "ja",
 	resources: {
-		en: { translation: resources.en },
-		ja: { translation: resources.ja },
+		en: { translation: katabamiI18next.resources.en },
+		ja: { translation: katabamiI18next.resources.ja },
 	},
 });
 
-const format = createFormatter(i18next.t);
+const formatter = katabamiI18next.createFormatter(i18next.t);
 const result = katabami.string().decodeValue(1);
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.issues)?.format(format);
+	katabami.getIssueMessage(result.issues)?.format(formatter);
 	// 文字列が期待されましたが、数値でした。
 
-	const flattened = katabami.flattenIssues(result.issues, format);
+	const flattened = katabami.flattenIssues(result.issues, formatter);
 	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
 
 	const restored = katabami.unflattenIssues(flattened);

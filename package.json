@@ -17,6 +17,14 @@
 		"typescript": "catalog:"
 	},
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"keywords": [
+		"combinator",
+		"decoder",
+		"json",
+		"monorepo",
+		"standard-schema",
+		"typescript"
+	],
 	"license": "WTFPL",
 	"name": "katabami-monorepo",
 	"packageManager": "pnpm@11.20.0",

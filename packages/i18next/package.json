@@ -25,6 +25,16 @@
 		"dist"
 	],
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"keywords": [
+		"decoder",
+		"i18n",
+		"i18next",
+		"internationalization",
+		"katabami",
+		"l10n",
+		"localization",
+		"typescript"
+	],
 	"license": "WTFPL",
 	"main": "./dist/index.js",
 	"name": "@katabami/i18next",

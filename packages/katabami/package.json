@@ -21,6 +21,20 @@
 		"dist"
 	],
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"keywords": [
+		"combinator",
+		"decoder",
+		"decoding",
+		"elm",
+		"json",
+		"parser",
+		"result",
+		"runtime-type",
+		"standard-schema",
+		"type-inference",
+		"type-safe",
+		"typescript"
+	],
 	"license": "WTFPL",
 	"main": "./dist/index.js",
 	"name": "katabami",
