@@ -26,6 +26,16 @@
 		"dist"
 	],
 	"homepage": "https://github.com/hallelujahdrive/katabami#readme",
+	"keywords": [
+		"decoder",
+		"json-schema",
+		"katabami",
+		"openapi",
+		"schema-generation",
+		"standard-json-schema",
+		"standard-schema",
+		"typescript"
+	],
 	"license": "WTFPL",
 	"main": "./dist/index.js",
 	"name": "@katabami/json-schema",
