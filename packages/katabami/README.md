@@ -1,6 +1,19 @@
 <p align="center">
-  <img src="../../assets/logo-light.svg#gh-light-mode-only" alt="Katabami" width="300">
-  <img src="../../assets/logo-dark.svg#gh-dark-mode-only" alt="Katabami" width="300">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="./assets/logo-dark.svg"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="./assets/logo-light.svg"
+    />
+    <img
+      src="./assets/logo-light.svg"
+      alt="Package name"
+      width="300"
+    />
+  </picture>
 </p>
 
 [![CI](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml/badge.svg)](https://github.com/hallelujahdrive/katabami/actions/workflows/ci.yml)
