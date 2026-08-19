@@ -346,6 +346,21 @@ class Decoder<
 	}
 
 	/**
+	 * Returns a decoder with the same decode behavior and a replaced schema.
+	 */
+	public static replaceSchema<U, J extends Issues>(
+		decoder: Decoder<U, J, boolean>,
+		schema: DecoderSchema,
+	): Decoder<U, J, false> {
+		return new Decoder<U, J, false>(
+			decoder.decodeFunc,
+			decoder.cacheFunc,
+			staticSchemaDescriptor(schema),
+			decoder.isAsync,
+		);
+	}
+
+	/**
 	 * Applies another decoder to the decoded value.
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
@@ -2025,6 +2040,29 @@ export function record<
 		recordSchemaDescriptor(key, value),
 		isDecoderAsync(key) || isDecoderAsync(value),
 	);
+}
+
+/**
+ * Replaces the accepted-value schema of a decoder.
+ *
+ * Intended for plugin authors. Import from `katabami/dev`. Decode behavior is
+ * unchanged; `map` / `andThen` / `catch` keep the replaced schema.
+ *
+ * @template T The type of the decoded value.
+ * @template {Issues} I The type of the issues.
+ * @param {IDecoder<T, I, boolean>} decoder The decoder whose schema to replace.
+ * @param {DecoderSchema} schema The accepted-value schema to use.
+ * @returns {IDecoder<T, I, false>} A decoder with the same decode behavior and the given schema.
+ */
+export function replaceSchema<T, I extends Issues>(
+	decoder: IDecoder<T, I, boolean>,
+	schema: DecoderSchema,
+): IDecoder<T, I, false> {
+	if (!(decoder instanceof Decoder)) {
+		throw new TypeError("Expected a Katabami Decoder");
+	}
+
+	return Decoder.replaceSchema(decoder as Decoder<T, I, boolean>, schema);
 }
 
 /**

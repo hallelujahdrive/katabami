@@ -6,6 +6,7 @@ import "@hyperjump/json-schema/draft-07";
 import { BASIC } from "@hyperjump/json-schema/experimental";
 import "@hyperjump/json-schema/openapi-3-0";
 import * as katabami from "katabami";
+import { replaceSchema } from "katabami/dev";
 import { describe, expect, test } from "vitest";
 import { toJsonSchema, toStandardJsonSchema } from "../src";
 import {
@@ -22,6 +23,13 @@ const META_SCHEMA_URI = {
 
 const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	array: katabami.array(katabami.string()),
+	arrayConstraints: {
+		element: { kind: "string" },
+		kind: "array",
+		maxItems: 5,
+		minItems: 1,
+		uniqueItems: true,
+	},
 	at: katabami.at(["person", "name"], katabami.string()),
 	boolean: katabami.boolean(),
 	constant: katabami.constant("foo"),
@@ -32,6 +40,12 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	fieldOptional: katabami.field("name", katabami.optional(katabami.string())),
 	index: katabami.index(1, katabami.int()),
 	integer: katabami.int(),
+	integerConstraints: {
+		exclusiveMaximum: 100,
+		kind: "integer",
+		minimum: 0,
+		multipleOf: 2,
+	},
 	mapAllOf: katabami.map(
 		(name, age) => [name, age] as const,
 		katabami.string(),
@@ -55,6 +69,11 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 		katabami.union(katabami.string(), katabami.int()),
 	),
 	number: katabami.float(),
+	numberExclusive: {
+		exclusiveMinimum: 0,
+		kind: "number",
+		maximum: 10,
+	},
 	object: katabami.object({
 		age: katabami.int(),
 		name: katabami.optional(katabami.string()),
@@ -70,6 +89,11 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	),
 	record: katabami.record(katabami.string(), katabami.int()),
 	string: katabami.string(),
+	stringFormat: replaceSchema(katabami.string(), {
+		format: "date-time",
+		kind: "string",
+		minLength: 1,
+	}),
 	tuple: katabami.tuple(katabami.string(), katabami.int()),
 	tupleEmpty: { elements: [], kind: "tuple" },
 	tupleSingle: katabami.tuple(katabami.string()),

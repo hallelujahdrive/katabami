@@ -76,6 +76,7 @@ jobs:
             toJsonSchema,
             toStandardJsonSchema,
           } from "@katabami/json-schema";
+          import { replaceSchema } from "katabami/dev";
           import i18next from "i18next";
 
           const result = katabami.string().decodeValue("ok");
@@ -101,6 +102,15 @@ jobs:
           const json = toJsonSchema(katabami.string(), { target: "draft-2020-12" });
           if (json.type !== "string") {
             throw new Error("toJsonSchema failed");
+          }
+
+          const date = replaceSchema(katabami.string(), {
+            format: "date-time",
+            kind: "string",
+          });
+          const dateJson = toJsonSchema(date, { target: "draft-2020-12" });
+          if (dateJson.format !== "date-time") {
+            throw new Error("replaceSchema json schema failed");
           }
 
           const standard = toStandardJsonSchema(katabami.string());

@@ -43,7 +43,8 @@ Async `getSchema()` is not supported by `toJsonSchema`. Resolve the schema
 first, then convert.
 
 `DecoderSchema` from `getSchema()` describes accepted **input**. `map` /
-`andThen` do not change that shape.
+`andThen` do not change that shape. Optional constraint fields (`format`,
+`pattern`, `minLength`, `minimum`, `maxItems`, …) are converted automatically.
 
 ## Documentation
 

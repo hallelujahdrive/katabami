@@ -474,7 +474,29 @@ Async `getSchema()` is not supported by `toJsonSchema`. Resolve the schema
 first, then convert.
 
 `DecoderSchema` from `getSchema()` describes accepted **input**. `map` /
-`andThen` do not change that shape.
+`andThen` do not change that shape. Optional constraint fields (`format`,
+`pattern`, `minLength`, `minimum`, `maxItems`, …) are converted automatically.
+
+## Plugin authors
+
+`katabami/dev` exports `replaceSchema` to attach accepted-value constraints
+without changing decode behavior. It is not part of the main `katabami` entry.
+
+```ts
+import * as katabami from "katabami";
+import { replaceSchema } from "katabami/dev";
+
+export const date = () =>
+	replaceSchema(
+		katabami.string().andThen((value) => {
+			const parsed = new Date(value);
+			return Number.isNaN(parsed.getTime())
+				? katabami.failed()
+				: katabami.succeed(parsed);
+		}),
+		{ format: "date-time", kind: "string" },
+	);
+```
 
 ## i18next
 

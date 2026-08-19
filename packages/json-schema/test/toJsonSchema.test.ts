@@ -1,4 +1,5 @@
 import * as katabami from "katabami";
+import { replaceSchema } from "katabami/dev";
 import { describe, expect, test } from "vitest";
 import {
 	type StandardJSONSchemaV1,
@@ -232,6 +233,94 @@ describe("toJsonSchema", () => {
 		expect(toJsonSchema({ kind: "string" })).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
+		});
+	});
+
+	test("converts string constraints", () => {
+		expect(
+			toJsonSchema({
+				format: "date-time",
+				kind: "string",
+				maxLength: 32,
+				minLength: 1,
+				pattern: "^[a-z]+$",
+			}),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			format: "date-time",
+			maxLength: 32,
+			minLength: 1,
+			pattern: "^[a-z]+$",
+			type: "string",
+		});
+	});
+
+	test("converts numeric constraints by target", () => {
+		const schema = {
+			exclusiveMinimum: 0,
+			kind: "number",
+			maximum: 10,
+			minimum: 1,
+			multipleOf: 0.5,
+		} as const;
+
+		expect(toJsonSchema(schema)).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			exclusiveMinimum: 0,
+			maximum: 10,
+			minimum: 1,
+			multipleOf: 0.5,
+			type: "number",
+		});
+		expect(toJsonSchema(schema, { target: "openapi-3.0" })).toEqual({
+			exclusiveMinimum: true,
+			maximum: 10,
+			minimum: 0,
+			multipleOf: 0.5,
+			type: "number",
+		});
+	});
+
+	test("converts array constraints", () => {
+		expect(
+			toJsonSchema({
+				element: { kind: "string" },
+				kind: "array",
+				maxItems: 5,
+				minItems: 1,
+				uniqueItems: true,
+			}),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			items: { type: "string" },
+			maxItems: 5,
+			minItems: 1,
+			type: "array",
+			uniqueItems: true,
+		});
+	});
+
+	test("converts replaceSchema constraints inside objects", () => {
+		const date = replaceSchema(katabami.string(), {
+			format: "date-time",
+			kind: "string",
+		});
+
+		expect(
+			toJsonSchema(
+				katabami.object({
+					at: date,
+					count: katabami.int(),
+				}),
+			),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				at: { format: "date-time", type: "string" },
+				count: { type: "integer" },
+			},
+			required: ["at", "count"],
+			type: "object",
 		});
 	});
 
