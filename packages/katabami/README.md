@@ -90,12 +90,35 @@ if (!result.ok) {
 }
 ```
 
+## Plugin authors
+
+`katabami/dev` exports `replaceSchema` to attach accepted-value constraints
+(`format`, `pattern`, `minLength`, `minimum`, `maxItems`, …) without changing
+decode behavior. It is not part of the main `katabami` entry.
+
+```ts
+import * as katabami from "katabami";
+import { replaceSchema } from "katabami/dev";
+
+export const date = () =>
+	replaceSchema(
+		katabami.string().andThen((value) => {
+			const parsed = new Date(value);
+			return Number.isNaN(parsed.getTime())
+				? katabami.failed()
+				: katabami.succeed(parsed);
+		}),
+		{ format: "date-time", kind: "string" },
+	);
+```
+
+`@katabami/json-schema` converts those fields when generating JSON Schema.
+
 ## Documentation
 
 Full decoder list, `flattenIssues` / `unflattenIssues`,
 `serializeDecodeResult` / `deserializeDecodeResult`, `unwrapDecodeResult`,
-Standard Schema, JSON
-Schema, and i18next usage:
+Standard Schema, JSON Schema, i18next usage, and `replaceSchema`:
 
 https://github.com/hallelujahdrive/katabami
 

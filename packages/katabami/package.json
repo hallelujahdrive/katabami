@@ -14,6 +14,10 @@
 		".": {
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
+		},
+		"./dev": {
+			"import": "./dist/dev.js",
+			"types": "./dist/dev.d.ts"
 		}
 	},
 	"files": [

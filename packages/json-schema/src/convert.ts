@@ -6,6 +6,62 @@ const isOptional = (
 ): schema is Extract<DecoderSchema, { kind: "optional" }> =>
 	schema.kind === "optional";
 
+type NumericConstraints = {
+	readonly exclusiveMaximum?: number;
+	readonly exclusiveMinimum?: number;
+	readonly maximum?: number;
+	readonly minimum?: number;
+	readonly multipleOf?: number;
+};
+
+const applyNumericConstraints = (
+	result: JsonSchema,
+	schema: NumericConstraints,
+	target: SupportedTarget,
+): void => {
+	if (schema.multipleOf !== undefined) {
+		result.multipleOf = schema.multipleOf;
+	}
+
+	if (target === "openapi-3.0") {
+		if (schema.minimum !== undefined) {
+			result.minimum = schema.minimum;
+		}
+
+		if (schema.maximum !== undefined) {
+			result.maximum = schema.maximum;
+		}
+
+		if (schema.exclusiveMinimum !== undefined) {
+			result.exclusiveMinimum = true;
+			result.minimum = schema.exclusiveMinimum;
+		}
+
+		if (schema.exclusiveMaximum !== undefined) {
+			result.exclusiveMaximum = true;
+			result.maximum = schema.exclusiveMaximum;
+		}
+
+		return;
+	}
+
+	if (schema.minimum !== undefined) {
+		result.minimum = schema.minimum;
+	}
+
+	if (schema.maximum !== undefined) {
+		result.maximum = schema.maximum;
+	}
+
+	if (schema.exclusiveMinimum !== undefined) {
+		result.exclusiveMinimum = schema.exclusiveMinimum;
+	}
+
+	if (schema.exclusiveMaximum !== undefined) {
+		result.exclusiveMaximum = schema.exclusiveMaximum;
+	}
+};
+
 const convertNullable = (
 	schema: DecoderSchema,
 	target: SupportedTarget,
@@ -230,8 +286,16 @@ export const convertSchema = (
 				type: "array",
 			};
 
+			if (schema.maxItems !== undefined) {
+				result.maxItems = schema.maxItems;
+			}
+
 			if (schema.minItems !== undefined) {
 				result.minItems = schema.minItems;
+			}
+
+			if (schema.uniqueItems !== undefined) {
+				result.uniqueItems = schema.uniqueItems;
 			}
 
 			return result;
@@ -244,24 +308,53 @@ export const convertSchema = (
 			return convertField(schema.key, schema.schema, target);
 		case "index":
 			return convertIndex(schema.index, schema.schema, target);
-		case "integer":
-			return { type: "integer" };
+		case "integer": {
+			const result: JsonSchema = { type: "integer" };
+
+			applyNumericConstraints(result, schema, target);
+
+			return result;
+		}
 		case "map":
 			return convertMap(schema.decoders, target);
 		case "never":
 			return { not: {} };
 		case "nullable":
 			return convertNullable(schema.schema, target);
-		case "number":
-			return { type: "number" };
+		case "number": {
+			const result: JsonSchema = { type: "number" };
+
+			applyNumericConstraints(result, schema, target);
+
+			return result;
+		}
 		case "object":
 			return convertObject(schema.properties, target);
 		case "optional":
 			return convertNullable(schema.schema, target);
 		case "record":
 			return convertRecord(schema.key, schema.value, target);
-		case "string":
-			return { type: "string" };
+		case "string": {
+			const result: JsonSchema = { type: "string" };
+
+			if (schema.format !== undefined) {
+				result.format = schema.format;
+			}
+
+			if (schema.maxLength !== undefined) {
+				result.maxLength = schema.maxLength;
+			}
+
+			if (schema.minLength !== undefined) {
+				result.minLength = schema.minLength;
+			}
+
+			if (schema.pattern !== undefined) {
+				result.pattern = schema.pattern;
+			}
+
+			return result;
+		}
 		case "tuple":
 			return convertTuple(schema.elements, target);
 		case "union":

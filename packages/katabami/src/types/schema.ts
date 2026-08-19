@@ -6,7 +6,9 @@ import type { Primitive } from "./primitive";
 export type ArrayDecoderSchema = {
 	readonly element: DecoderSchema;
 	readonly kind: "array";
+	readonly maxItems?: number;
 	readonly minItems?: number;
+	readonly uniqueItems?: boolean;
 };
 
 /**
@@ -27,6 +29,7 @@ export type ConstantDecoderSchema = {
 /**
  * Minimal schema describing the values a decoder accepts.
  * Intended for plugins (e.g. JSON Schema generation).
+ * Optional constraint fields (`format`, `minimum`, …) are input restrictions.
  */
 export type DecoderSchema =
 	| ArrayDecoderSchema
@@ -69,7 +72,12 @@ export type IndexDecoderSchema = {
  * A decoder that accepts integers.
  */
 export type IntegerDecoderSchema = {
+	readonly exclusiveMaximum?: number;
+	readonly exclusiveMinimum?: number;
 	readonly kind: "integer";
+	readonly maximum?: number;
+	readonly minimum?: number;
+	readonly multipleOf?: number;
 };
 
 /**
@@ -99,7 +107,12 @@ export type NullableDecoderSchema = {
  * A decoder that accepts numbers.
  */
 export type NumberDecoderSchema = {
+	readonly exclusiveMaximum?: number;
+	readonly exclusiveMinimum?: number;
 	readonly kind: "number";
+	readonly maximum?: number;
+	readonly minimum?: number;
+	readonly multipleOf?: number;
 };
 
 /**
@@ -131,7 +144,11 @@ export type RecordDecoderSchema = {
  * A decoder that accepts strings.
  */
 export type StringDecoderSchema = {
+	readonly format?: string;
 	readonly kind: "string";
+	readonly maxLength?: number;
+	readonly minLength?: number;
+	readonly pattern?: string;
 };
 
 /**
