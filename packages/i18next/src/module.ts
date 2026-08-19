@@ -21,10 +21,9 @@ const quoteString = (
 };
 
 /**
- * The formatter module for the katabami.
- * @returns {FormatterModule} The formatter module.
+ * i18next plugin required when using `@katabami/i18next`.
  */
-export const formatter: FormatterModule = {
+export const initKatabami: FormatterModule = {
 	add: () => {},
 	addCached: () => {},
 	format: (value, format) => {

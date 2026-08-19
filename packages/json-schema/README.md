@@ -17,15 +17,15 @@ pnpm add katabami @katabami/json-schema
 ## Quick start
 
 ```ts
-import * as katabami from "katabami";
-import * as katabamiJsonSchema from "@katabami/json-schema";
+import * as k from "katabami";
+import { toJsonSchema, toStandardJsonSchema } from "@katabami/json-schema";
 
-const decoder = katabami.object({
-	age: katabami.int(),
-	name: katabami.optional(katabami.string()),
+const decoder = k.object({
+	age: k.int(),
+	name: k.optional(k.string()),
 });
 
-katabamiJsonSchema.toJsonSchema(decoder);
+toJsonSchema(decoder);
 // {
 //   $schema: "https://json-schema.org/draft/2020-12/schema",
 //   type: "object",
@@ -33,8 +33,8 @@ katabamiJsonSchema.toJsonSchema(decoder);
 //   required: ["age"]
 // }
 
-katabamiJsonSchema.toJsonSchema(decoder, { target: "draft-07" });
-katabamiJsonSchema.toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
+toJsonSchema(decoder, { target: "draft-07" });
+toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
 	target: "openapi-3.0",
 });
 ```

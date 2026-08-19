@@ -1,7 +1,7 @@
 import i18next from "i18next";
-import { formatter, resources } from "../src";
+import { initKatabami, resources } from "../src";
 
-i18next.use(formatter).init({
+i18next.use(initKatabami).init({
 	interpolation: {
 		escapeValue: false,
 	},
