@@ -42,15 +42,15 @@ pnpm add @katabami/i18next i18next
 ## Quick start
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const user = katabami.object({
-	age: katabami.int(),
-	name: katabami.string(),
-	tags: katabami.optional(katabami.array(katabami.string())),
+const user = k.object({
+	age: k.int(),
+	name: k.string(),
+	tags: k.optional(k.array(k.string())),
 });
 
-type User = katabami.Infer<typeof user>;
+type User = k.Infer<typeof user>;
 // { age: number; name: string; tags: string[] | undefined }
 
 const result = user.decodeValue({ age: 20, name: "Ada" });
@@ -58,7 +58,7 @@ const result = user.decodeValue({ age: 20, name: "Ada" });
 if (result.ok) {
 	console.log(result.value.name);
 } else {
-	console.log(katabami.getIssueMessage(result.issues)?.format());
+	console.log(k.getIssueMessage(result.issues)?.format());
 }
 ```
 
@@ -73,19 +73,19 @@ user.decodeString('{"age":20,"name":"Ada"}');
 Decode failures keep a nested issue tree you can read like the input:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	user: katabami.object({
-		age: katabami.int(),
-		name: katabami.string(),
+const decoder = k.object({
+	user: k.object({
+		age: k.int(),
+		name: k.string(),
 	}),
 });
 
 const result = decoder.decodeValue({ user: { age: "20", name: "Ada" } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.issues.user?.age)?.format();
+	k.getIssueMessage(result.issues.user?.age)?.format();
 	// "Expected number, but received string."
 }
 ```
@@ -97,16 +97,16 @@ if (!result.ok) {
 decode behavior. It is not part of the main `katabami` entry.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 import { replaceSchema } from "katabami/dev";
 
 export const date = () =>
 	replaceSchema(
-		katabami.string().andThen((value) => {
+		k.string().andThen((value) => {
 			const parsed = new Date(value);
 			return Number.isNaN(parsed.getTime())
-				? katabami.failed()
-				: katabami.succeed(parsed);
+				? k.failed()
+				: k.succeed(parsed);
 		}),
 		{ format: "date-time", kind: "string" },
 	);

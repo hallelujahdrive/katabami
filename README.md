@@ -48,24 +48,24 @@ Katabami is a decoder library.
 - **A minimal type DSL, in the spirit of elm/json.** The combinators are the
   types themselves (`string`, `int`, `object`, `union`, …). You compose those
   into the shape you want to recover. There is no separate constraint language.
-- **Types flow both ways.** `katabami.Infer` reads the decoded type off a
+- **Types flow both ways.** `k.Infer` reads the decoded type off a
   decoder. The same combinators also take a generic, so you can start from a
   type and build a decoder that must match it.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const fromDecoder = katabami.object({
-	age: katabami.int(),
-	name: katabami.string(),
+const fromDecoder = k.object({
+	age: k.int(),
+	name: k.string(),
 });
 
-type User = katabami.Infer<typeof fromDecoder>;
+type User = k.Infer<typeof fromDecoder>;
 // { age: number; name: string }
 
-const fromType = katabami.object<User>({
-	age: katabami.int(),
-	name: katabami.string(),
+const fromType = k.object<User>({
+	age: k.int(),
+	name: k.string(),
 });
 ```
 
@@ -79,19 +79,19 @@ const fromType = katabami.object<User>({
   node.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	user: katabami.object({
-		age: katabami.int(),
-		name: katabami.string(),
+const decoder = k.object({
+	user: k.object({
+		age: k.int(),
+		name: k.string(),
 	}),
 });
 
 const result = decoder.decodeValue({ user: { age: "20", name: "Ada" } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.issues.user?.age)?.format();
+	k.getIssueMessage(result.issues.user?.age)?.format();
 	// "Expected number, but received string."
 }
 ```
@@ -127,15 +127,15 @@ pnpm add @katabami/i18next i18next
 ## Quick start
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const user = katabami.object({
-	age: katabami.int(),
-	name: katabami.string(),
-	tags: katabami.optional(katabami.array(katabami.string())),
+const user = k.object({
+	age: k.int(),
+	name: k.string(),
+	tags: k.optional(k.array(k.string())),
 });
 
-type User = katabami.Infer<typeof user>;
+type User = k.Infer<typeof user>;
 // { age: number; name: string; tags: string[] | undefined }
 
 const result = user.decodeValue({ age: 20, name: "Ada" });
@@ -143,7 +143,7 @@ const result = user.decodeValue({ age: 20, name: "Ada" });
 if (result.ok) {
 	console.log(result.value.name);
 } else {
-	console.log(katabami.getIssueMessage(result.issues)?.format());
+	console.log(k.getIssueMessage(result.issues)?.format());
 }
 ```
 
@@ -171,25 +171,25 @@ user.decodeString('{"age":20,"name":"Ada"}');
 ### Structure
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-katabami.array(katabami.string());
-katabami.oneOrMore(katabami.string()); // [string, ...string[]]
-katabami.tuple(katabami.string(), katabami.int());
-katabami.record(katabami.string(), katabami.int()); // Record<string, number>
-katabami.union(katabami.string(), katabami.int());
-katabami.nullable(katabami.string()); // string | null
-katabami.optional(katabami.string()); // string | undefined (null/undefined → undefined)
+k.array(k.string());
+k.oneOrMore(k.string()); // [string, ...string[]]
+k.tuple(k.string(), k.int());
+k.record(k.string(), k.int()); // Record<string, number>
+k.union(k.string(), k.int());
+k.nullable(k.string()); // string | null
+k.optional(k.string()); // string | undefined (null/undefined → undefined)
 ```
 
 `object` strips missing/`undefined` properties and keeps `null`:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	name: katabami.string(),
-	nickname: katabami.optional(katabami.string()),
+const decoder = k.object({
+	name: k.string(),
+	nickname: k.optional(k.string()),
 });
 
 decoder.decodeValue({ name: "Ada" });
@@ -201,11 +201,11 @@ decoder.decodeValue({ name: "Ada" });
 Read a nested field without decoding the whole object:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-katabami.field("name", katabami.string());
-katabami.at(["person", "name"], katabami.string());
-katabami.index(0, katabami.int());
+k.field("name", k.string());
+k.at(["person", "name"], k.string());
+k.index(0, k.int());
 ```
 
 `at(["person", "name"], string())` is the same as
@@ -217,12 +217,12 @@ katabami.index(0, katabami.int());
 results. `.map()` on a decoder transforms an already decoded value.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const pair = katabami.map(
+const pair = k.map(
 	(foo, bar) => ({ bar, foo }),
-	katabami.field("foo", katabami.string()),
-	katabami.field("bar", katabami.int()),
+	k.field("foo", k.string()),
+	k.field("bar", k.int()),
 );
 
 pair.decodeValue({ bar: 1, foo: "x" });
@@ -232,14 +232,14 @@ pair.decodeValue({ bar: 1, foo: "x" });
 `lazy` defers decoder construction (useful for recursive types):
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
 type Node = { children: Node[]; name: string };
 
-const node: katabami.Decoder<Node> = katabami.lazy(() =>
-	katabami.object({
-		children: katabami.array(node),
-		name: katabami.string(),
+const node: k.Decoder<Node> = k.lazy(() =>
+	k.object({
+		children: k.array(node),
+		name: k.string(),
 	}),
 );
 ```
@@ -258,20 +258,20 @@ Issues are a nested object (or array for unions) that follows the input shape.
 `getIssueMessage` reads the message attached to a node:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	foo: katabami.object({
-		bar: katabami.string(),
+const decoder = k.object({
+	foo: k.object({
+		bar: k.string(),
 	}),
 });
 
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.issues)?.format();
+	k.getIssueMessage(result.issues)?.format();
 	// "One or more object properties failed validation."
-	katabami.getIssueMessage(result.issues.foo?.bar)?.format();
+	k.getIssueMessage(result.issues.foo?.bar)?.format();
 	// "Expected string, but received number."
 }
 ```
@@ -281,7 +281,7 @@ The second argument can be a message string or a formatter; omitted, the
 error message is `"Failed to decode"`.
 
 ```ts
-const value = katabami.unwrapDecodeResult(
+const value = k.unwrapDecodeResult(
 	decoder.decodeValue({ foo: { bar: "ok" } }),
 );
 ```
@@ -292,30 +292,30 @@ The flattened list keeps the source issues type, so `unflattenIssues` can
 rebuild typed paths without a generic. Messages stay pre-formatted.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	foo: katabami.object({
-		bar: katabami.string(),
+const decoder = k.object({
+	foo: k.object({
+		bar: k.string(),
 	}),
 });
 
 const result = decoder.decodeValue({ foo: { bar: 1 } });
 
 if (!result.ok) {
-	const flattened = katabami.flattenIssues(result.issues);
+	const flattened = k.flattenIssues(result.issues);
 	// [
 	//   { message: "One or more object properties failed validation.", path: undefined },
 	//   { message: "One or more object properties failed validation.", path: ["foo"] },
 	//   { message: "Expected string, but received number.", path: ["foo", "bar"] },
 	// ]
 
-	const restored = katabami.unflattenIssues(flattened);
-	katabami.getIssueMessage(restored)?.format();
+	const restored = k.unflattenIssues(flattened);
+	k.getIssueMessage(restored)?.format();
 	// "One or more object properties failed validation."
-	katabami.getIssueMessage(restored.foo?.bar)?.format();
+	k.getIssueMessage(restored.foo?.bar)?.format();
 	// "Expected string, but received number."
-	katabami.getIssueMessage(restored.foo?.bar)?.message;
+	k.getIssueMessage(restored.foo?.bar)?.message;
 	// already a formatted string
 }
 ```
@@ -325,21 +325,21 @@ Success is passed through; failure issues are flattened so the value is JSON-saf
 After `JSON.parse`, pass `typeof decoder` to restore typed paths.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.object({
-	foo: katabami.object({
-		bar: katabami.string(),
+const decoder = k.object({
+	foo: k.object({
+		bar: k.string(),
 	}),
 });
 
 const result = decoder.decodeValue({ foo: { bar: 1 } });
-const serialized = katabami.serializeDecodeResult(result);
+const serialized = k.serializeDecodeResult(result);
 const parsed = JSON.parse(JSON.stringify(serialized));
-const restored = katabami.deserializeDecodeResult<typeof decoder>(parsed);
+const restored = k.deserializeDecodeResult<typeof decoder>(parsed);
 
 if (!restored.ok) {
-	katabami.getIssueMessage(restored.issues.foo?.bar)?.format();
+	k.getIssueMessage(restored.issues.foo?.bar)?.format();
 	// "Expected string, but received number."
 }
 ```
@@ -347,24 +347,24 @@ if (!restored.ok) {
 `unflattenIssues` also accepts Standard Schema `PathSegment` objects (`{ key }`):
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const restored = katabami.unflattenIssues([
+const restored = k.unflattenIssues([
 	{ message: "root failed", path: undefined },
 	{ message: "nested failed", path: [{ key: "foo" }] },
 ]);
 
-katabami.getIssueMessage(restored.foo)?.format();
+k.getIssueMessage(restored.foo)?.format();
 // "nested failed"
 ```
 
 Custom issues use `createIssues`:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.string().catch(() => ({
-	issues: katabami.createIssues("custom", "Custom issue"),
+const decoder = k.string().catch(() => ({
+	issues: k.createIssues("custom", "Custom issue"),
 	ok: false,
 }));
 ```
@@ -383,12 +383,12 @@ const decoder = katabami.string().catch(() => ({
 | `getSchema()` | Accepted-value schema for plugins |
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
 const port = katabami
 	.string()
 	.map(Number)
-	.andThen((n) => (Number.isInteger(n) ? katabami.succeed(n) : katabami.failed()));
+	.andThen((n) => (Number.isInteger(n) ? k.succeed(n) : k.failed()));
 ```
 
 ## Async decoding
@@ -397,9 +397,9 @@ If `map`, `andThen`, or `lazy` returns a `Promise`, the decoder becomes async:
 `decodeValue` / `decodeString` return `Promise<Result<...>>`.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const decoder = katabami.string().map(async (id) => fetchUser(id));
+const decoder = k.string().map(async (id) => fetchUser(id));
 
 const result = await decoder.decodeValue("42");
 ```
@@ -409,11 +409,11 @@ const result = await decoder.decodeValue("42");
 Every decoder implements Standard Schema v1 (`vendor: "katabami"`):
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const user = katabami.object({
-	age: katabami.int(),
-	name: katabami.string(),
+const user = k.object({
+	age: k.int(),
+	name: k.string(),
 });
 
 const result = user["~standard"].validate({ age: 20, name: "Ada" });
@@ -428,11 +428,11 @@ if (result.issues) {
 Pass a custom formatter through `libraryOptions`:
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 
-const user = katabami.object({
-	age: katabami.int(),
-	name: katabami.string(),
+const user = k.object({
+	age: k.int(),
+	name: k.string(),
 });
 
 user["~standard"].validate(input, {
@@ -448,15 +448,15 @@ Schema. Targets: `draft-2020-12` (default), `draft-07`, `openapi-3.0`.
 [Standard JSON Schema](https://standardschema.dev/json-schema).
 
 ```ts
-import * as katabami from "katabami";
-import * as katabamiJsonSchema from "@katabami/json-schema";
+import * as k from "katabami";
+import { toJsonSchema, toStandardJsonSchema } from "@katabami/json-schema";
 
-const decoder = katabami.object({
-	age: katabami.int(),
-	name: katabami.optional(katabami.string()),
+const decoder = k.object({
+	age: k.int(),
+	name: k.optional(k.string()),
 });
 
-katabamiJsonSchema.toJsonSchema(decoder);
+toJsonSchema(decoder);
 // {
 //   $schema: "https://json-schema.org/draft/2020-12/schema",
 //   type: "object",
@@ -464,8 +464,8 @@ katabamiJsonSchema.toJsonSchema(decoder);
 //   required: ["age"]
 // }
 
-katabamiJsonSchema.toJsonSchema(decoder, { target: "draft-07" });
-katabamiJsonSchema.toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
+toJsonSchema(decoder, { target: "draft-07" });
+toStandardJsonSchema(decoder)["~standard"].jsonSchema.input({
 	target: "openapi-3.0",
 });
 ```
@@ -483,16 +483,16 @@ first, then convert.
 without changing decode behavior. It is not part of the main `katabami` entry.
 
 ```ts
-import * as katabami from "katabami";
+import * as k from "katabami";
 import { replaceSchema } from "katabami/dev";
 
 export const date = () =>
 	replaceSchema(
-		katabami.string().andThen((value) => {
+		k.string().andThen((value) => {
 			const parsed = new Date(value);
 			return Number.isNaN(parsed.getTime())
-				? katabami.failed()
-				: katabami.succeed(parsed);
+				? k.failed()
+				: k.succeed(parsed);
 		}),
 		{ format: "date-time", kind: "string" },
 	);
@@ -500,35 +500,35 @@ export const date = () =>
 
 ## i18next
 
-`@katabami/i18next` ships English and Japanese resources plus an i18next
-formatter module (`quoteString`).
+`@katabami/i18next` ships English and Japanese resources. Register
+`initKatabami` with i18next.
 
 ```ts
 import i18next from "i18next";
-import * as katabami from "katabami";
-import * as katabamiI18next from "@katabami/i18next";
+import * as k from "katabami";
+import { createFormatter, initKatabami, resources } from "@katabami/i18next";
 
-await i18next.use(katabamiI18next.formatter).init({
+await i18next.use(initKatabami).init({
 	interpolation: { escapeValue: false },
 	lng: "ja",
 	resources: {
-		en: { translation: katabamiI18next.resources.en },
-		ja: { translation: katabamiI18next.resources.ja },
+		en: { translation: resources.en },
+		ja: { translation: resources.ja },
 	},
 });
 
-const formatter = katabamiI18next.createFormatter(i18next.t);
-const result = katabami.string().decodeValue(1);
+const format = createFormatter(i18next.t);
+const result = k.string().decodeValue(1);
 
 if (!result.ok) {
-	katabami.getIssueMessage(result.issues)?.format(formatter);
+	k.getIssueMessage(result.issues)?.format(format);
 	// 文字列が期待されましたが、数値でした。
 
-	const flattened = katabami.flattenIssues(result.issues, formatter);
+	const flattened = k.flattenIssues(result.issues, format);
 	// [{ message: "文字列が期待されましたが、数値でした。", path: undefined }]
 
-	const restored = katabami.unflattenIssues(flattened);
-	katabami.getIssueMessage(restored)?.format();
+	const restored = k.unflattenIssues(flattened);
+	k.getIssueMessage(restored)?.format();
 	// 文字列が期待されましたが、数値でした。
 }
 ```

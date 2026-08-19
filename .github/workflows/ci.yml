@@ -70,8 +70,8 @@ jobs:
         working-directory: ${{ runner.temp }}/npm-install-check
         run: |
           cat > smoke.mjs <<'EOF'
-          import * as katabami from "katabami";
-          import { createFormatter, formatter, resources } from "@katabami/i18next";
+          import * as k from "katabami";
+          import { createFormatter, initKatabami, resources } from "@katabami/i18next";
           import {
             toJsonSchema,
             toStandardJsonSchema,
@@ -79,7 +79,7 @@ jobs:
           import { replaceSchema } from "katabami/dev";
           import i18next from "i18next";
 
-          const result = katabami.string().decodeValue("ok");
+          const result = k.string().decodeValue("ok");
           if (!result.ok || result.value !== "ok") {
             throw new Error("katabami decode failed");
           }
@@ -87,8 +87,8 @@ jobs:
           if (typeof createFormatter !== "function") {
             throw new Error("createFormatter is missing");
           }
-          if (formatter?.type !== "formatter") {
-            throw new Error("i18next formatter module is missing");
+          if (initKatabami?.type !== "formatter") {
+            throw new Error("i18next initKatabami plugin is missing");
           }
           if (resources.en == null || resources.ja == null) {
             throw new Error("i18next resources are missing");
@@ -99,12 +99,12 @@ jobs:
             throw new Error("createFormatter did not return a formatter");
           }
 
-          const json = toJsonSchema(katabami.string(), { target: "draft-2020-12" });
+          const json = toJsonSchema(k.string(), { target: "draft-2020-12" });
           if (json.type !== "string") {
             throw new Error("toJsonSchema failed");
           }
 
-          const date = replaceSchema(katabami.string(), {
+          const date = replaceSchema(k.string(), {
             format: "date-time",
             kind: "string",
           });
@@ -113,7 +113,7 @@ jobs:
             throw new Error("replaceSchema json schema failed");
           }
 
-          const standard = toStandardJsonSchema(katabami.string());
+          const standard = toStandardJsonSchema(k.string());
           const fromStandard = standard["~standard"].jsonSchema.input({
             target: "draft-07",
           });
