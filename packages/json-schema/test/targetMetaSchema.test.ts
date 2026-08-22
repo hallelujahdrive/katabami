@@ -68,7 +68,7 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	nullableUnion: katabami.nullable(
 		katabami.union(katabami.string(), katabami.int()),
 	),
-	number: katabami.float(),
+	number: katabami.number(),
 	numberExclusive: {
 		exclusiveMinimum: 0,
 		kind: "number",

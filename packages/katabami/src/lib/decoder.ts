@@ -58,17 +58,12 @@ type SchemaDecoder = IDecoder<unknown, Issues, boolean>;
 
 type SchemaDescriptor = () => Awaitable<DecoderSchema>;
 
-const unknownSchema = { kind: "unknown" } as const satisfies DecoderSchema;
-const neverSchema = { kind: "never" } as const satisfies DecoderSchema;
-const stringSchema = { kind: "string" } as const satisfies DecoderSchema;
 const booleanSchema = { kind: "boolean" } as const satisfies DecoderSchema;
 const integerSchema = { kind: "integer" } as const satisfies DecoderSchema;
+const neverSchema = { kind: "never" } as const satisfies DecoderSchema;
 const numberSchema = { kind: "number" } as const satisfies DecoderSchema;
-
-const constantSchema = <T extends Primitive>(value: T): DecoderSchema => ({
-	kind: "constant",
-	value,
-});
+const stringSchema = { kind: "string" } as const satisfies DecoderSchema;
+const unknownSchema = { kind: "unknown" } as const satisfies DecoderSchema;
 
 const arraySchema = (
 	element: DecoderSchema,
@@ -78,11 +73,43 @@ const arraySchema = (
 		? { element, kind: "array" }
 		: { element, kind: "array", minItems };
 
+const constantSchema = <T extends Primitive>(value: T): DecoderSchema => ({
+	kind: "constant",
+	value,
+});
+
+const fieldSchema = (key: string, schema: DecoderSchema): DecoderSchema => ({
+	key,
+	kind: "field",
+	schema,
+});
+
+const indexSchema = (index: number, schema: DecoderSchema): DecoderSchema => ({
+	index,
+	kind: "index",
+	schema,
+});
+
+const mapSchema = (decoders: readonly DecoderSchema[]): DecoderSchema => ({
+	decoders,
+	kind: "map",
+});
+
+const nullableSchema = (schema: DecoderSchema): DecoderSchema => ({
+	kind: "nullable",
+	schema,
+});
+
 const objectSchema = (
 	properties: Readonly<Record<string, DecoderSchema>>,
 ): DecoderSchema => ({
 	kind: "object",
 	properties,
+});
+
+const optionalSchema = (schema: DecoderSchema): DecoderSchema => ({
+	kind: "optional",
+	schema,
 });
 
 const recordSchema = (
@@ -102,33 +129,6 @@ const tupleSchema = (elements: readonly DecoderSchema[]): DecoderSchema => ({
 const unionSchema = (variants: readonly DecoderSchema[]): DecoderSchema => ({
 	kind: "union",
 	variants,
-});
-
-const nullableSchema = (schema: DecoderSchema): DecoderSchema => ({
-	kind: "nullable",
-	schema,
-});
-
-const optionalSchema = (schema: DecoderSchema): DecoderSchema => ({
-	kind: "optional",
-	schema,
-});
-
-const fieldSchema = (key: string, schema: DecoderSchema): DecoderSchema => ({
-	key,
-	kind: "field",
-	schema,
-});
-
-const indexSchema = (index: number, schema: DecoderSchema): DecoderSchema => ({
-	index,
-	kind: "index",
-	schema,
-});
-
-const mapSchema = (decoders: readonly DecoderSchema[]): DecoderSchema => ({
-	decoders,
-	kind: "map",
 });
 
 const mapAwaitable = <T, U>(
@@ -191,15 +191,38 @@ const resolveAwaitablePairs = <K, T>(
 		),
 	);
 
-const staticSchemaDescriptor =
-	(schema: DecoderSchema): SchemaDescriptor =>
-	() =>
-		schema;
-
 const arraySchemaDescriptor =
 	(decoder: SchemaDecoder): SchemaDescriptor =>
 	() =>
 		mapAwaitable(decoder.getSchema(), (schema) => arraySchema(schema));
+
+const fieldSchemaDescriptor =
+	(key: string, decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => fieldSchema(key, schema));
+
+const indexSchemaDescriptor =
+	(index: number, decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => indexSchema(index, schema));
+
+const lazySchemaDescriptor =
+	(lazyFunc: () => Awaitable<SchemaDecoder>): SchemaDescriptor =>
+	() =>
+		flatMapAwaitable(lazyFunc(), (decoder) => decoder.getSchema());
+
+const mapSchemaDescriptor =
+	(decoders: readonly SchemaDecoder[]): SchemaDescriptor =>
+	() =>
+		mapAwaitable(
+			allAwaitable(decoders.map((decoder) => decoder.getSchema())),
+			(schemas) => mapSchema(schemas),
+		);
+
+const nullableSchemaDescriptor =
+	(decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => nullableSchema(schema));
 
 const objectSchemaDescriptor =
 	(decoders: Readonly<Record<string, SchemaDecoder>>): SchemaDescriptor =>
@@ -218,6 +241,11 @@ const oneOrMoreSchemaDescriptor =
 	() =>
 		mapAwaitable(decoder.getSchema(), (schema) => arraySchema(schema, 1));
 
+const optionalSchemaDescriptor =
+	(decoder: SchemaDecoder): SchemaDescriptor =>
+	() =>
+		mapAwaitable(decoder.getSchema(), (schema) => optionalSchema(schema));
+
 const recordSchemaDescriptor =
 	(key: SchemaDecoder, value: SchemaDecoder): SchemaDescriptor =>
 	() =>
@@ -232,6 +260,11 @@ const recordSchemaDescriptor =
 				return recordSchema(keySchema, valueSchema);
 			},
 		);
+
+const staticSchemaDescriptor =
+	(schema: DecoderSchema): SchemaDescriptor =>
+	() =>
+		schema;
 
 const tupleSchemaDescriptor =
 	(decoders: readonly SchemaDecoder[]): SchemaDescriptor =>
@@ -248,39 +281,6 @@ const unionSchemaDescriptor =
 			allAwaitable(decoders.map((decoder) => decoder.getSchema())),
 			(schemas) => unionSchema(schemas),
 		);
-
-const mapSchemaDescriptor =
-	(decoders: readonly SchemaDecoder[]): SchemaDescriptor =>
-	() =>
-		mapAwaitable(
-			allAwaitable(decoders.map((decoder) => decoder.getSchema())),
-			(schemas) => mapSchema(schemas),
-		);
-
-const nullableSchemaDescriptor =
-	(decoder: SchemaDecoder): SchemaDescriptor =>
-	() =>
-		mapAwaitable(decoder.getSchema(), (schema) => nullableSchema(schema));
-
-const optionalSchemaDescriptor =
-	(decoder: SchemaDecoder): SchemaDescriptor =>
-	() =>
-		mapAwaitable(decoder.getSchema(), (schema) => optionalSchema(schema));
-
-const fieldSchemaDescriptor =
-	(key: string, decoder: SchemaDecoder): SchemaDescriptor =>
-	() =>
-		mapAwaitable(decoder.getSchema(), (schema) => fieldSchema(key, schema));
-
-const indexSchemaDescriptor =
-	(index: number, decoder: SchemaDecoder): SchemaDescriptor =>
-	() =>
-		mapAwaitable(decoder.getSchema(), (schema) => indexSchema(index, schema));
-
-const lazySchemaDescriptor =
-	(lazyFunc: () => Awaitable<SchemaDecoder>): SchemaDescriptor =>
-	() =>
-		flatMapAwaitable(lazyFunc(), (decoder) => decoder.getSchema());
 
 /**
  * Creates a decoder that always succeeds with the given value.
@@ -583,6 +583,35 @@ const typeOf = (value: unknown): TypeKeys => {
 };
 
 /**
+ * A decoder for booleans.
+ */
+const booleanDecoder = new Decoder<
+	boolean,
+	Issues<
+		"boolean",
+		Issue<
+			"boolean",
+			"issue.unexpectedType",
+			{ expected: "type.boolean"; received: string }
+		>
+	>
+>(
+	(value) => {
+		if (typeof value === "boolean") return { ok: true, value };
+
+		return {
+			issues: createIssues("boolean", "issue.unexpectedType", {
+				expected: "type.boolean",
+				received: typeOf(value),
+			}),
+			ok: false,
+		};
+	},
+	undefined,
+	staticSchemaDescriptor(booleanSchema),
+);
+
+/**
  * A decoder that always fails with the given message and issues.
  * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
@@ -601,14 +630,58 @@ const failedDecoder = new Decoder<
 );
 
 /**
- * A decoder for floats.
+ * A decoder for integers.
  */
-const floatDecoder = new Decoder<
+const integerDecoder = new Decoder<
 	number,
 	Issues<
-		"float",
+		"integer",
 		Issue<
-			"float",
+			"integer",
+			"issue.unexpectedType",
+			{ expected: "type.integer" | "type.number"; received: string }
+		>
+	>
+>(
+	(value) => {
+		// If the value is not a number, return an error.
+		if (typeof value !== "number") {
+			return {
+				issues: createIssues("integer", "issue.unexpectedType", {
+					expected: "type.number",
+					received: typeOf(value),
+				}),
+				ok: false,
+			};
+		}
+
+		// If the value is not an integer, return an error.
+		if (!Number.isInteger(value)) {
+			return {
+				issues: createIssues("integer", "issue.unexpectedType", {
+					expected: "type.integer",
+					received: "type.float",
+				}),
+				ok: false,
+			};
+		}
+
+		// If the value is an integer, return the value.
+		return { ok: true, value };
+	},
+	undefined,
+	staticSchemaDescriptor(integerSchema),
+);
+
+/**
+ * A decoder for numbers.
+ */
+const numberDecoder = new Decoder<
+	number,
+	Issues<
+		"number",
+		Issue<
+			"number",
 			"issue.unexpectedType",
 			{ expected: "type.number"; received: string }
 		>
@@ -618,8 +691,8 @@ const floatDecoder = new Decoder<
 		if (typeof value === "number") return { ok: true, value };
 
 		return {
-			issues: createIssues("float", "issue.unexpectedType", {
-				expected: "type.float",
+			issues: createIssues("number", "issue.unexpectedType", {
+				expected: "type.number",
 				received: typeOf(value),
 			}),
 			ok: false,
@@ -1680,25 +1753,6 @@ export function field<
 }
 
 /**
- * A decoder for floats.
- *
- * @returns {IDecoder<number, Issues<"float", Issue<"float", "issue.unexpectedType", { expected: "type.number"; received: string }>>>} A decoder for floats.
- */
-export function float(): IDecoder<
-	number,
-	Issues<
-		"float",
-		Issue<
-			"float",
-			"issue.unexpectedType",
-			{ expected: "type.number"; received: string }
-		>
-	>
-> {
-	return floatDecoder;
-}
-
-/**
  * Creates a decoder that decodes an index.
  * @template T - The type of the value.
  * @template {IDecoder<T>} U - The decoder to use.
@@ -1858,6 +1912,25 @@ export function nullable<
 		nullableSchemaDescriptor(decoder),
 		isDecoderAsync(decoder),
 	);
+}
+
+/**
+ * A decoder for numbers.
+ *
+ * @returns {IDecoder<number, Issues<"number", Issue<"number", "issue.unexpectedType", { expected: "type.number"; received: string }>>>} A decoder for numbers.
+ */
+export function number(): IDecoder<
+	number,
+	Issues<
+		"number",
+		Issue<
+			"number",
+			"issue.unexpectedType",
+			{ expected: "type.number"; received: string }
+		>
+	>
+> {
+	return numberDecoder;
 }
 
 /**
@@ -2183,76 +2256,3 @@ export function union<
 		anyDecoderAsync(decoders),
 	);
 }
-
-/**
- * A decoder for booleans.
- */
-const booleanDecoder = new Decoder<
-	boolean,
-	Issues<
-		"boolean",
-		Issue<
-			"boolean",
-			"issue.unexpectedType",
-			{ expected: "type.boolean"; received: string }
-		>
-	>
->(
-	(value) => {
-		if (typeof value === "boolean") return { ok: true, value };
-
-		return {
-			issues: createIssues("boolean", "issue.unexpectedType", {
-				expected: "type.boolean",
-				received: typeOf(value),
-			}),
-			ok: false,
-		};
-	},
-	undefined,
-	staticSchemaDescriptor(booleanSchema),
-);
-
-/**
- * A decoder for integers.
- */
-const integerDecoder = new Decoder<
-	number,
-	Issues<
-		"integer",
-		Issue<
-			"integer",
-			"issue.unexpectedType",
-			{ expected: "type.integer" | "type.number"; received: string }
-		>
-	>
->(
-	(value) => {
-		// If the value is not a number, return an error.
-		if (typeof value !== "number") {
-			return {
-				issues: createIssues("integer", "issue.unexpectedType", {
-					expected: "type.number",
-					received: typeOf(value),
-				}),
-				ok: false,
-			};
-		}
-
-		// If the value is not an integer, return an error.
-		if (!Number.isInteger(value)) {
-			return {
-				issues: createIssues("integer", "issue.unexpectedType", {
-					expected: "type.integer",
-					received: "type.float",
-				}),
-				ok: false,
-			};
-		}
-
-		// If the value is an integer, return the value.
-		return { ok: true, value };
-	},
-	undefined,
-	staticSchemaDescriptor(integerSchema),
-);

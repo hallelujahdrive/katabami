@@ -8,12 +8,12 @@ import {
 	failed,
 	field,
 	flattenIssues,
-	float,
 	getIssueMessage,
 	index,
 	int,
 	map,
 	nullable,
+	number,
 	object,
 	oneOrMore,
 	optional,
@@ -247,23 +247,6 @@ describe("issues", () => {
 		});
 	});
 
-	describe("float decoder", () => {
-		const decoder = float();
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue("foo");
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				"Expected float, but received string.",
-			);
-		});
-	});
-
 	describe("index decoder", () => {
 		const decoder = index(0, string());
 
@@ -375,6 +358,23 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Object property "foo" failed validation.',
+			);
+		});
+	});
+
+	describe("number decoder", () => {
+		const decoder = number();
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue("foo");
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"Expected number, but received string.",
 			);
 		});
 	});

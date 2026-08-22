@@ -10,7 +10,6 @@ import {
 	type Decoder,
 	failed,
 	field,
-	float,
 	type Issue,
 	type Issues,
 	type IssueType,
@@ -18,6 +17,7 @@ import {
 	int,
 	map,
 	nullable,
+	number,
 	type ObjectDecodeIssues,
 	object,
 	oneOrMore,
@@ -218,20 +218,20 @@ describe("decode issues", () => {
 		}>();
 	});
 
+	test("number", () => {
+		const _decoder = number();
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.number";
+			received: string;
+		}>();
+	});
+
 	test("optional", () => {
 		const _decoder = optional(int());
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
-			received: string;
-		}>();
-	});
-
-	test("float", () => {
-		const _decoder = float();
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "type.number";
 			received: string;
 		}>();
 	});
@@ -248,7 +248,7 @@ describe("decode issues", () => {
 	describe("map", () => {
 		const _decoder = map(
 			(foo, bar) => ({ ...foo, ...bar }),
-			object({ foo: float() }),
+			object({ foo: number() }),
 			object({ bar: string() }),
 		);
 

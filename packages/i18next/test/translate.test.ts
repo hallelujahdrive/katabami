@@ -134,23 +134,6 @@ describe("translate", () => {
 		});
 	});
 
-	describe("float decoder", () => {
-		const decoder = katabami.float();
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue("foo");
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				"浮動小数点数が期待されましたが、文字列でした。",
-			);
-		});
-	});
-
 	describe("index decoder", () => {
 		const decoder = katabami.index(0, katabami.string());
 
@@ -262,6 +245,23 @@ describe("translate", () => {
 
 			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				'オブジェクトプロパティ"foo"のバリデーションに失敗しました。',
+			);
+		});
+	});
+
+	describe("number decoder", () => {
+		const decoder = katabami.number();
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue("foo");
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"数値が期待されましたが、文字列でした。",
 			);
 		});
 	});
