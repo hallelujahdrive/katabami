@@ -6,10 +6,10 @@ import {
 	constant,
 	type Decoder,
 	field,
-	float,
 	index,
 	int,
 	map,
+	number,
 	object,
 	oneOrMore,
 	record,
@@ -1589,7 +1589,7 @@ describe("StandardSchemaV1", () => {
 	describe("decoder method", () => {
 		describe("andThen", () => {
 			describe("sync", () => {
-				const decoder = float().andThen(() => int());
+				const decoder = number().andThen(() => int());
 
 				describe("validate value", () => {
 					test("success", () => {
@@ -1627,7 +1627,7 @@ describe("StandardSchemaV1", () => {
 			});
 
 			describe("async", () => {
-				const decoder = float().andThen(
+				const decoder = number().andThen(
 					() => new Promise<Decoder<number>>((resolve) => resolve(int())),
 				);
 

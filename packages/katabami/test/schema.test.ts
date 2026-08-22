@@ -7,12 +7,12 @@ import {
 	type Decoder,
 	failed,
 	field,
-	float,
 	index,
 	int,
 	lazy,
 	map,
 	nullable,
+	number,
 	object,
 	oneOrMore,
 	optional,
@@ -26,12 +26,12 @@ import {
 
 describe("getSchema", () => {
 	test("primitives", () => {
-		expect(string().getSchema()).toEqual({ kind: "string" });
 		expect(boolean().getSchema()).toEqual({ kind: "boolean" });
-		expect(int().getSchema()).toEqual({ kind: "integer" });
-		expect(float().getSchema()).toEqual({ kind: "number" });
-		expect(value().getSchema()).toEqual({ kind: "unknown" });
 		expect(failed().getSchema()).toEqual({ kind: "never" });
+		expect(int().getSchema()).toEqual({ kind: "integer" });
+		expect(number().getSchema()).toEqual({ kind: "number" });
+		expect(string().getSchema()).toEqual({ kind: "string" });
+		expect(value().getSchema()).toEqual({ kind: "unknown" });
 	});
 
 	test("constant", () => {

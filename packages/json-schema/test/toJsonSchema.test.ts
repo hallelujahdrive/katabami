@@ -20,7 +20,7 @@ describe("toJsonSchema", () => {
 		expect(toJsonSchema(katabami.int(), { target: "openapi-3.0" })).toEqual({
 			type: "integer",
 		});
-		expect(toJsonSchema(katabami.float())).toEqual({
+		expect(toJsonSchema(katabami.number())).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "number",
 		});

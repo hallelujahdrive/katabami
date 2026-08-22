@@ -9,7 +9,6 @@ import {
 	type Decoder,
 	failed,
 	field,
-	float,
 	type Infer,
 	type Issue,
 	type Issues,
@@ -17,6 +16,7 @@ import {
 	int,
 	map,
 	nullable,
+	number,
 	object,
 	oneOrMore,
 	optional,
@@ -33,20 +33,20 @@ import {
 describe("Decoder", () => {
 	describe("array", () => {
 		test("fixed", () => {
-			const _decoder = array<number>(float());
+			const _decoder = array<number>(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
 
 		test("complement", () => {
-			const _decoder = array(float());
+			const _decoder = array(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Array<number>>();
 		});
 
 		test("has promise", () => {
 			const _decoder = array(
-				float().andThen(() => {
+				number().andThen(() => {
 					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
@@ -202,24 +202,6 @@ describe("Decoder", () => {
 		});
 	});
 
-	describe("float", () => {
-		test("sync", () => {
-			const _decoder = float();
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
-		});
-
-		test("promise", () => {
-			const _decoder = float().andThen((value) => {
-				return new Promise<Decoder<number>>((resolve) =>
-					resolve(succeed(value)),
-				);
-			});
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
-		});
-	});
-
 	describe("index", () => {
 		describe("sync", () => {
 			test("fixed", () => {
@@ -289,8 +271,8 @@ describe("Decoder", () => {
 				[Decoder<number>, Decoder<number>]
 			>(
 				(foo, bar) => ({ bar, foo }),
-				field("foo", float()),
-				field("bar", float()),
+				field("foo", number()),
+				field("bar", number()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -302,8 +284,8 @@ describe("Decoder", () => {
 		test("complement", () => {
 			const _decoder = map(
 				(foo, bar) => ({ bar, foo }),
-				field("foo", float()),
-				field("bar", float()),
+				field("foo", number()),
+				field("bar", number()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -317,13 +299,13 @@ describe("Decoder", () => {
 				(foo, bar) => ({ bar, foo }),
 				field(
 					"foo",
-					float().andThen((value) => {
+					number().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
 							resolve(succeed(value)),
 						);
 					}),
 				),
-				field("bar", float()),
+				field("bar", number()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -340,8 +322,8 @@ describe("Decoder", () => {
 					await new Promise((resolve) => setTimeout(resolve, 100));
 					return { bar, foo };
 				},
-				field("foo", float()),
-				field("bar", float()),
+				field("foo", number()),
+				field("bar", number()),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -353,10 +335,28 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("number", () => {
+		test("sync", () => {
+			const _decoder = number();
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<number>();
+		});
+
+		test("promise", () => {
+			const _decoder = number().andThen((value) => {
+				return new Promise<Decoder<number>>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<number>>();
+		});
+	});
+
 	describe("object", () => {
 		test("fixed", () => {
 			const _decoder = object<{ num: number; optionalStr?: string }>({
-				num: float(),
+				num: number(),
 				optionalStr: optional(string()),
 			});
 
@@ -368,7 +368,7 @@ describe("Decoder", () => {
 
 		test("complement", () => {
 			const _decoder = object({
-				num: float(),
+				num: number(),
 				optionalStr: optional(string()),
 			});
 
@@ -380,7 +380,7 @@ describe("Decoder", () => {
 
 		test("has promise", () => {
 			const _decoder = object({
-				num: float().andThen((value) => {
+				num: number().andThen((value) => {
 					return new Promise<Decoder<number>>((resolve) =>
 						resolve(succeed(value)),
 					);
@@ -399,7 +399,7 @@ describe("Decoder", () => {
 		test("nullable field", () => {
 			const _decoder = object({
 				nullableStr: nullable(string()),
-				num: float(),
+				num: number(),
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<{
@@ -411,7 +411,7 @@ describe("Decoder", () => {
 
 	describe("oneOrMore", () => {
 		test("fixed", () => {
-			const _decoder = oneOrMore<number>(float());
+			const _decoder = oneOrMore<number>(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				[number, ...number[]]
@@ -419,7 +419,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = oneOrMore(float());
+			const _decoder = oneOrMore(number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				[number, ...number[]]
@@ -428,7 +428,7 @@ describe("Decoder", () => {
 
 		test("has promise", () => {
 			const _decoder = oneOrMore(
-				float().andThen(() => {
+				number().andThen(() => {
 					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
@@ -441,7 +441,7 @@ describe("Decoder", () => {
 
 	describe("record", () => {
 		test("fixed", () => {
-			const _decoder = record(string(), float());
+			const _decoder = record(string(), number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
@@ -449,7 +449,7 @@ describe("Decoder", () => {
 		});
 
 		test("complement", () => {
-			const _decoder = record(string(), float());
+			const _decoder = record(string(), number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<string, number>
@@ -457,7 +457,7 @@ describe("Decoder", () => {
 		});
 
 		test("literal keys", () => {
-			const _decoder = record(union(constant("a"), constant("b")), float());
+			const _decoder = record(union(constant("a"), constant("b")), number());
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 				Record<"a" | "b", number>
@@ -467,7 +467,7 @@ describe("Decoder", () => {
 		test("has promise", () => {
 			const _decoder = record(
 				string(),
-				float().andThen(() => {
+				number().andThen(() => {
 					return new Promise<Decoder<number>>((resolve) => resolve(int()));
 				}),
 			);
@@ -482,7 +482,7 @@ describe("Decoder", () => {
 				string().andThen(() => {
 					return new Promise<Decoder<string>>((resolve) => resolve(string()));
 				}),
-				float(),
+				number(),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -502,13 +502,13 @@ describe("Decoder", () => {
 	describe("nullable", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = nullable<number>(float());
+				const _decoder = nullable<number>(number());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
 			});
 
 			test("complement", () => {
-				const _decoder = nullable(float());
+				const _decoder = nullable(number());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
 			});
@@ -517,7 +517,7 @@ describe("Decoder", () => {
 		describe("async", () => {
 			test("fixed", () => {
 				const _decoder = nullable<Promise<number>>(
-					float().andThen((value) => {
+					number().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
 							resolve(succeed(value)),
 						);
@@ -531,7 +531,7 @@ describe("Decoder", () => {
 
 			test("complement", () => {
 				const _decoder = nullable(
-					float().andThen((value) => {
+					number().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
 							resolve(succeed(value)),
 						);
@@ -548,7 +548,7 @@ describe("Decoder", () => {
 	describe("optional", () => {
 		describe("sync", () => {
 			test("fixed", () => {
-				const _decoder = optional<number>(float());
+				const _decoder = optional<number>(number());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 					number | undefined
@@ -556,7 +556,7 @@ describe("Decoder", () => {
 			});
 
 			test("complement", () => {
-				const _decoder = optional(float());
+				const _decoder = optional(number());
 
 				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
 					number | undefined
@@ -567,7 +567,7 @@ describe("Decoder", () => {
 		describe("async", () => {
 			test("fixed", () => {
 				const _decoder = optional<Promise<number>>(
-					float().andThen((value) => {
+					number().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
 							resolve(succeed(value)),
 						);
@@ -581,7 +581,7 @@ describe("Decoder", () => {
 
 			test("complement", () => {
 				const _decoder = optional(
-					float().andThen((value) => {
+					number().andThen((value) => {
 						return new Promise<Decoder<number>>((resolve) =>
 							resolve(succeed(value)),
 						);
