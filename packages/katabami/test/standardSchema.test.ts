@@ -3,11 +3,11 @@ import {
 	array,
 	at,
 	boolean,
-	constant,
 	type Decoder,
 	field,
 	index,
 	int,
+	literal,
 	map,
 	number,
 	object,
@@ -337,69 +337,6 @@ describe("StandardSchemaV1", () => {
 		});
 	});
 
-	describe("constant", () => {
-		describe("string", () => {
-			const decoder = constant("foo");
-
-			describe("validate value", () => {
-				test("success", () => {
-					expectValidateSync(decoder, "foo", { value: "foo" } as const);
-				});
-
-				test("fail", () => {
-					expectValidateSync(decoder, "bar", {
-						issues: [
-							{
-								message: 'Expected "foo", but received "bar".',
-								path: undefined,
-							},
-						],
-					});
-				});
-			});
-
-			describe("validate parsed string", () => {
-				test("success", () => {
-					expectValidateSync(decoder, JSON.parse('"foo"'), {
-						value: "foo",
-					} as const);
-				});
-
-				test("fail", () => {
-					expectValidateSync(decoder, JSON.parse('"bar"'), {
-						issues: [
-							{
-								message: 'Expected "foo", but received "bar".',
-								path: undefined,
-							},
-						],
-					});
-				});
-			});
-		});
-
-		describe("null", () => {
-			const decoder = constant(null);
-
-			describe("validate value", () => {
-				test("success", () => {
-					expectValidateSync(decoder, null, { value: null } as const);
-				});
-
-				test("fail", () => {
-					expectValidateSync(decoder, "foo", {
-						issues: [
-							{
-								message: 'Expected null, but received "foo".',
-								path: undefined,
-							},
-						],
-					});
-				});
-			});
-		});
-	});
-
 	describe("field", () => {
 		describe("sync", () => {
 			const decoder = field("foo", string());
@@ -636,6 +573,69 @@ describe("StandardSchemaV1", () => {
 							{
 								message: "Expected number, but received string.",
 								path: ["bar"],
+							},
+						],
+					});
+				});
+			});
+		});
+	});
+
+	describe("literal", () => {
+		describe("string", () => {
+			const decoder = literal("foo");
+
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, "foo", { value: "foo" } as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, "bar", {
+						issues: [
+							{
+								message: 'Expected "foo", but received "bar".',
+								path: undefined,
+							},
+						],
+					});
+				});
+			});
+
+			describe("validate parsed string", () => {
+				test("success", () => {
+					expectValidateSync(decoder, JSON.parse('"foo"'), {
+						value: "foo",
+					} as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, JSON.parse('"bar"'), {
+						issues: [
+							{
+								message: 'Expected "foo", but received "bar".',
+								path: undefined,
+							},
+						],
+					});
+				});
+			});
+		});
+
+		describe("null", () => {
+			const decoder = literal(null);
+
+			describe("validate value", () => {
+				test("success", () => {
+					expectValidateSync(decoder, null, { value: null } as const);
+				});
+
+				test("fail", () => {
+					expectValidateSync(decoder, "foo", {
+						issues: [
+							{
+								message: 'Expected null, but received "foo".',
+								path: undefined,
 							},
 						],
 					});
@@ -1301,7 +1301,7 @@ describe("StandardSchemaV1", () => {
 		});
 
 		describe("key decoder", () => {
-			const decoder = record(union(constant("a"), constant("b")), int());
+			const decoder = record(union(literal("a"), literal("b")), int());
 
 			test("invalid key", () => {
 				expectValidateSync(

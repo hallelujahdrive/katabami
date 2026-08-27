@@ -3,7 +3,6 @@ import {
 	array,
 	at,
 	boolean,
-	constant,
 	createIssues,
 	failed,
 	field,
@@ -11,6 +10,7 @@ import {
 	getIssueMessage,
 	index,
 	int,
+	literal,
 	map,
 	nullable,
 	number,
@@ -55,8 +55,8 @@ describe("issues", () => {
 		});
 	});
 
-	describe("oneOrMore decoder", () => {
-		const decoder = oneOrMore(string());
+	describe("at decoder", () => {
+		const decoder = at(["foo", "bar"], string());
 
 		test("unexpected type", () => {
 			const result = decoder.decodeValue(1);
@@ -67,12 +67,12 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				"Expected array, but received number.",
+				"Expected object, but received number.",
 			);
 		});
 
-		test("empty array", () => {
-			const result = decoder.decodeValue([]);
+		test("missing nested field", () => {
+			const result = decoder.decodeValue({ foo: {} });
 
 			expect(result).toStrictEqual({
 				issues: expect.anything(),
@@ -80,7 +80,43 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				"Expected array length 1, but received 0.",
+				'Object property "foo" failed validation.',
+			);
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
+				'Object property "bar" failed validation.',
+			);
+		});
+	});
+
+	describe("at decoder", () => {
+		const decoder = at(["foo", "bar"], string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"Expected object, but received number.",
+			);
+		});
+
+		test("missing nested field", () => {
+			const result = decoder.decodeValue({ foo: {} });
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				'Object property "foo" failed validation.',
+			);
+			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
+				'Object property "bar" failed validation.',
 			);
 		});
 	});
@@ -98,36 +134,6 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected boolean, but received string.",
-			);
-		});
-	});
-
-	describe("constant decoder", () => {
-		const decoder = constant("foo");
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue(1);
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Expected "foo", but received 1.',
-			);
-		});
-
-		test("null constant", () => {
-			const result = constant(null).decodeValue("foo");
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Expected null, but received "foo".',
 			);
 		});
 	});
@@ -214,39 +220,6 @@ describe("issues", () => {
 		});
 	});
 
-	describe("at decoder", () => {
-		const decoder = at(["foo", "bar"], string());
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue(1);
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
-		});
-
-		test("missing nested field", () => {
-			const result = decoder.decodeValue({ foo: {} });
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Object property "foo" failed validation.',
-			);
-			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
-				'Object property "bar" failed validation.',
-			);
-		});
-	});
-
 	describe("index decoder", () => {
 		const decoder = index(0, string());
 
@@ -328,6 +301,36 @@ describe("issues", () => {
 		});
 	});
 
+	describe("literal decoder", () => {
+		const decoder = literal("foo");
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				'Expected "foo", but received 1.',
+			);
+		});
+
+		test("null literal", () => {
+			const result = literal(null).decodeValue("foo");
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				'Expected null, but received "foo".',
+			);
+		});
+	});
+
 	describe("map decoder", () => {
 		const decoder = map(
 			(foo, bar) => ({ bar, foo }),
@@ -379,39 +382,6 @@ describe("issues", () => {
 		});
 	});
 
-	describe("at decoder", () => {
-		const decoder = at(["foo", "bar"], string());
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue(1);
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				"Expected object, but received number.",
-			);
-		});
-
-		test("missing nested field", () => {
-			const result = decoder.decodeValue({ foo: {} });
-
-			expect(result).toStrictEqual({
-				issues: expect.anything(),
-				ok: false,
-			});
-
-			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Object property "foo" failed validation.',
-			);
-			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
-				'Object property "bar" failed validation.',
-			);
-		});
-	});
-
 	describe("object decoder", () => {
 		const decoder = object({
 			foo: string(),
@@ -444,6 +414,36 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues?.foo)?.format()).toStrictEqual(
 				"Expected string, but received number.",
+			);
+		});
+	});
+
+	describe("oneOrMore decoder", () => {
+		const decoder = oneOrMore(string());
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"Expected array, but received number.",
+			);
+		});
+
+		test("empty array", () => {
+			const result = decoder.decodeValue([]);
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"Expected array length 1, but received 0.",
 			);
 		});
 	});
@@ -482,7 +482,7 @@ describe("issues", () => {
 		});
 
 		test("invalid record key", () => {
-			const keyed = record(union(constant("a"), constant("b")), int());
+			const keyed = record(union(literal("a"), literal("b")), int());
 			const result = keyed.decodeValue({ c: 1 });
 
 			expect(result).toStrictEqual({
@@ -591,8 +591,8 @@ describe("issues", () => {
 
 		describe("nested union", () => {
 			const decoder = union(
-				constant("foo"),
-				union(constant("bar"), constant("baz")),
+				literal("foo"),
+				union(literal("bar"), literal("baz")),
 			);
 
 			test("unexpected type", () => {
@@ -624,7 +624,7 @@ describe("issues", () => {
 
 	describe("Decoder methods", () => {
 		test("andThen", () => {
-			const decoder = string().andThen(() => constant("foo"));
+			const decoder = string().andThen(() => literal("foo"));
 
 			const result = decoder.decodeValue("bar");
 

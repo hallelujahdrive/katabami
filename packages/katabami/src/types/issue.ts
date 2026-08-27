@@ -144,8 +144,8 @@ export type UnflattenedIssuesOf<T> = [T] extends [never]
 type CommonIssueType =
 	| "array"
 	| "boolean"
-	| "constant"
 	| "integer"
+	| "literal"
 	| "number"
 	| "object"
 	| "record"

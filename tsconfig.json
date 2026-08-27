@@ -25,5 +25,6 @@
 		"target": "ESNext",
 		"types": ["node"],
 		"verbatimModuleSyntax": true
-	}
+	},
+	"exclude": ["packages/*/dist"]
 }

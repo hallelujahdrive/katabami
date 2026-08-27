@@ -32,18 +32,6 @@ describe("translate", () => {
 		});
 	});
 
-	describe("oneOrMore decoder", () => {
-		const decoder = katabami.oneOrMore(katabami.string());
-
-		test("empty array", () => {
-			const result = decoder.decodeValue([]);
-
-			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				"配列の長さは1が期待されましたが、0でした。",
-			);
-		});
-	});
-
 	describe("boolean decoder", () => {
 		const decoder = katabami.boolean();
 
@@ -52,26 +40,6 @@ describe("translate", () => {
 
 			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				"真偽値が期待されましたが、文字列でした。",
-			);
-		});
-	});
-
-	describe("constant decoder", () => {
-		const decoder = katabami.constant("foo");
-
-		test("unexpected type", () => {
-			const result = decoder.decodeValue(1);
-
-			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				'"foo"が期待されましたが、1でした。',
-			);
-		});
-
-		test("null constant", () => {
-			const result = katabami.constant(null).decodeValue("foo");
-
-			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				'nullが期待されましたが、"foo"でした。',
 			);
 		});
 	});
@@ -215,6 +183,26 @@ describe("translate", () => {
 		});
 	});
 
+	describe("literal decoder", () => {
+		const decoder = katabami.literal("foo");
+
+		test("unexpected type", () => {
+			const result = decoder.decodeValue(1);
+
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'"foo"が期待されましたが、1でした。',
+			);
+		});
+
+		test("null literal", () => {
+			const result = katabami.literal(null).decodeValue("foo");
+
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				'nullが期待されましたが、"foo"でした。',
+			);
+		});
+	});
+
 	describe("map decoder", () => {
 		const decoder = katabami.map(
 			(foo, bar) => ({ bar, foo }),
@@ -302,6 +290,18 @@ describe("translate", () => {
 		});
 	});
 
+	describe("oneOrMore decoder", () => {
+		const decoder = katabami.oneOrMore(katabami.string());
+
+		test("empty array", () => {
+			const result = decoder.decodeValue([]);
+
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"配列の長さは1が期待されましたが、0でした。",
+			);
+		});
+	});
+
 	describe("record decoder", () => {
 		const decoder = katabami.record(katabami.string(), katabami.string());
 
@@ -337,7 +337,7 @@ describe("translate", () => {
 
 		test("invalid record key", () => {
 			const keyed = katabami.record(
-				katabami.union(katabami.constant("a"), katabami.constant("b")),
+				katabami.union(katabami.literal("a"), katabami.literal("b")),
 				katabami.int(),
 			);
 			const result = keyed.decodeValue({ c: 1 });
@@ -447,8 +447,8 @@ describe("translate", () => {
 
 		describe("nested union", () => {
 			const decoder = katabami.union(
-				katabami.constant("foo"),
-				katabami.union(katabami.constant("bar"), katabami.constant("baz")),
+				katabami.literal("foo"),
+				katabami.union(katabami.literal("bar"), katabami.literal("baz")),
 			);
 
 			test("unexpected type", () => {
@@ -480,7 +480,7 @@ describe("translate", () => {
 
 	describe("Decoder methods", () => {
 		test("andThen", () => {
-			const decoder = katabami.string().andThen(() => katabami.constant("foo"));
+			const decoder = katabami.string().andThen(() => katabami.literal("foo"));
 
 			const result = decoder.decodeValue("bar");
 

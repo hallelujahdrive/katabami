@@ -19,14 +19,6 @@ export type BooleanDecoderSchema = {
 };
 
 /**
- * A decoder that accepts a single literal value.
- */
-export type ConstantDecoderSchema = {
-	readonly kind: "constant";
-	readonly value: Primitive;
-};
-
-/**
  * Minimal schema describing the values a decoder accepts.
  * Intended for plugins (e.g. JSON Schema generation).
  * Optional constraint fields (`format`, `minimum`, …) are input restrictions.
@@ -34,10 +26,10 @@ export type ConstantDecoderSchema = {
 export type DecoderSchema =
 	| ArrayDecoderSchema
 	| BooleanDecoderSchema
-	| ConstantDecoderSchema
 	| FieldDecoderSchema
 	| IndexDecoderSchema
 	| IntegerDecoderSchema
+	| LiteralDecoderSchema
 	| MapDecoderSchema
 	| NeverDecoderSchema
 	| NullableDecoderSchema
@@ -78,6 +70,14 @@ export type IntegerDecoderSchema = {
 	readonly maximum?: number;
 	readonly minimum?: number;
 	readonly multipleOf?: number;
+};
+
+/**
+ * A decoder that accepts a single literal value.
+ */
+export type LiteralDecoderSchema = {
+	readonly kind: "literal";
+	readonly value: Primitive;
 };
 
 /**
