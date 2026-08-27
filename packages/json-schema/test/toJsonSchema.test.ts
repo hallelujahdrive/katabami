@@ -8,49 +8,144 @@ import {
 } from "../src";
 
 describe("toJsonSchema", () => {
-	test("converts primitives", () => {
-		expect(toJsonSchema(katabami.string())).toEqual({
+	test("accepts DecoderSchema directly", () => {
+		expect(toJsonSchema({ kind: "string" })).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
 		});
-		expect(toJsonSchema(katabami.boolean(), { target: "draft-07" })).toEqual({
-			$schema: "http://json-schema.org/draft-07/schema#",
-			type: "boolean",
-		});
-		expect(toJsonSchema(katabami.int(), { target: "openapi-3.0" })).toEqual({
-			type: "integer",
-		});
-		expect(toJsonSchema(katabami.number())).toEqual({
+	});
+
+	test("converts array constraints", () => {
+		expect(
+			toJsonSchema({
+				element: { kind: "string" },
+				kind: "array",
+				maxItems: 5,
+				minItems: 1,
+				uniqueItems: true,
+			}),
+		).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
-			type: "number",
-		});
-		expect(toJsonSchema(katabami.value())).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-		});
-		expect(toJsonSchema(katabami.failed())).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			not: {},
+			items: { type: "string" },
+			maxItems: 5,
+			minItems: 1,
+			type: "array",
+			uniqueItems: true,
 		});
 	});
 
-	test("converts constants by target", () => {
-		expect(toJsonSchema(katabami.constant("foo"))).toEqual({
+	test("converts literals by target", () => {
+		expect(toJsonSchema(katabami.literal("foo"))).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			const: "foo",
 		});
 		expect(
-			toJsonSchema(katabami.constant("foo"), { target: "openapi-3.0" }),
+			toJsonSchema(katabami.literal("foo"), { target: "openapi-3.0" }),
 		).toEqual({
 			enum: ["foo"],
 		});
-		expect(toJsonSchema(katabami.constant(null))).toEqual({
+		expect(toJsonSchema(katabami.literal(null))).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			const: null,
 		});
 		expect(
-			toJsonSchema(katabami.constant(null), { target: "openapi-3.0" }),
+			toJsonSchema(katabami.literal(null), { target: "openapi-3.0" }),
 		).toEqual({
 			enum: [null],
+		});
+	});
+
+	test("converts map of fields to an object schema", () => {
+		const decoder = katabami.map(
+			(name, age) => ({ age, name }),
+			katabami.field("name", katabami.string()),
+			katabami.field("age", katabami.int()),
+		);
+
+		expect(toJsonSchema(decoder)).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				age: { type: "integer" },
+				name: { type: "string" },
+			},
+			required: ["name", "age"],
+			type: "object",
+		});
+	});
+
+	test("converts nested at fields", () => {
+		expect(
+			toJsonSchema(katabami.at(["person", "name"], katabami.string())),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				person: {
+					properties: {
+						name: { type: "string" },
+					},
+					required: ["name"],
+					type: "object",
+				},
+			},
+			required: ["person"],
+			type: "object",
+		});
+	});
+
+	test("converts nullable as required null union", () => {
+		expect(toJsonSchema(katabami.nullable(katabami.string()))).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: ["string", "null"],
+		});
+		expect(
+			toJsonSchema(katabami.nullable(katabami.string()), {
+				target: "openapi-3.0",
+			}),
+		).toEqual({
+			nullable: true,
+			type: "string",
+		});
+		expect(
+			toJsonSchema(
+				katabami.object({
+					age: katabami.int(),
+					name: katabami.nullable(katabami.string()),
+				}),
+			),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			properties: {
+				age: { type: "integer" },
+				name: { type: ["string", "null"] },
+			},
+			required: ["age", "name"],
+			type: "object",
+		});
+	});
+
+	test("converts numeric constraints by target", () => {
+		const schema = {
+			exclusiveMinimum: 0,
+			kind: "number",
+			maximum: 10,
+			minimum: 1,
+			multipleOf: 0.5,
+		} as const;
+
+		expect(toJsonSchema(schema)).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			exclusiveMinimum: 0,
+			maximum: 10,
+			minimum: 1,
+			multipleOf: 0.5,
+			type: "number",
+		});
+		expect(toJsonSchema(schema, { target: "openapi-3.0" })).toEqual({
+			exclusiveMinimum: true,
+			maximum: 10,
+			minimum: 0,
+			multipleOf: 0.5,
+			type: "number",
 		});
 	});
 
@@ -161,142 +256,28 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	test("converts nullable as required null union", () => {
-		expect(toJsonSchema(katabami.nullable(katabami.string()))).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			type: ["string", "null"],
-		});
-		expect(
-			toJsonSchema(katabami.nullable(katabami.string()), {
-				target: "openapi-3.0",
-			}),
-		).toEqual({
-			nullable: true,
-			type: "string",
-		});
-		expect(
-			toJsonSchema(
-				katabami.object({
-					age: katabami.int(),
-					name: katabami.nullable(katabami.string()),
-				}),
-			),
-		).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			properties: {
-				age: { type: "integer" },
-				name: { type: ["string", "null"] },
-			},
-			required: ["age", "name"],
-			type: "object",
-		});
-	});
-
-	test("converts nested at fields", () => {
-		expect(
-			toJsonSchema(katabami.at(["person", "name"], katabami.string())),
-		).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			properties: {
-				person: {
-					properties: {
-						name: { type: "string" },
-					},
-					required: ["name"],
-					type: "object",
-				},
-			},
-			required: ["person"],
-			type: "object",
-		});
-	});
-
-	test("converts map of fields to an object schema", () => {
-		const decoder = katabami.map(
-			(name, age) => ({ age, name }),
-			katabami.field("name", katabami.string()),
-			katabami.field("age", katabami.int()),
-		);
-
-		expect(toJsonSchema(decoder)).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			properties: {
-				age: { type: "integer" },
-				name: { type: "string" },
-			},
-			required: ["name", "age"],
-			type: "object",
-		});
-	});
-
-	test("accepts DecoderSchema directly", () => {
-		expect(toJsonSchema({ kind: "string" })).toEqual({
+	test("converts primitives", () => {
+		expect(toJsonSchema(katabami.string())).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
 		});
-	});
-
-	test("converts string constraints", () => {
-		expect(
-			toJsonSchema({
-				format: "date-time",
-				kind: "string",
-				maxLength: 32,
-				minLength: 1,
-				pattern: "^[a-z]+$",
-			}),
-		).toEqual({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			format: "date-time",
-			maxLength: 32,
-			minLength: 1,
-			pattern: "^[a-z]+$",
-			type: "string",
+		expect(toJsonSchema(katabami.boolean(), { target: "draft-07" })).toEqual({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			type: "boolean",
 		});
-	});
-
-	test("converts numeric constraints by target", () => {
-		const schema = {
-			exclusiveMinimum: 0,
-			kind: "number",
-			maximum: 10,
-			minimum: 1,
-			multipleOf: 0.5,
-		} as const;
-
-		expect(toJsonSchema(schema)).toEqual({
+		expect(toJsonSchema(katabami.int(), { target: "openapi-3.0" })).toEqual({
+			type: "integer",
+		});
+		expect(toJsonSchema(katabami.number())).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
-			exclusiveMinimum: 0,
-			maximum: 10,
-			minimum: 1,
-			multipleOf: 0.5,
 			type: "number",
 		});
-		expect(toJsonSchema(schema, { target: "openapi-3.0" })).toEqual({
-			exclusiveMinimum: true,
-			maximum: 10,
-			minimum: 0,
-			multipleOf: 0.5,
-			type: "number",
-		});
-	});
-
-	test("converts array constraints", () => {
-		expect(
-			toJsonSchema({
-				element: { kind: "string" },
-				kind: "array",
-				maxItems: 5,
-				minItems: 1,
-				uniqueItems: true,
-			}),
-		).toEqual({
+		expect(toJsonSchema(katabami.value())).toEqual({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
-			items: { type: "string" },
-			maxItems: 5,
-			minItems: 1,
-			type: "array",
-			uniqueItems: true,
+		});
+		expect(toJsonSchema(katabami.failed())).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			not: {},
 		});
 	});
 
@@ -324,10 +305,23 @@ describe("toJsonSchema", () => {
 		});
 	});
 
-	test("throws for unsupported targets", () => {
-		expect(() =>
-			toJsonSchema(katabami.string(), { target: "draft-04" }),
-		).toThrow("Unsupported target: draft-04");
+	test("converts string constraints", () => {
+		expect(
+			toJsonSchema({
+				format: "date-time",
+				kind: "string",
+				maxLength: 32,
+				minLength: 1,
+				pattern: "^[a-z]+$",
+			}),
+		).toEqual({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			format: "date-time",
+			maxLength: 32,
+			minLength: 1,
+			pattern: "^[a-z]+$",
+			type: "string",
+		});
 	});
 
 	test("throws for async schemas", () => {
@@ -336,6 +330,12 @@ describe("toJsonSchema", () => {
 		);
 
 		expect(() => toJsonSchema(decoder)).toThrow(/Async DecoderSchema/);
+	});
+
+	test("throws for unsupported targets", () => {
+		expect(() =>
+			toJsonSchema(katabami.string(), { target: "draft-04" }),
+		).toThrow("Unsupported target: draft-04");
 	});
 });
 

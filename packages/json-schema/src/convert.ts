@@ -79,7 +79,7 @@ const convertNullable = (
 	return { anyOf: [inner, { type: "null" }] };
 };
 
-const convertConstant = (
+const convertLiteral = (
 	value: unknown,
 	target: SupportedTarget,
 ): JsonSchema => {
@@ -302,8 +302,6 @@ export const convertSchema = (
 		}
 		case "boolean":
 			return { type: "boolean" };
-		case "constant":
-			return convertConstant(schema.value, target);
 		case "field":
 			return convertField(schema.key, schema.schema, target);
 		case "index":
@@ -315,6 +313,8 @@ export const convertSchema = (
 
 			return result;
 		}
+		case "literal":
+			return convertLiteral(schema.value, target);
 		case "map":
 			return convertMap(schema.decoders, target);
 		case "never":

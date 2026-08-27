@@ -11,10 +11,10 @@ describe("TypeOf", () => {
 		expectTypeOf<TypeOf<false | true>>().toEqualTypeOf<"boolean">();
 	});
 
-	test("constant", () => {
-		expectTypeOf<TypeOf<true>>().toEqualTypeOf<"constant">();
-		expectTypeOf<TypeOf<0>>().toEqualTypeOf<"constant">();
-		expectTypeOf<TypeOf<"foo">>().toEqualTypeOf<"constant">();
+	test("literal", () => {
+		expectTypeOf<TypeOf<true>>().toEqualTypeOf<"literal">();
+		expectTypeOf<TypeOf<0>>().toEqualTypeOf<"literal">();
+		expectTypeOf<TypeOf<"foo">>().toEqualTypeOf<"literal">();
 	});
 
 	test("null", () => {

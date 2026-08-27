@@ -73,8 +73,8 @@ const arraySchema = (
 		? { element, kind: "array" }
 		: { element, kind: "array", minItems };
 
-const constantSchema = <T extends Primitive>(value: T): DecoderSchema => ({
-	kind: "constant",
+const literalSchema = <T extends Primitive>(value: T): DecoderSchema => ({
+	kind: "literal",
 	value,
 });
 
@@ -895,19 +895,19 @@ const decodeOneOrMoreFunc =
 	};
 
 /**
- * Creates a decoder that always returns the same value.
- * @param {T} expected - The value to return.
- * @returns {DecodeFunction<T, Issues<"constant", Issue<"constant", string, { expected: T; received: Primitive }>>>} A decoder that always returns the given value.
+ * Creates a decoder that accepts a single literal value.
+ * @param {T} expected - The literal value to accept.
+ * @returns {DecodeFunction<T, Issues<"literal", Issue<"literal", string, { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
  */
-const decodeConstantFunc =
+const decodeLiteralFunc =
 	<T extends Primitive>(
 		expected: T,
 	): DecodeFunction<
 		T,
 		Issues<
-			"constant",
+			"literal",
 			Issue<
-				"constant",
+				"literal",
 				"issue.unexpectedValue",
 				{ expected: T; received: Primitive }
 			>
@@ -917,7 +917,7 @@ const decodeConstantFunc =
 		if (value === expected) return { ok: true, value: value as T };
 
 		return {
-			issues: createIssues("constant", "issue.unexpectedValue", {
+			issues: createIssues("literal", "issue.unexpectedValue", {
 				expected,
 				received: value as Primitive,
 			}),
@@ -1665,33 +1665,6 @@ export function boolean(): IDecoder<
 }
 
 /**
- * A decoder that always returns the same value.
- *
- * @template {Primitive} T The type of the value.
- * @param {T} expected The value to return.
- * @returns {IDecoder<T, Issues<"constant", Issue<"constant", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that always returns the given value.
- */
-export function constant<T extends Primitive>(
-	expected: T,
-): IDecoder<
-	T,
-	Issues<
-		"constant",
-		Issue<
-			"constant",
-			"issue.unexpectedValue",
-			{ expected: T; received: Primitive }
-		>
-	>
-> {
-	return new Decoder(
-		decodeConstantFunc(expected),
-		undefined,
-		staticSchemaDescriptor(constantSchema(expected)),
-	);
-}
-
-/**
  * Create a decoder that always fails with the given message and issues.
  * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
@@ -1857,6 +1830,33 @@ export function lazy<T, I extends Issues = Issues>(
 		lazySchemaDescriptor(lazyFunc),
 		returnsPromise(lazyFunc as (value: never) => unknown),
 	) as IDecoder<T, I, SchemaAsyncOf<IDecoder<T, I>> | true>;
+}
+
+/**
+ * A decoder that accepts a single literal value.
+ *
+ * @template {Primitive} T The type of the value.
+ * @param {T} expected The literal value to accept.
+ * @returns {IDecoder<T, Issues<"literal", Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
+ */
+export function literal<T extends Primitive>(
+	expected: T,
+): IDecoder<
+	T,
+	Issues<
+		"literal",
+		Issue<
+			"literal",
+			"issue.unexpectedValue",
+			{ expected: T; received: Primitive }
+		>
+	>
+> {
+	return new Decoder(
+		decodeLiteralFunc(expected),
+		undefined,
+		staticSchemaDescriptor(literalSchema(expected)),
+	);
 }
 
 export function map<

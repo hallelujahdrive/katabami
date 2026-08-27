@@ -4,7 +4,6 @@ import {
 	array,
 	at,
 	boolean,
-	constant,
 	createIssues,
 	type Decoder,
 	failed,
@@ -14,6 +13,7 @@ import {
 	type Issues,
 	index,
 	int,
+	literal,
 	map,
 	nullable,
 	number,
@@ -119,30 +119,6 @@ describe("Decoder", () => {
 			});
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<boolean>>();
-		});
-	});
-
-	describe("constant", () => {
-		test("sync", () => {
-			const _decoder = constant("foo");
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"foo">();
-		});
-
-		test("null", () => {
-			const _decoder = constant(null);
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null>();
-		});
-
-		test("promise", () => {
-			const _decoder = constant("foo").andThen((value) => {
-				return new Promise<Decoder<"foo">>((resolve) =>
-					resolve(succeed(value)),
-				);
-			});
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<"foo">>();
 		});
 	});
 
@@ -264,6 +240,30 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("literal", () => {
+		test("sync", () => {
+			const _decoder = literal("foo");
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"foo">();
+		});
+
+		test("null", () => {
+			const _decoder = literal(null);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null>();
+		});
+
+		test("promise", () => {
+			const _decoder = literal("foo").andThen((value) => {
+				return new Promise<Decoder<"foo">>((resolve) =>
+					resolve(succeed(value)),
+				);
+			});
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<Promise<"foo">>();
+		});
+	});
+
 	describe("map", () => {
 		test("fixed", () => {
 			const _decoder = map<
@@ -332,6 +332,52 @@ describe("Decoder", () => {
 					foo: number;
 				}>
 			>();
+		});
+	});
+
+	describe("nullable", () => {
+		describe("sync", () => {
+			test("fixed", () => {
+				const _decoder = nullable<number>(number());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
+			});
+
+			test("complement", () => {
+				const _decoder = nullable(number());
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
+			});
+		});
+
+		describe("async", () => {
+			test("fixed", () => {
+				const _decoder = nullable<Promise<number>>(
+					number().andThen((value) => {
+						return new Promise<Decoder<number>>((resolve) =>
+							resolve(succeed(value)),
+						);
+					}),
+				);
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+					Promise<null | number>
+				>();
+			});
+
+			test("complement", () => {
+				const _decoder = nullable(
+					number().andThen((value) => {
+						return new Promise<Decoder<number>>((resolve) =>
+							resolve(succeed(value)),
+						);
+					}),
+				);
+
+				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+					Promise<null | number>
+				>();
+			});
 		});
 	});
 
@@ -439,112 +485,6 @@ describe("Decoder", () => {
 		});
 	});
 
-	describe("record", () => {
-		test("fixed", () => {
-			const _decoder = record(string(), number());
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				Record<string, number>
-			>();
-		});
-
-		test("complement", () => {
-			const _decoder = record(string(), number());
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				Record<string, number>
-			>();
-		});
-
-		test("literal keys", () => {
-			const _decoder = record(union(constant("a"), constant("b")), number());
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				Record<"a" | "b", number>
-			>();
-		});
-
-		test("has promise", () => {
-			const _decoder = record(
-				string(),
-				number().andThen(() => {
-					return new Promise<Decoder<number>>((resolve) => resolve(int()));
-				}),
-			);
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				Promise<Record<string, number>>
-			>();
-		});
-
-		test("has promise from key", () => {
-			const _decoder = record(
-				string().andThen(() => {
-					return new Promise<Decoder<string>>((resolve) => resolve(string()));
-				}),
-				number(),
-			);
-
-			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-				Promise<Record<string, number>>
-			>();
-		});
-
-		test("key decoder must decode PropertyKey", () => {
-			expectTypeOf<Parameters<typeof record>[0]>().toEqualTypeOf<
-				Decoder<Awaitable<PropertyKey>>
-			>();
-			expectTypeOf(string()).toExtend<Parameters<typeof record>[0]>();
-			expectTypeOf(boolean()).not.toExtend<Parameters<typeof record>[0]>();
-		});
-	});
-
-	describe("nullable", () => {
-		describe("sync", () => {
-			test("fixed", () => {
-				const _decoder = nullable<number>(number());
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
-			});
-
-			test("complement", () => {
-				const _decoder = nullable(number());
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<null | number>();
-			});
-		});
-
-		describe("async", () => {
-			test("fixed", () => {
-				const _decoder = nullable<Promise<number>>(
-					number().andThen((value) => {
-						return new Promise<Decoder<number>>((resolve) =>
-							resolve(succeed(value)),
-						);
-					}),
-				);
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-					Promise<null | number>
-				>();
-			});
-
-			test("complement", () => {
-				const _decoder = nullable(
-					number().andThen((value) => {
-						return new Promise<Decoder<number>>((resolve) =>
-							resolve(succeed(value)),
-						);
-					}),
-				);
-
-				expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
-					Promise<null | number>
-				>();
-			});
-		});
-	});
-
 	describe("optional", () => {
 		describe("sync", () => {
 			test("fixed", () => {
@@ -595,6 +535,66 @@ describe("Decoder", () => {
 		});
 	});
 
+	describe("record", () => {
+		test("fixed", () => {
+			const _decoder = record(string(), number());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<string, number>
+			>();
+		});
+
+		test("complement", () => {
+			const _decoder = record(string(), number());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<string, number>
+			>();
+		});
+
+		test("literal keys", () => {
+			const _decoder = record(union(literal("a"), literal("b")), number());
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Record<"a" | "b", number>
+			>();
+		});
+
+		test("has promise", () => {
+			const _decoder = record(
+				string(),
+				number().andThen(() => {
+					return new Promise<Decoder<number>>((resolve) => resolve(int()));
+				}),
+			);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Promise<Record<string, number>>
+			>();
+		});
+
+		test("has promise from key", () => {
+			const _decoder = record(
+				string().andThen(() => {
+					return new Promise<Decoder<string>>((resolve) => resolve(string()));
+				}),
+				number(),
+			);
+
+			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
+				Promise<Record<string, number>>
+			>();
+		});
+
+		test("key decoder must decode PropertyKey", () => {
+			expectTypeOf<Parameters<typeof record>[0]>().toEqualTypeOf<
+				Decoder<Awaitable<PropertyKey>>
+			>();
+			expectTypeOf(string()).toExtend<Parameters<typeof record>[0]>();
+			expectTypeOf(boolean()).not.toExtend<Parameters<typeof record>[0]>();
+		});
+	});
+
 	describe("string", () => {
 		test("sync", () => {
 			const _decoder = string();
@@ -615,25 +615,25 @@ describe("Decoder", () => {
 
 	describe("tuple", () => {
 		test("fixed", () => {
-			const _decoder = tuple<["foo", "bar"]>(constant("foo"), constant("bar"));
+			const _decoder = tuple<["foo", "bar"]>(literal("foo"), literal("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
 
 		test("complement", () => {
-			const _decoder = tuple(constant("foo"), constant("bar"));
+			const _decoder = tuple(literal("foo"), literal("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<["foo", "bar"]>();
 		});
 
 		test("has promise", () => {
 			const _decoder = tuple(
-				constant("foo").andThen((value) => {
+				literal("foo").andThen((value) => {
 					return new Promise<Decoder<"foo">>((resolve) =>
 						resolve(succeed(value)),
 					);
 				}),
-				constant("bar"),
+				literal("bar"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -644,25 +644,25 @@ describe("Decoder", () => {
 
 	describe("union", () => {
 		test("fixed", () => {
-			const _decoder = union(constant("foo"), constant("bar"));
+			const _decoder = union(literal("foo"), literal("bar"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
 
 		test("complement", () => {
-			const _decoder = union(constant("bar"), constant("foo"));
+			const _decoder = union(literal("bar"), literal("foo"));
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<"bar" | "foo">();
 		});
 
 		test("has promise", () => {
 			const _decoder = union(
-				constant("bar").andThen((value) => {
+				literal("bar").andThen((value) => {
 					return new Promise<Decoder<"bar">>((resolve) =>
 						resolve(succeed(value)),
 					);
 				}),
-				constant("foo"),
+				literal("foo"),
 			);
 
 			expectTypeOf<Infer<typeof _decoder>>().toEqualTypeOf<
@@ -672,10 +672,10 @@ describe("Decoder", () => {
 
 		test("nested union flattens issues", () => {
 			type UnionIssue = Issue<"union", "issue.invalidUnion", undefined>;
-			type ConstantIssue<Expected extends string> = Issues<
-				"constant",
+			type LiteralIssue<Expected extends string> = Issues<
+				"literal",
 				Issue<
-					"constant",
+					"literal",
 					"issue.unexpectedValue",
 					{ expected: Expected; received: Primitive }
 				>
@@ -683,13 +683,13 @@ describe("Decoder", () => {
 
 			type NestedUnionIssues = UnionDecodeIssues<
 				[
-					Decoder<"foo", ConstantIssue<"foo">>,
+					Decoder<"foo", LiteralIssue<"foo">>,
 					Decoder<
 						"bar" | "baz",
 						UnionDecodeIssues<
 							[
-								Decoder<"bar", ConstantIssue<"bar">>,
-								Decoder<"baz", ConstantIssue<"baz">>,
+								Decoder<"bar", LiteralIssue<"bar">>,
+								Decoder<"baz", LiteralIssue<"baz">>,
 							],
 							UnionIssue
 						>
@@ -700,9 +700,9 @@ describe("Decoder", () => {
 
 			type FlatUnionIssues = UnionDecodeIssues<
 				[
-					Decoder<"foo", ConstantIssue<"foo">>,
-					Decoder<"bar", ConstantIssue<"bar">>,
-					Decoder<"baz", ConstantIssue<"baz">>,
+					Decoder<"foo", LiteralIssue<"foo">>,
+					Decoder<"bar", LiteralIssue<"bar">>,
+					Decoder<"baz", LiteralIssue<"baz">>,
 				],
 				UnionIssue
 			>;

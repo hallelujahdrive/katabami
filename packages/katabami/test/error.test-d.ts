@@ -5,7 +5,6 @@ import {
 	array,
 	at,
 	boolean,
-	constant,
 	createIssues,
 	type Decoder,
 	failed,
@@ -15,6 +14,7 @@ import {
 	type IssueType,
 	index,
 	int,
+	literal,
 	map,
 	nullable,
 	number,
@@ -118,21 +118,6 @@ describe("decode issues", () => {
 		});
 	});
 
-	test("oneOrMore", () => {
-		const _decoder = oneOrMore(int());
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
-			| {
-					expected: "type.array";
-					received: TypeKeys;
-			  }
-			| {
-					expected: 1;
-					received: number;
-			  }
-		>();
-	});
-
 	test("at", () => {
 		const _decoder = at(["foo", "bar"], string());
 		const _field = field("foo", field("bar", string()));
@@ -149,38 +134,6 @@ describe("decode issues", () => {
 			expected: "type.boolean";
 			received: string;
 		}>();
-	});
-
-	test("constant", () => {
-		const _decoder = constant("foo");
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "foo";
-			received: Primitive;
-		}>();
-	});
-
-	test("constant null", () => {
-		const _decoder = constant(null);
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: null;
-			received: Primitive;
-		}>();
-	});
-
-	test("int", () => {
-		const _decoder = int();
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "type.integer" | "type.number";
-			received: string;
-		}>();
-
-		expectTypeOf<{
-			expected: "type.integer";
-			received: "type.float";
-		}>().toExtend<GetVars<typeof _decoder>>();
 	});
 
 	test("failed", () => {
@@ -209,39 +162,35 @@ describe("decode issues", () => {
 		>();
 	});
 
-	test("nullable", () => {
-		const _decoder = nullable(int());
+	test("int", () => {
+		const _decoder = int();
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
 			received: string;
 		}>();
+
+		expectTypeOf<{
+			expected: "type.integer";
+			received: "type.float";
+		}>().toExtend<GetVars<typeof _decoder>>();
 	});
 
-	test("number", () => {
-		const _decoder = number();
+	test("literal", () => {
+		const _decoder = literal("foo");
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "type.number";
-			received: string;
+			expected: "foo";
+			received: Primitive;
 		}>();
 	});
 
-	test("optional", () => {
-		const _decoder = optional(int());
+	test("literal null", () => {
+		const _decoder = literal(null);
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "type.integer" | "type.number";
-			received: string;
-		}>();
-	});
-
-	test("string", () => {
-		const _decoder = string();
-
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "type.string";
-			received: string;
+			expected: null;
+			received: Primitive;
 		}>();
 	});
 
@@ -269,6 +218,24 @@ describe("decode issues", () => {
 				  }
 			>();
 		});
+	});
+
+	test("nullable", () => {
+		const _decoder = nullable(int());
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.integer" | "type.number";
+			received: string;
+		}>();
+	});
+
+	test("number", () => {
+		const _decoder = number();
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.number";
+			received: string;
+		}>();
 	});
 
 	describe("object", () => {
@@ -317,6 +284,30 @@ describe("decode issues", () => {
 		});
 	});
 
+	test("oneOrMore", () => {
+		const _decoder = oneOrMore(int());
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			| {
+					expected: "type.array";
+					received: TypeKeys;
+			  }
+			| {
+					expected: 1;
+					received: number;
+			  }
+		>();
+	});
+
+	test("optional", () => {
+		const _decoder = optional(int());
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.integer" | "type.number";
+			received: string;
+		}>();
+	});
+
 	describe("record", () => {
 		const _decoder = record(string(), string());
 
@@ -337,7 +328,7 @@ describe("decode issues", () => {
 		});
 
 		describe("literal keys", () => {
-			const _keyed = record(union(constant("a"), constant("b")), int());
+			const _keyed = record(union(literal("a"), literal("b")), int());
 
 			test("issue message", () => {
 				expectTypeOf<GetVars<typeof _keyed>>().toEqualTypeOf<
@@ -361,6 +352,15 @@ describe("decode issues", () => {
 				>().not.toHaveProperty("c");
 			});
 		});
+	});
+
+	test("string", () => {
+		const _decoder = string();
+
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
+			expected: "type.string";
+			received: string;
+		}>();
 	});
 
 	describe("tuple", () => {
@@ -403,8 +403,8 @@ describe("decode issues", () => {
 
 		describe("nested", () => {
 			const _decoder = union(
-				constant("foo"),
-				union(constant("bar"), constant("baz")),
+				literal("foo"),
+				union(literal("bar"), literal("baz")),
 			);
 
 			test("issue message", () => {
@@ -421,53 +421,10 @@ describe("decode issues", () => {
 		});
 	});
 
-	describe("parseJson", () => {
-		test("issue message", () => {
-			const _decoder = int();
-
-			expectTypeOf<{
-				expected: "type.integer" | "type.number";
-				received: string;
-			}>().toExtend<
-				IssueVars<
-					ExtractIssue<
-						typeof _decoder extends Decoder<unknown, infer I>
-							?
-									| I
-									| Issues<
-											"parseJson",
-											Issue<"parseJson", "issue.failedToDecode", never>
-									  >
-							: never
-					>
-				>
-			>();
-
-			expectTypeOf<
-				Issue<"parseJson", "issue.failedToDecode", never>
-			>().toExtend<
-				ExtractIssue<
-					typeof _decoder extends Decoder<unknown, infer I>
-						?
-								| I
-								| Issues<
-										"parseJson",
-										Issue<"parseJson", "issue.failedToDecode", never>
-								  >
-						: never
-				>
-			>();
-
-			expectTypeOf<
-				GetIssues<DecodeStringResult<typeof _decoder>>
-			>().toEqualTypeOf<Record<never, never>>();
-		});
-	});
-
 	describe("Decoder methods", () => {
 		describe("andThen", () => {
 			test("issue message", () => {
-				const _decoder = string().andThen(() => constant("foo"));
+				const _decoder = string().andThen(() => literal("foo"));
 
 				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
 					| { expected: "foo"; received: Primitive }
@@ -518,6 +475,49 @@ describe("decode issues", () => {
 					Record<never, never>
 				>();
 			});
+		});
+	});
+
+	describe("parseJson", () => {
+		test("issue message", () => {
+			const _decoder = int();
+
+			expectTypeOf<{
+				expected: "type.integer" | "type.number";
+				received: string;
+			}>().toExtend<
+				IssueVars<
+					ExtractIssue<
+						typeof _decoder extends Decoder<unknown, infer I>
+							?
+									| I
+									| Issues<
+											"parseJson",
+											Issue<"parseJson", "issue.failedToDecode", never>
+									  >
+							: never
+					>
+				>
+			>();
+
+			expectTypeOf<
+				Issue<"parseJson", "issue.failedToDecode", never>
+			>().toExtend<
+				ExtractIssue<
+					typeof _decoder extends Decoder<unknown, infer I>
+						?
+								| I
+								| Issues<
+										"parseJson",
+										Issue<"parseJson", "issue.failedToDecode", never>
+								  >
+						: never
+				>
+			>();
+
+			expectTypeOf<
+				GetIssues<DecodeStringResult<typeof _decoder>>
+			>().toEqualTypeOf<Record<never, never>>();
 		});
 	});
 });

@@ -163,7 +163,7 @@ user.decodeString('{"age":20,"name":"Ada"}');
 | `boolean()` | `boolean` |
 | `int()` | integers (`Number.isInteger`) |
 | `number()` | any `number` |
-| `constant(value)` | a literal (`string`, `number`, `boolean`, or `null`) |
+| `literal(value)` | a literal (`string`, `number`, `boolean`, or `null`) |
 | `value()` | anything (typed as `unknown` by default) |
 | `succeed(value)` | anything; always returns `value` |
 | `failed()` | nothing; always fails |

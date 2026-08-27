@@ -29,17 +29,17 @@ describe("helpers", () => {
 			expectTypeOf<T>().toEqualTypeOf<"boolean">();
 		});
 
-		describe("constant", () => {
+		describe("literal", () => {
 			test("number", () => {
 				type T = TypeOf<0>;
 
-				expectTypeOf<T>().toEqualTypeOf<"constant">();
+				expectTypeOf<T>().toEqualTypeOf<"literal">();
 			});
 
 			test("true", () => {
 				type T = TypeOf<true>;
 
-				expectTypeOf<T>().toEqualTypeOf<"constant">();
+				expectTypeOf<T>().toEqualTypeOf<"literal">();
 			});
 		});
 

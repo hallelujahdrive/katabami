@@ -32,8 +32,6 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 	},
 	at: katabami.at(["person", "name"], katabami.string()),
 	boolean: katabami.boolean(),
-	constant: katabami.constant("foo"),
-	constantNull: katabami.constant(null),
 	decoderSchema: { kind: "string" },
 	field: katabami.field("name", katabami.string()),
 	fieldNullable: katabami.field("name", katabami.nullable(katabami.string())),
@@ -46,6 +44,8 @@ const fixtures: Record<string, Parameters<typeof toJsonSchema>[0]> = {
 		minimum: 0,
 		multipleOf: 2,
 	},
+	literal: katabami.literal("foo"),
+	literalNull: katabami.literal(null),
 	mapAllOf: katabami.map(
 		(name, age) => [name, age] as const,
 		katabami.string(),
