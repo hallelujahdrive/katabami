@@ -7,7 +7,6 @@
 		"rootDir": "./src",
 		"types": []
 	},
-	"exclude": ["src/@types"],
 	"extends": "./tsconfig.json",
 	"include": ["src"]
 }

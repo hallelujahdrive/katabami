@@ -1,7 +1,32 @@
 /**
- * The issue message keys.
+ * This interface can be augmented to customize issue message keys.
+ *
+ * `@katabami/i18next` registers i18next `ParseKeys` here so `createIssues`
+ * autocompletes the same keys as `t()`.
+ *
+ * @example
+ * ```ts
+ * declare module "katabami" {
+ *   interface CustomTypeOptions {
+ *     issueMessageKeys: import("i18next").ParseKeys;
+ *   }
+ * }
+ * ```
  */
-export type IssueMessageKeys = `issue.${keyof MessageResources["issue"]}`;
+// biome-ignore lint/suspicious/noEmptyInterface: module augmentation target, same pattern as i18next CustomTypeOptions
+export interface CustomTypeOptions {}
+
+/**
+ * The issue message keys.
+ *
+ * Falls back to built-in `issue.*` keys when nothing is registered, or when
+ * the registered keys widen to `string` (i18next without typed resources).
+ */
+export type IssueMessageKeys = [RegisteredIssueMessageKeys] extends [never]
+	? BuiltInIssueMessageKeys
+	: string extends RegisteredIssueMessageKeys
+		? BuiltInIssueMessageKeys
+		: BuiltInIssueMessageKeys | RegisteredIssueMessageKeys;
 
 /**
  * The message resources for Katabami.
@@ -120,3 +145,17 @@ export type MessageResources = {
  * The type message keys.
  */
 export type TypeKeys = `type.${keyof MessageResources["type"]}`;
+
+/**
+ * The built-in issue message keys.
+ */
+type BuiltInIssueMessageKeys = `issue.${keyof MessageResources["issue"]}`;
+
+/**
+ * Keys registered via {@link CustomTypeOptions.issueMessageKeys}.
+ */
+type RegisteredIssueMessageKeys = CustomTypeOptions extends {
+	issueMessageKeys: infer Keys extends string;
+}
+	? Keys
+	: never;
