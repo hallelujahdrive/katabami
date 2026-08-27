@@ -79,7 +79,9 @@ class IssueMessage<
  */
 export function createIssues<
 	T extends IssueType,
-	Msg extends string = string,
+	const Msg extends IssueMessageKeys | (string & {}) =
+		| IssueMessageKeys
+		| (string & {}),
 	Vars extends Record<string, Primitive> | undefined = undefined,
 >(
 	type: T,
@@ -99,12 +101,16 @@ export function createIssues<
  */
 export function createIssues<
 	T extends IssueType,
-	Msg extends string = IssueMessageKeys | (string & {}),
+	const Msg extends IssueMessageKeys | (string & {}) =
+		| IssueMessageKeys
+		| (string & {}),
 	Vars extends Record<string, Primitive | TypeKeys> | undefined = undefined,
 >(type: T, message: Msg, vars?: Vars): Issues<T, Issue<T, Msg, Vars>>;
 export function createIssues<
 	T extends IssueType,
-	Msg extends string = IssueMessageKeys | (string & {}),
+	const Msg extends IssueMessageKeys | (string & {}) =
+		| IssueMessageKeys
+		| (string & {}),
 	Vars extends Record<string, Primitive | TypeKeys> | undefined = undefined,
 >(
 	type: T,
