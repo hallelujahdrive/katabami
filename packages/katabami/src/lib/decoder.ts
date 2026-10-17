@@ -13,6 +13,7 @@ import type {
 	IndexDecodeIssues,
 	IndexDecodeResponse,
 	Issue,
+	IssueMessageKeys,
 	Issues,
 	MapDecodeFunction,
 	MapDecodeFunctionParams,
@@ -827,6 +828,23 @@ const decodeArrayHelper = <T, U extends IDecoder<T>>(
 		value: results.map(([_, result]) => result.value) as ArrayDecodeResponse<U>,
 	};
 };
+
+/**
+ * A decoder that always fails with the given message and issues.
+ * @template {string} T - The type of the message.
+ * @param {T} message - The message to fail with.
+ * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message and issues.
+ */
+const decodeFailedFunc =
+	<T extends string>(
+		message: T,
+	): DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>> =>
+	() => {
+		return {
+			issues: createIssues("failed", message),
+			ok: false,
+		};
+	};
 
 /**
  * Creates a decoder that decodes a non-empty array.
@@ -1668,11 +1686,37 @@ export function boolean(): IDecoder<
  * Create a decoder that always fails with the given message and issues.
  * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
+export function failed<T extends IssueMessageKeys | (string & {})>(
+	message: T,
+): IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>;
+/**
+ * Create a decoder that always fails with the given message and issues.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ */
 export function failed(): IDecoder<
 	never,
 	Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>
-> {
-	return failedDecoder;
+>;
+/**
+ * Create a decoder that always fails with the given message and issues.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ */
+export function failed<
+	T extends IssueMessageKeys | (string & {}) = "issue.failedToDecode",
+>(message?: T): IDecoder<never, Issues<"failed", Issue<"failed", T, never>>> {
+	if (message == null)
+		return failedDecoder as IDecoder<
+			never,
+			Issues<"failed", Issue<"failed", T, never>>,
+			false
+		>;
+
+	return new Decoder<never, Issues<"failed", Issue<"failed", T, never>>, false>(
+		decodeFailedFunc(message),
+		undefined,
+		staticSchemaDescriptor(neverSchema),
+		false,
+	);
 }
 
 /**
