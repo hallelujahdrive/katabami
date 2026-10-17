@@ -6,6 +6,7 @@ declare module "i18next" {
 		resources: {
 			custom: {
 				issue: {
+					failedToDecode: string;
 					unexpectedType: string;
 				};
 			};

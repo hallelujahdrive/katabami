@@ -13,6 +13,7 @@ import type {
 	IndexDecodeIssues,
 	IndexDecodeResponse,
 	Issue,
+	IssueMessageKeys,
 	Issues,
 	MapDecodeFunction,
 	MapDecodeFunctionParams,
@@ -613,18 +614,30 @@ const booleanDecoder = new Decoder<
 
 /**
  * A decoder that always fails with the given message and issues.
+ * @template {string} T - The type of the message.
+ * @param {T} message - The message to fail with.
+ * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message and issues.
+ */
+const decodeFailedFunc =
+	<T extends string>(
+		message: T,
+	): DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>> =>
+	() => {
+		return {
+			issues: createIssues("failed", message),
+			ok: false,
+		};
+	};
+
+/**
+ * A decoder that always fails with the given message and issues.
  * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
 const failedDecoder = new Decoder<
 	never,
 	Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>
 >(
-	() => {
-		return {
-			issues: createIssues("failed", "issue.failedToDecode"),
-			ok: false,
-		};
-	},
+	decodeFailedFunc("issue.failedToDecode"),
 	undefined,
 	staticSchemaDescriptor(neverSchema),
 );
@@ -1665,14 +1678,44 @@ export function boolean(): IDecoder<
 }
 
 /**
- * Create a decoder that always fails with the given message and issues.
- * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ * Create a decoder that always fails with the given message.
+ * @template {IssueMessageKeys | string} T - The message.
+ * @param {T} message - The issue message. A built-in key such as `"issue.failedToDecode"` is formatted; any other string is used as written.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message.
+ */
+export function failed<T extends IssueMessageKeys | (string & {})>(
+	message: T,
+): IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>;
+/**
+ * Create a decoder that always fails with `"issue.failedToDecode"`.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with `"issue.failedToDecode"`.
  */
 export function failed(): IDecoder<
 	never,
 	Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>
-> {
-	return failedDecoder;
+>;
+/**
+ * Create a decoder that always fails with the given message.
+ * @template {IssueMessageKeys | string} [T="issue.failedToDecode"] - The message.
+ * @param {T} [message="issue.failedToDecode"] - The issue message. Defaults to `"issue.failedToDecode"`.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message.
+ */
+export function failed<
+	T extends IssueMessageKeys | (string & {}) = "issue.failedToDecode",
+>(message?: T): IDecoder<never, Issues<"failed", Issue<"failed", T, never>>> {
+	if (message == null)
+		return failedDecoder as IDecoder<
+			never,
+			Issues<"failed", Issue<"failed", T, never>>,
+			false
+		>;
+
+	return new Decoder<never, Issues<"failed", Issue<"failed", T, never>>, false>(
+		decodeFailedFunc(message),
+		undefined,
+		staticSchemaDescriptor(neverSchema),
+		false,
+	);
 }
 
 /**

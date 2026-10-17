@@ -139,9 +139,9 @@ describe("issues", () => {
 	});
 
 	describe("failed decoder", () => {
-		const decoder = failed();
-
 		test("default message", () => {
+			const decoder = failed("issue.failedToDecode");
+
 			const result = decoder.decodeValue("foo");
 
 			expect(result).toStrictEqual({
@@ -151,6 +151,21 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Failed to decode.",
+			);
+		});
+
+		test("custom message", () => {
+			const decoder = failed("custom message");
+
+			const result = decoder.decodeValue("foo");
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"custom message",
 			);
 		});
 	});

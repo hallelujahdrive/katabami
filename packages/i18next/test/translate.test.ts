@@ -45,13 +45,23 @@ describe("translate", () => {
 	});
 
 	describe("failed decoder", () => {
-		const decoder = katabami.failed();
-
 		test("default message", () => {
+			const decoder = katabami.failed();
+
 			const result = decoder.decodeValue("foo");
 
 			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
 				"デコードに失敗しました。",
+			);
+		});
+
+		test("custom message", () => {
+			const decoder = katabami.failed("custom:issue.failedToDecode");
+
+			const result = decoder.decodeValue("foo");
+
+			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
+				"カスタム:デコードに失敗しました。",
 			);
 		});
 	});
