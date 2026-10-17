@@ -4,6 +4,7 @@ import {
 	at,
 	boolean,
 	type Decoder,
+	failed,
 	field,
 	index,
 	int,
@@ -1663,6 +1664,303 @@ describe("StandardSchemaV1", () => {
 									path: undefined,
 								},
 							],
+						});
+					});
+				});
+			});
+
+			describe("pipes the original value", () => {
+				type Shape =
+					| {
+							height: number;
+							shape: { type: "rectangle" };
+							width: number;
+					  }
+					| {
+							radius: number;
+							shape: { type: "circle" };
+					  };
+
+				const shapeDecoder = (type: string): Decoder<Shape> => {
+					if (type === "circle") {
+						return object({
+							radius: number(),
+							shape: object({
+								type: literal("circle"),
+							}),
+						}) as Decoder<Shape>;
+					}
+
+					if (type === "rectangle") {
+						return object({
+							height: number(),
+							shape: object({
+								type: literal("rectangle"),
+							}),
+							width: number(),
+						}) as Decoder<Shape>;
+					}
+
+					return failed("Unknown type.") as Decoder<Shape>;
+				};
+
+				describe("sync", () => {
+					const decoder = at(["shape", "type"], string()).andThen(shapeDecoder);
+
+					describe("validate value", () => {
+						test("circle", () => {
+							expectValidateSync(
+								decoder,
+								{
+									radius: 1,
+									shape: { type: "circle" },
+								},
+								{
+									value: {
+										radius: 1,
+										shape: { type: "circle" },
+									},
+								} as const,
+							);
+						});
+
+						test("rectangle", () => {
+							expectValidateSync(
+								decoder,
+								{
+									height: 2,
+									shape: { type: "rectangle" },
+									width: 3,
+								},
+								{
+									value: {
+										height: 2,
+										shape: { type: "rectangle" },
+										width: 3,
+									},
+								} as const,
+							);
+						});
+
+						test("unknown type", () => {
+							expectValidateSync(
+								decoder,
+								{
+									shape: { type: "triangle" },
+								},
+								{
+									issues: [
+										{
+											message: "Unknown type.",
+											path: undefined,
+										},
+									],
+								},
+							);
+						});
+
+						test("invalid payload", () => {
+							expectValidateSync(
+								decoder,
+								{
+									radius: "wide",
+									shape: { type: "circle" },
+								},
+								{
+									issues: [
+										{
+											message:
+												"One or more object properties failed validation.",
+											path: undefined,
+										},
+										{
+											message: "Expected number, but received string.",
+											path: ["radius"],
+										},
+									],
+								},
+							);
+						});
+
+						test("missing type", () => {
+							expectValidateSync(
+								decoder,
+								{
+									radius: 1,
+									shape: {},
+								},
+								{
+									issues: [
+										{
+											message: 'Object property "shape" failed validation.',
+											path: undefined,
+										},
+										{
+											message: 'Object property "type" failed validation.',
+											path: ["shape"],
+										},
+										{
+											message: "Expected string, but received undefined.",
+											path: ["shape", "type"],
+										},
+									],
+								},
+							);
+						});
+					});
+
+					describe("validate parsed string", () => {
+						test("circle", () => {
+							expectValidateSync(
+								decoder,
+								JSON.parse('{"radius":1,"shape":{"type":"circle"}}'),
+								{
+									value: {
+										radius: 1,
+										shape: { type: "circle" },
+									},
+								} as const,
+							);
+						});
+
+						test("invalid payload", () => {
+							expectValidateSync(
+								decoder,
+								JSON.parse('{"radius":"wide","shape":{"type":"circle"}}'),
+								{
+									issues: [
+										{
+											message:
+												"One or more object properties failed validation.",
+											path: undefined,
+										},
+										{
+											message: "Expected number, but received string.",
+											path: ["radius"],
+										},
+									],
+								},
+							);
+						});
+					});
+				});
+
+				describe("async", () => {
+					const decoder = at(["shape", "type"], string()).andThen(
+						(type) =>
+							new Promise<Decoder<Shape>>((resolve) => {
+								resolve(shapeDecoder(type));
+							}),
+					);
+
+					describe("validate value", () => {
+						test("circle", async () => {
+							await expectValidateAsync(
+								decoder,
+								{
+									radius: 1,
+									shape: { type: "circle" },
+								},
+								{
+									value: {
+										radius: 1,
+										shape: { type: "circle" },
+									},
+								} as const,
+							);
+						});
+
+						test("rectangle", async () => {
+							await expectValidateAsync(
+								decoder,
+								{
+									height: 2,
+									shape: { type: "rectangle" },
+									width: 3,
+								},
+								{
+									value: {
+										height: 2,
+										shape: { type: "rectangle" },
+										width: 3,
+									},
+								} as const,
+							);
+						});
+
+						test("unknown type", async () => {
+							await expectValidateAsync(
+								decoder,
+								{
+									shape: { type: "triangle" },
+								},
+								{
+									issues: [
+										{
+											message: "Unknown type.",
+											path: undefined,
+										},
+									],
+								},
+							);
+						});
+
+						test("invalid payload", async () => {
+							await expectValidateAsync(
+								decoder,
+								{
+									radius: "wide",
+									shape: { type: "circle" },
+								},
+								{
+									issues: [
+										{
+											message:
+												"One or more object properties failed validation.",
+											path: undefined,
+										},
+										{
+											message: "Expected number, but received string.",
+											path: ["radius"],
+										},
+									],
+								},
+							);
+						});
+					});
+
+					describe("validate parsed string", () => {
+						test("circle", async () => {
+							await expectValidateAsync(
+								decoder,
+								JSON.parse('{"radius":1,"shape":{"type":"circle"}}'),
+								{
+									value: {
+										radius: 1,
+										shape: { type: "circle" },
+									},
+								} as const,
+							);
+						});
+
+						test("invalid payload", async () => {
+							await expectValidateAsync(
+								decoder,
+								JSON.parse('{"radius":"wide","shape":{"type":"circle"}}'),
+								{
+									issues: [
+										{
+											message:
+												"One or more object properties failed validation.",
+											path: undefined,
+										},
+										{
+											message: "Expected number, but received string.",
+											path: ["radius"],
+										},
+									],
+								},
+							);
 						});
 					});
 				});

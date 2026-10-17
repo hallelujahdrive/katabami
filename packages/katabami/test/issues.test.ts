@@ -402,7 +402,7 @@ describe("issues", () => {
 			foo: string(),
 		});
 
-		test("unexpected type", () => {
+		test("unexpected type: number", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(result).toStrictEqual({
@@ -412,6 +412,19 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				"Expected object, but received number.",
+			);
+		});
+
+		test("unexpected type: array", () => {
+			const result = decoder.decodeValue([1, 2, 3]);
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				"Expected object, but received array.",
 			);
 		});
 
@@ -650,6 +663,33 @@ describe("issues", () => {
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
 				'Expected "foo", but received "bar".',
+			);
+		});
+
+		test("andThen pipes the original value", () => {
+			const decoder = at(["shape", "type"], literal("circle")).andThen((type) =>
+				object({
+					radius: number(),
+					shape: object({
+						type: literal(type),
+					}),
+				}),
+			);
+
+			const invalid = decoder.decodeValue({
+				radius: "wide",
+				shape: { type: "circle" },
+			});
+
+			expect(invalid).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+			expect(getIssueMessage(invalid.issues)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(invalid.issues?.radius)?.format()).toStrictEqual(
+				"Expected number, but received string.",
 			);
 		});
 
