@@ -51,5 +51,5 @@
 		"types:check": "tsc --noEmit --pretty"
 	},
 	"type": "module",
-	"version": "0.2.0"
+	"version": "0.3.0"
 }
