@@ -941,7 +941,10 @@ const decodeLiteralFunc =
 		return {
 			issues: createIssues("literal", "issue.unexpectedValue", {
 				expected,
-				received: value as Primitive,
+				received:
+					typeof value === typeof expected
+						? (value as Primitive)
+						: typeOf(value),
 			}),
 			ok: false,
 		};
