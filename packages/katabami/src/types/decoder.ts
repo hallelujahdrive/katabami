@@ -5,6 +5,7 @@ import type {
 	FlattenedIssues,
 	Issue,
 	Issues,
+	MergeIssues,
 	UnflattenedIssuesFromFlattened,
 	UnflattenedIssuesOf,
 } from "./issue";
@@ -75,11 +76,11 @@ export interface Decoder<
 	 * @template U The type of the decoded value.
 	 * @template {Issues<U>} J The type of the issues of the other decoder.
 	 * @param {(value: T | Resolved<T>) => Decoder<U, J>} nextFunc The function to apply the next decoder to the decoded value.
-	 * @returns {Decoder<U, J>} A new decoder that applies the other decoder to the decoded value.
+	 * @returns {Decoder<U, MergeIssues<I, J>, S>} A new decoder that applies the other decoder to the decoded value.
 	 */
 	andThen<U, J extends Issues = Issues>(
 		nextFunc: (value: Resolved<T>) => Decoder<U, J>,
-	): Decoder<U, I | J, S>;
+	): Decoder<U, MergeIssues<I, J>, S>;
 
 	/**
 	 * Applies another decoder to the decoded value (async nextFunc).
@@ -87,11 +88,11 @@ export interface Decoder<
 	 * @template U The type of the decoded value.
 	 * @template {Issues<U>} J The type of the issues of the other decoder.
 	 * @param {(value: T | Resolved<T>) => Promise<Decoder<U, J>>} nextFunc The function to apply the next decoder to the decoded value.
-	 * @returns {Decoder<Promise<U>, J>} A new decoder that applies the other decoder to the decoded value.
+	 * @returns {Decoder<Promise<Resolved<U>>, MergeIssues<I, J>, S>} A new decoder that applies the other decoder to the decoded value.
 	 */
 	andThen<U, J extends Issues = Issues>(
 		nextFunc: (value: Resolved<T>) => Promise<Decoder<U, J>>,
-	): Decoder<Promise<Resolved<U>>, I | J, S>;
+	): Decoder<Promise<Resolved<U>>, MergeIssues<I, J>, S>;
 
 	/**
 	 * Catches and transforms issues during decoding.
@@ -107,11 +108,14 @@ export interface Decoder<
 	 * When T is Promise, returns Promise; otherwise returns Result.
 	 *
 	 * @param {string} value The string to decode as T.
-	 * @returns {T extends Promise<unknown> ? Promise<Result<Resolved<T>, I | Issues<"parseJson", Issue<"parseJson", never>>>> : Result<T, I | Issues<"parseJson", Issue<"parseJson", never>>>} The decoded value or an error with issues.
+	 * @returns {DecodeResult<T, MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>>} The decoded value or an error with issues.
 	 */
 	decodeString(
 		value: string,
-	): DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
+	): DecodeResult<
+		T,
+		MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>
+	>;
 
 	/**
 	 * Decode a value as T.

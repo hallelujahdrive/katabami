@@ -19,6 +19,7 @@ import type {
 	MapDecodeFunctionParams,
 	MapDecodeIssues,
 	MapDecodeResponse,
+	MergeIssues,
 	NullableDecodeResponse,
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
@@ -366,18 +367,18 @@ class Decoder<
 	 * @template U
 	 * @template {Issues<TypeOf<U>>} J
 	 * @param {(value: Resolved<T>) => Awaitable<IDecoder<Resolved<U>, J>>} nextFunc
-	 * @returns {IDecoder<U, I | J>}
+	 * @returns {IDecoder<U, MergeIssues<I, J>, S>}
 	 */
 	public andThen<U, J extends Issues = Issues<TypeOf<U>>>(
 		nextFunc: (value: Resolved<T>) => Awaitable<IDecoder<U, J>>,
-	): IDecoder<U, I | J, S> {
-		return new Decoder<U, I | J, S>(
+	): IDecoder<U, MergeIssues<I, J>, S> {
+		return new Decoder<U, MergeIssues<I, J>, S>(
 			andThenFunc.call(
 				this,
 				nextFunc as unknown as (
 					value: unknown,
 				) => Awaitable<IDecoder<unknown, Issues>>,
-			) as DecodeFunction<U, I | J>,
+			) as DecodeFunction<U, MergeIssues<I, J>>,
 			undefined,
 			this.schemaDescriptor,
 			this.isAsync ||
@@ -406,15 +407,21 @@ class Decoder<
 	 * Decodes a string as T.
 	 * When T is Promise, returns Promise; otherwise returns Result.
 	 * @param {string} value The string to decode as T.
-	 * @returns {DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>>} The decoded value or an error with issues.
+	 * @returns {DecodeResult<T, MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>>} The decoded value or an error with issues.
 	 */
 	public decodeString(
 		value: string,
-	): DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>> {
+	): DecodeResult<
+		T,
+		MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>
+	> {
 		try {
 			const _value = JSON.parse(value);
 
-			return this.decodeValue(_value);
+			return this.decodeValue(_value) as unknown as DecodeResult<
+				T,
+				MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>
+			>;
 		} catch {
 			return toDecodeResult(
 				{
@@ -422,7 +429,10 @@ class Decoder<
 					ok: false,
 				},
 				this.isAsync,
-			) as DecodeResult<T, I | Issues<"parseJson", Issue<"parseJson", never>>>;
+			) as DecodeResult<
+				T,
+				MergeIssues<I, Issues<"parseJson", Issue<"parseJson", never>>>
+			>;
 		}
 	}
 

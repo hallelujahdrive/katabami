@@ -102,6 +102,17 @@ export interface IssuesObject {
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
 /**
+ * Combines two issue trees so every nested path stays readable.
+ *
+ * `andThen` and `decodeString` can fail for more than one reason. A plain
+ * union hides optional fields that exist on only one member. Merging keeps
+ * each field optional and unions the label where paths overlap.
+ */
+export type MergeIssues<A extends Issues, B extends Issues> = MergeIssuesOf<
+	A | B
+>;
+
+/**
  * Open issues tree reconstructed by {@link unflattenIssues} without a source type.
  * Supports path access such as `issues.foo` / `issues[0]`.
  */
@@ -138,6 +149,12 @@ export type UnflattenedIssuesOf<T> = [T] extends [never]
 	? never
 	: _Issues<UnflattenedIssuesShape<T>, FormattedIssue>;
 
+type AsMergedIssues<V> = [V] extends [never]
+	? never
+	: HasDistinctKeys<V> extends true
+		? MergeIssuesOf<V>
+		: V;
+
 /**
  * Common issue types
  */
@@ -156,6 +173,110 @@ type CommonIssueType =
  * Custom issue types
  */
 type CustomIssueType = never;
+
+/**
+ * Optional fields on different objects are mutually assignable, so a normal
+ * union check treats `{ name?: _ } | { age?: _ }` as one type. Compare keys
+ * instead, and merge only when a member has a path the others lack.
+ */
+type HasDistinctKeys<T> = [T] extends [never]
+	? false
+	: [T extends unknown ? keyof T : never] extends [keyof T]
+		? false
+		: true;
+
+type MergeIssuesKeyOf<K> = K extends symbol
+	? never
+	: K extends `${number}` | number
+		? K
+		: K extends keyof unknown[]
+			? never
+			: K extends string
+				? K
+				: never;
+
+type MergeIssuesKeys<T> = MergeIssuesKeyOf<
+	T extends unknown ? Exclude<keyof T, typeof labelSymbol> : never
+>;
+
+type MergeIssuesNumericLiteralKeys<T> = Extract<
+	MergeIssuesKeys<T>,
+	`${number}`
+>;
+
+type MergeIssuesNumericShape<T> = [MergeIssuesNumericLiteralKeys<T>] extends [
+	never,
+]
+	? number extends MergeIssuesKeys<T>
+		? {
+				readonly [key: number]:
+					| AsMergedIssues<MergeIssuesValue<T, number>>
+					| undefined;
+			}
+		: unknown
+	: {
+			readonly [K in MergeIssuesNumericLiteralKeys<T>]?: AsMergedIssues<
+				MergeIssuesNumericValue<T, K>
+			>;
+		};
+
+type MergeIssuesNumericValue<T, K extends `${number}`> = T extends unknown
+	? K extends keyof T
+		? Exclude<T[K], undefined>
+		: number extends keyof T
+			? Exclude<T[number], undefined>
+			: never
+	: never;
+
+type MergeIssuesOf<T> = [T] extends [never]
+	? never
+	: _Issues<MergeIssuesShape<T>, IssueLabelOf<T>>;
+
+type MergeIssuesShape<T> = [MergeIssuesKeys<T>] extends [never]
+	? Record<never, never>
+	: MergeIssuesStringShape<T> & MergeIssuesNumericShape<T>;
+
+type MergeIssuesStringKeys<T> = Exclude<
+	MergeIssuesKeys<T>,
+	`${number}` | number
+>;
+
+type MergeIssuesStringPropKey<K> = K extends `${number}` | number | symbol
+	? never
+	: K extends keyof unknown[]
+		? never
+		: K extends string
+			? K
+			: never;
+
+type MergeIssuesStringProps<T> = {
+	[K in keyof T as MergeIssuesStringPropKey<K>]: Exclude<T[K], undefined>;
+};
+
+type MergeIssuesStringShape<T> =
+	string extends MergeIssuesKeys<T>
+		? {
+				readonly [key: string]:
+					| AsMergedIssues<MergeIssuesStringValues<T>>
+					| undefined;
+			}
+		: [MergeIssuesStringKeys<T>] extends [never]
+			? unknown
+			: {
+					readonly [K in MergeIssuesStringKeys<T>]?: AsMergedIssues<
+						MergeIssuesValue<T, K>
+					>;
+				};
+
+type MergeIssuesStringValues<T> = T extends unknown
+	? MergeIssuesStringProps<T>[keyof MergeIssuesStringProps<T>]
+	: never;
+
+type MergeIssuesValue<T, K extends PropertyKey> = T extends unknown
+	? K extends keyof T
+		? Exclude<T[K], undefined>
+		: never
+	: never;
 
 type UnflattenedIssuesShape<T> = T extends readonly (infer E)[]
 	? { readonly [key: number]: undefined | UnflattenedIssuesOf<E> }
