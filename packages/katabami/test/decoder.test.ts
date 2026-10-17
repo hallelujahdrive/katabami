@@ -4,6 +4,7 @@ import {
 	at,
 	boolean,
 	type Decoder,
+	failed,
 	field,
 	index,
 	int,
@@ -1844,6 +1845,261 @@ describe("decoder", () => {
 						} as const;
 
 						expect(result).toStrictEqual(expectedResult);
+					});
+				});
+			});
+
+			describe("pipes the original value", () => {
+				type Shape =
+					| {
+							height: number;
+							shape: { type: "rectangle" };
+							width: number;
+					  }
+					| {
+							radius: number;
+							shape: { type: "circle" };
+					  };
+
+				const shapeDecoder = (type: string): Decoder<Shape> => {
+					if (type === "circle") {
+						return object({
+							radius: number(),
+							shape: object({
+								type: literal("circle"),
+							}),
+						}) as Decoder<Shape>;
+					}
+
+					if (type === "rectangle") {
+						return object({
+							height: number(),
+							shape: object({
+								type: literal("rectangle"),
+							}),
+							width: number(),
+						}) as Decoder<Shape>;
+					}
+
+					return failed("Unknown type.") as Decoder<Shape>;
+				};
+
+				describe("sync", () => {
+					const decoder = at(["shape", "type"], string()).andThen(shapeDecoder);
+
+					describe("decode value", () => {
+						test("circle", () => {
+							const result = decoder.decodeValue({
+								radius: 1,
+								shape: { type: "circle" },
+							});
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									radius: 1,
+									shape: { type: "circle" },
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("rectangle", () => {
+							const result = decoder.decodeValue({
+								height: 2,
+								shape: { type: "rectangle" },
+								width: 3,
+							});
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									height: 2,
+									shape: { type: "rectangle" },
+									width: 3,
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("unknown type", () => {
+							const result = decoder.decodeValue({
+								shape: { type: "triangle" },
+							});
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("invalid payload", () => {
+							const result = decoder.decodeValue({
+								radius: "wide",
+								shape: { type: "circle" },
+							});
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("missing type", () => {
+							const result = decoder.decodeValue({
+								radius: 1,
+								shape: {},
+							});
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+					});
+
+					describe("decode string", () => {
+						test("circle", () => {
+							const result = decoder.decodeString(
+								'{"radius":1,"shape":{"type":"circle"}}',
+							);
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									radius: 1,
+									shape: { type: "circle" },
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("invalid payload", () => {
+							const result = decoder.decodeString(
+								'{"radius":"wide","shape":{"type":"circle"}}',
+							);
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+					});
+				});
+
+				describe("async", () => {
+					const decoder = at(["shape", "type"], string()).andThen(
+						(type) =>
+							new Promise<Decoder<Shape>>((resolve) => {
+								resolve(shapeDecoder(type));
+							}),
+					);
+
+					describe("decode value", () => {
+						test("circle", async () => {
+							const result = await decoder.decodeValue({
+								radius: 1,
+								shape: { type: "circle" },
+							});
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									radius: 1,
+									shape: { type: "circle" },
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("rectangle", async () => {
+							const result = await decoder.decodeValue({
+								height: 2,
+								shape: { type: "rectangle" },
+								width: 3,
+							});
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									height: 2,
+									shape: { type: "rectangle" },
+									width: 3,
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("unknown type", async () => {
+							const result = await decoder.decodeValue({
+								shape: { type: "triangle" },
+							});
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("invalid payload", async () => {
+							const result = await decoder.decodeValue({
+								radius: "wide",
+								shape: { type: "circle" },
+							});
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+					});
+
+					describe("decode string", () => {
+						test("circle", async () => {
+							const result = await decoder.decodeString(
+								'{"radius":1,"shape":{"type":"circle"}}',
+							);
+
+							const expectedResult = {
+								ok: true,
+								value: {
+									radius: 1,
+									shape: { type: "circle" },
+								},
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
+
+						test("invalid payload", async () => {
+							const result = await decoder.decodeString(
+								'{"radius":"wide","shape":{"type":"circle"}}',
+							);
+
+							const expectedResult = {
+								issues: expect.anything(),
+								ok: false,
+							} as const;
+
+							expect(result).toStrictEqual(expectedResult);
+						});
 					});
 				});
 			});

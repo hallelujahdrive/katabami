@@ -24,7 +24,6 @@ import type {
 	ObjectDecodeIssues,
 	ObjectDecodeResponse,
 	ObjectDecoders,
-	Ok,
 	OneOrMoreDecodeResponse,
 	OptionalDecodeResponse,
 	Primitive,
@@ -526,7 +525,7 @@ function andThenFunc<
 			return andThenHelper.call(
 				this,
 				nextFunc(res.value as Resolved<T>),
-				res as Ok<Resolved<T>>,
+				value,
 			) as Awaitable<Result<U, I | J>>;
 		}) as Awaitable<Result<U, I | J>>;
 	};
@@ -539,7 +538,7 @@ function andThenFunc<
  * @template {Issues<TypeOf<T>>} I
  * @template {Issues<TypeOf<U>>} J
  * @param {Awaitable<IDecoder<U, J>>} nextDecoder
- * @param {Result<T, I> & { ok: true }} res
+ * @param {unknown} value
  * @returns {Awaitable<Result<U, I | J>>}
  */
 function andThenHelper<
@@ -550,10 +549,10 @@ function andThenHelper<
 >(
 	this: Decoder<T, I, boolean>,
 	nextDecoder: Awaitable<IDecoder<U, J>>,
-	res: Ok<Resolved<T>>,
+	value: unknown,
 ): Awaitable<Result<U, I | J>> {
 	return mapAwaitable(nextDecoder, (nextDecoder) =>
-		nextDecoder.decodeValue(res.value),
+		nextDecoder.decodeValue(value),
 	) as Result<U, I | J>;
 }
 
@@ -969,6 +968,7 @@ const decodeFieldFunc = <
 	FieldDecodeIssues<
 		U,
 		| Issue<"field", "issue.invalidObjectField", { key: K }>
+		| Issue<"field", "issue.missingObjectField", { key: K }>
 		| Issue<
 				"field",
 				"issue.unexpectedType",
