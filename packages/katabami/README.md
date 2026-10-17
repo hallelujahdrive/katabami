@@ -105,7 +105,7 @@ export const date = () =>
 		k.string().andThen((value) => {
 			const parsed = new Date(value);
 			return Number.isNaN(parsed.getTime())
-				? k.failed()
+				? k.failed("Expected an ISO 8601 date-time.")
 				: k.succeed(parsed);
 		}),
 		{ format: "date-time", kind: "string" },

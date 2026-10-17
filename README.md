@@ -166,7 +166,11 @@ user.decodeString('{"age":20,"name":"Ada"}');
 | `literal(value)` | a literal (`string`, `number`, `boolean`, or `null`) |
 | `value()` | anything (typed as `unknown` by default) |
 | `succeed(value)` | anything; always returns `value` |
-| `failed()` | nothing; always fails |
+| `failed(message?)` | nothing; always fails with `message` |
+
+`failed()` uses `"issue.failedToDecode"`, which formats to `"Failed to decode."`.
+`failed("Expected an integer.")` uses that string as the issue message. A
+built-in message key is formatted the same way as other issues.
 
 ### Structure
 
@@ -385,10 +389,12 @@ const decoder = k.string().catch(() => ({
 ```ts
 import * as k from "katabami";
 
-const port = katabami
+const port = k
 	.string()
 	.map(Number)
-	.andThen((n) => (Number.isInteger(n) ? k.succeed(n) : k.failed()));
+	.andThen((n) =>
+		Number.isInteger(n) ? k.succeed(n) : k.failed("Expected an integer."),
+	);
 ```
 
 ## Async decoding
@@ -491,7 +497,7 @@ export const date = () =>
 		k.string().andThen((value) => {
 			const parsed = new Date(value);
 			return Number.isNaN(parsed.getTime())
-				? k.failed()
+				? k.failed("Expected an ISO 8601 date-time.")
 				: k.succeed(parsed);
 		}),
 		{ format: "date-time", kind: "string" },

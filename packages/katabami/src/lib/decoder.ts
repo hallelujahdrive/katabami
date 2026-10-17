@@ -1678,23 +1678,27 @@ export function boolean(): IDecoder<
 }
 
 /**
- * Create a decoder that always fails with the given message and issues.
- * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ * Create a decoder that always fails with the given message.
+ * @template {IssueMessageKeys | string} T - The message.
+ * @param {T} message - The issue message. A built-in key such as `"issue.failedToDecode"` is formatted; any other string is used as written.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message.
  */
 export function failed<T extends IssueMessageKeys | (string & {})>(
 	message: T,
 ): IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>;
 /**
- * Create a decoder that always fails with the given message and issues.
- * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ * Create a decoder that always fails with `"issue.failedToDecode"`.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with `"issue.failedToDecode"`.
  */
 export function failed(): IDecoder<
 	never,
 	Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>
 >;
 /**
- * Create a decoder that always fails with the given message and issues.
- * @returns {IDecoder<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
+ * Create a decoder that always fails with the given message.
+ * @template {IssueMessageKeys | string} [T="issue.failedToDecode"] - The message.
+ * @param {T} [message="issue.failedToDecode"] - The issue message. Defaults to `"issue.failedToDecode"`.
+ * @returns {IDecoder<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message.
  */
 export function failed<
 	T extends IssueMessageKeys | (string & {}) = "issue.failedToDecode",
