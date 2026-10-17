@@ -328,7 +328,20 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Expected "foo", but received 1.',
+				"Expected string, but received number.",
+			);
+		});
+
+		test("unexpected value", () => {
+			const result = decoder.decodeValue("bar");
+
+			expect(result).toStrictEqual({
+				issues: expect.anything(),
+				ok: false,
+			});
+
+			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
+				'Expected "foo", but received "bar".',
 			);
 		});
 
@@ -341,7 +354,7 @@ describe("issues", () => {
 			});
 
 			expect(getIssueMessage(result.issues)?.format()).toStrictEqual(
-				'Expected null, but received "foo".',
+				"Expected null, but received string.",
 			);
 		});
 	});
@@ -636,15 +649,15 @@ describe("issues", () => {
 				);
 
 				expect(getIssueMessage(result.issues?.[0])?.format()).toStrictEqual(
-					'Expected "foo", but received 1.',
+					"Expected string, but received number.",
 				);
 
 				expect(getIssueMessage(result.issues?.[1])?.format()).toStrictEqual(
-					'Expected "bar", but received 1.',
+					"Expected string, but received number.",
 				);
 
 				expect(getIssueMessage(result.issues?.[2])?.format()).toStrictEqual(
-					'Expected "baz", but received 1.',
+					"Expected string, but received number.",
 				);
 			});
 		});

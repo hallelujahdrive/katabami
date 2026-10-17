@@ -919,7 +919,7 @@ const decodeOneOrMoreFunc =
 /**
  * Creates a decoder that accepts a single literal value.
  * @param {T} expected - The literal value to accept.
- * @returns {DecodeFunction<T, Issues<"literal", Issue<"literal", string, { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
+ * @returns {DecodeFunction<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: TypeKeys; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
  */
 const decodeLiteralFunc =
 	<T extends Primitive>(
@@ -928,23 +928,35 @@ const decodeLiteralFunc =
 		T,
 		Issues<
 			"literal",
-			Issue<
-				"literal",
-				"issue.unexpectedValue",
-				{ expected: T; received: Primitive }
-			>
+			| Issue<
+					"literal",
+					"issue.unexpectedType",
+					{ expected: TypeKeys; received: TypeKeys }
+			  >
+			| Issue<
+					"literal",
+					"issue.unexpectedValue",
+					{ expected: T; received: Primitive }
+			  >
 		>
 	> =>
 	(value) => {
 		if (value === expected) return { ok: true, value: value as T };
 
+		if (typeof value !== typeof expected) {
+			return {
+				issues: createIssues("literal", "issue.unexpectedType", {
+					expected: typeOf(expected),
+					received: typeOf(value),
+				}),
+				ok: false,
+			};
+		}
+
 		return {
 			issues: createIssues("literal", "issue.unexpectedValue", {
 				expected,
-				received:
-					typeof value === typeof expected
-						? (value as Primitive)
-						: typeOf(value),
+				received: value as Primitive,
 			}),
 			ok: false,
 		};
@@ -1893,7 +1905,7 @@ export function lazy<T, I extends Issues = Issues>(
  *
  * @template {Primitive} T The type of the value.
  * @param {T} expected The literal value to accept.
- * @returns {IDecoder<T, Issues<"literal", Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
+ * @returns {IDecoder<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: TypeKeys; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
  */
 export function literal<T extends Primitive>(
 	expected: T,
@@ -1901,11 +1913,16 @@ export function literal<T extends Primitive>(
 	T,
 	Issues<
 		"literal",
-		Issue<
-			"literal",
-			"issue.unexpectedValue",
-			{ expected: T; received: Primitive }
-		>
+		| Issue<
+				"literal",
+				"issue.unexpectedType",
+				{ expected: TypeKeys; received: TypeKeys }
+		  >
+		| Issue<
+				"literal",
+				"issue.unexpectedValue",
+				{ expected: T; received: Primitive }
+		  >
 	>
 > {
 	return new Decoder(
