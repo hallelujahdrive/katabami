@@ -614,18 +614,30 @@ const booleanDecoder = new Decoder<
 
 /**
  * A decoder that always fails with the given message and issues.
+ * @template {string} T - The type of the message.
+ * @param {T} message - The message to fail with.
+ * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message and issues.
+ */
+const decodeFailedFunc =
+	<T extends string>(
+		message: T,
+	): DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>> =>
+	() => {
+		return {
+			issues: createIssues("failed", message),
+			ok: false,
+		};
+	};
+
+/**
+ * A decoder that always fails with the given message and issues.
  * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>>} A decoder that always fails with the given message and issues.
  */
 const failedDecoder = new Decoder<
 	never,
 	Issues<"failed", Issue<"failed", "issue.failedToDecode", never>>
 >(
-	() => {
-		return {
-			issues: createIssues("failed", "issue.failedToDecode"),
-			ok: false,
-		};
-	},
+	decodeFailedFunc("issue.failedToDecode"),
 	undefined,
 	staticSchemaDescriptor(neverSchema),
 );
@@ -828,23 +840,6 @@ const decodeArrayHelper = <T, U extends IDecoder<T>>(
 		value: results.map(([_, result]) => result.value) as ArrayDecodeResponse<U>,
 	};
 };
-
-/**
- * A decoder that always fails with the given message and issues.
- * @template {string} T - The type of the message.
- * @param {T} message - The message to fail with.
- * @returns {DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>>} A decoder that always fails with the given message and issues.
- */
-const decodeFailedFunc =
-	<T extends string>(
-		message: T,
-	): DecodeFunction<never, Issues<"failed", Issue<"failed", T, never>>> =>
-	() => {
-		return {
-			issues: createIssues("failed", message),
-			ok: false,
-		};
-	};
 
 /**
  * Creates a decoder that decodes a non-empty array.
