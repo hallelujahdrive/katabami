@@ -9,6 +9,7 @@ import {
 	type Decoder,
 	failed,
 	field,
+	getIssueMessage,
 	type Issue,
 	type Issues,
 	type IssueType,
@@ -443,6 +444,65 @@ describe("decode issues", () => {
 					readonly foo?: Record<never, never>;
 				}>().toExtend<GetIssues<DecodeResult<typeof _decoder>>>();
 			});
+
+			test("paths from both decoders are readable", () => {
+				const decoder = object({
+					foo: object({ bar: string() }),
+				}).andThen(() =>
+					object({
+						baz: object({ qux: int() }),
+					}),
+				);
+				const result = decoder.decodeValue({});
+
+				if (result.ok) return;
+
+				expectTypeOf(
+					getIssueMessage(result.issues.foo?.bar)?.type,
+				).toEqualTypeOf<"string" | undefined>();
+				expectTypeOf(
+					getIssueMessage(result.issues.baz?.qux)?.type,
+				).toEqualTypeOf<"integer" | undefined>();
+			});
+
+			test("shared paths keep every nested field", () => {
+				const decoder = object({
+					user: object({ name: string() }),
+				}).andThen(() =>
+					object({
+						user: object({ age: int() }),
+					}),
+				);
+				const result = decoder.decodeValue({});
+
+				if (result.ok) return;
+
+				expectTypeOf(
+					getIssueMessage(result.issues.user?.name)?.type,
+				).toEqualTypeOf<"string" | undefined>();
+				expectTypeOf(
+					getIssueMessage(result.issues.user?.age)?.type,
+				).toEqualTypeOf<"integer" | undefined>();
+			});
+
+			test("chained andThen keeps every path", () => {
+				const decoder = object({ a: string() })
+					.andThen(() => object({ b: object({ c: string() }) }))
+					.andThen(() => object({ d: int() }));
+				const result = decoder.decodeValue({});
+
+				if (result.ok) return;
+
+				expectTypeOf(getIssueMessage(result.issues.a)?.type).toEqualTypeOf<
+					"string" | undefined
+				>();
+				expectTypeOf(getIssueMessage(result.issues.b?.c)?.type).toEqualTypeOf<
+					"string" | undefined
+				>();
+				expectTypeOf(getIssueMessage(result.issues.d)?.type).toEqualTypeOf<
+					"integer" | undefined
+				>();
+			});
 		});
 
 		describe("catch", () => {
@@ -518,6 +578,45 @@ describe("decode issues", () => {
 			expectTypeOf<
 				GetIssues<DecodeStringResult<typeof _decoder>>
 			>().toEqualTypeOf<Record<never, never>>();
+		});
+
+		test("nested paths stay readable", () => {
+			const decoder = object({
+				foo: object({ bar: string() }),
+			});
+			const result = decoder.decodeString('{"foo":{"bar":1}}');
+
+			if (result.ok) return;
+
+			expectTypeOf(getIssueMessage(result.issues.foo?.bar)?.type).toEqualTypeOf<
+				"string" | undefined
+			>();
+			expectTypeOf(getIssueMessage(result.issues)?.type).toEqualTypeOf<
+				"object" | "parseJson" | undefined
+			>();
+		});
+
+		test("array and union indexes stay readable", () => {
+			const items = array(object({ name: string() }));
+			const itemResult = items.decodeString("[1]");
+
+			if (!itemResult.ok) {
+				expectTypeOf(
+					getIssueMessage(itemResult.issues[0]?.name)?.type,
+				).toEqualTypeOf<"string" | undefined>();
+			}
+
+			const choice = union(object({ name: string() }), object({ age: int() }));
+			const choiceResult = choice.decodeString("1");
+
+			if (!choiceResult.ok) {
+				expectTypeOf(
+					getIssueMessage(choiceResult.issues[0]?.name)?.type,
+				).toEqualTypeOf<"string" | undefined>();
+				expectTypeOf(
+					getIssueMessage(choiceResult.issues[1]?.age)?.type,
+				).toEqualTypeOf<"integer" | undefined>();
+			}
 		});
 	});
 });
