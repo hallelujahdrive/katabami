@@ -200,7 +200,7 @@ describe("translate", () => {
 			const result = decoder.decodeValue(1);
 
 			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				'"foo"が期待されましたが、1でした。',
+				"文字列が期待されましたが、数値でした。",
 			);
 		});
 
@@ -208,7 +208,7 @@ describe("translate", () => {
 			const result = katabami.literal(null).decodeValue("foo");
 
 			expect(getIssueMessage(result.issues)?.format(formatter)).toStrictEqual(
-				'nullが期待されましたが、"foo"でした。',
+				"nullが期待されましたが、文字列でした。",
 			);
 		});
 	});
@@ -475,15 +475,15 @@ describe("translate", () => {
 
 				expect(
 					getIssueMessage(result.issues?.[0])?.format(formatter),
-				).toStrictEqual('"foo"が期待されましたが、1でした。');
+				).toStrictEqual("文字列が期待されましたが、数値でした。");
 
 				expect(
 					getIssueMessage(result.issues?.[1])?.format(formatter),
-				).toStrictEqual('"bar"が期待されましたが、1でした。');
+				).toStrictEqual("文字列が期待されましたが、数値でした。");
 
 				expect(
 					getIssueMessage(result.issues?.[2])?.format(formatter),
-				).toStrictEqual('"baz"が期待されましたが、1でした。');
+				).toStrictEqual("文字列が期待されましたが、数値でした。");
 			});
 		});
 	});
