@@ -55,6 +55,20 @@ type DecodeFunction<T, Is extends Issues = Issues<TypeOf<T>>> = (
 	value: unknown,
 ) => Awaitable<Result<T, Is>>;
 
+/**
+ * The type key {@link typeOf} reports for a literal.
+ * String, number, and boolean literals widen to their primitive type.
+ */
+type LiteralTypeKey<T> = `type.${T extends null
+	? "null"
+	: T extends string
+		? "string"
+		: T extends number
+			? "number"
+			: T extends boolean
+				? "boolean"
+				: never}`;
+
 type SchemaDecoder = IDecoder<unknown, Issues, boolean>;
 
 type SchemaDescriptor = () => Awaitable<DecoderSchema>;
@@ -602,7 +616,7 @@ const booleanDecoder = new Decoder<
 		Issue<
 			"boolean",
 			"issue.unexpectedType",
-			{ expected: "type.boolean"; received: string }
+			{ expected: "type.boolean"; received: TypeKeys }
 		>
 	>
 >(
@@ -661,7 +675,7 @@ const integerDecoder = new Decoder<
 		Issue<
 			"integer",
 			"issue.unexpectedType",
-			{ expected: "type.integer" | "type.number"; received: string }
+			{ expected: "type.integer" | "type.number"; received: TypeKeys }
 		>
 	>
 >(
@@ -705,7 +719,7 @@ const numberDecoder = new Decoder<
 		Issue<
 			"number",
 			"issue.unexpectedType",
-			{ expected: "type.number"; received: string }
+			{ expected: "type.number"; received: TypeKeys }
 		>
 	>
 >(
@@ -734,7 +748,7 @@ const stringDecoder = new Decoder<
 		Issue<
 			"string",
 			"issue.unexpectedType",
-			{ expected: "type.string"; received: string }
+			{ expected: "type.string"; received: TypeKeys }
 		>
 	>
 >(
@@ -919,7 +933,7 @@ const decodeOneOrMoreFunc =
 /**
  * Creates a decoder that accepts a single literal value.
  * @param {T} expected - The literal value to accept.
- * @returns {DecodeFunction<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: TypeKeys; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
+ * @returns {DecodeFunction<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: LiteralTypeKey<T>; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
  */
 const decodeLiteralFunc =
 	<T extends Primitive>(
@@ -931,7 +945,7 @@ const decodeLiteralFunc =
 			| Issue<
 					"literal",
 					"issue.unexpectedType",
-					{ expected: TypeKeys; received: TypeKeys }
+					{ expected: LiteralTypeKey<T>; received: TypeKeys }
 			  >
 			| Issue<
 					"literal",
@@ -946,7 +960,7 @@ const decodeLiteralFunc =
 		if (typeof value !== typeof expected) {
 			return {
 				issues: createIssues("literal", "issue.unexpectedType", {
-					expected: typeOf(expected),
+					expected: typeOf(expected) as LiteralTypeKey<T>,
 					received: typeOf(value),
 				}),
 				ok: false,
@@ -1686,7 +1700,7 @@ export function at<
 
 /**
  * A decoder for booleans.
- * @returns {IDecoder<boolean, Issues<"boolean", Issue<"boolean", "issue.unexpectedType", { expected: "type.boolean"; received: string }>>>}
+ * @returns {IDecoder<boolean, Issues<"boolean", Issue<"boolean", "issue.unexpectedType", { expected: "type.boolean"; received: TypeKeys }>>>}
  */
 export function boolean(): IDecoder<
 	boolean,
@@ -1695,7 +1709,7 @@ export function boolean(): IDecoder<
 		Issue<
 			"boolean",
 			"issue.unexpectedType",
-			{ expected: "type.boolean"; received: string }
+			{ expected: "type.boolean"; received: TypeKeys }
 		>
 	>
 > {
@@ -1846,7 +1860,7 @@ export function index<
 /**
  * A decoder for integers.
  *
- * @returns {IDecoder<number, Issues<"integer", Issue<"integer", "issue.unexpectedType", { expected: "type.number"; received: string }>>>} A decoder for integers.
+ * @returns {IDecoder<number, Issues<"integer", Issue<"integer", "issue.unexpectedType", { expected: "type.number"; received: TypeKeys }>>>} A decoder for integers.
  */
 export function int(): IDecoder<
 	number,
@@ -1855,7 +1869,7 @@ export function int(): IDecoder<
 		Issue<
 			"integer",
 			"issue.unexpectedType",
-			{ expected: "type.integer" | "type.number"; received: string }
+			{ expected: "type.integer" | "type.number"; received: TypeKeys }
 		>
 	>
 > {
@@ -1905,7 +1919,7 @@ export function lazy<T, I extends Issues = Issues>(
  *
  * @template {Primitive} T The type of the value.
  * @param {T} expected The literal value to accept.
- * @returns {IDecoder<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: TypeKeys; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
+ * @returns {IDecoder<T, Issues<"literal", Issue<"literal", "issue.unexpectedType", { expected: LiteralTypeKey<T>; received: TypeKeys }> | Issue<"literal", "issue.unexpectedValue", { expected: T; received: Primitive }>>>} A decoder that accepts the given literal value.
  */
 export function literal<T extends Primitive>(
 	expected: T,
@@ -1916,7 +1930,7 @@ export function literal<T extends Primitive>(
 		| Issue<
 				"literal",
 				"issue.unexpectedType",
-				{ expected: TypeKeys; received: TypeKeys }
+				{ expected: LiteralTypeKey<T>; received: TypeKeys }
 		  >
 		| Issue<
 				"literal",
@@ -1990,7 +2004,7 @@ export function nullable<
 /**
  * A decoder for numbers.
  *
- * @returns {IDecoder<number, Issues<"number", Issue<"number", "issue.unexpectedType", { expected: "type.number"; received: string }>>>} A decoder for numbers.
+ * @returns {IDecoder<number, Issues<"number", Issue<"number", "issue.unexpectedType", { expected: "type.number"; received: TypeKeys }>>>} A decoder for numbers.
  */
 export function number(): IDecoder<
 	number,
@@ -1999,7 +2013,7 @@ export function number(): IDecoder<
 		Issue<
 			"number",
 			"issue.unexpectedType",
-			{ expected: "type.number"; received: string }
+			{ expected: "type.number"; received: TypeKeys }
 		>
 	>
 > {
@@ -2214,7 +2228,7 @@ export function replaceSchema<T, I extends Issues>(
 /**
  * A decoder for strings.
  *
- * @returns {IDecoder<string, Issues<"string", Issue<"string", "issue.unexpectedType", { expected: "type.string"; received: string }>>>} A decoder for strings.
+ * @returns {IDecoder<string, Issues<"string", Issue<"string", "issue.unexpectedType", { expected: "type.string"; received: TypeKeys }>>>} A decoder for strings.
  */
 export function string(): IDecoder<
 	string,
@@ -2223,7 +2237,7 @@ export function string(): IDecoder<
 		Issue<
 			"string",
 			"issue.unexpectedType",
-			{ expected: "type.string"; received: string }
+			{ expected: "type.string"; received: TypeKeys }
 		>
 	>
 > {
