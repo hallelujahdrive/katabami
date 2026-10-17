@@ -133,7 +133,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.boolean";
-			received: string;
+			received: TypeKeys;
 		}>();
 	});
 
@@ -168,7 +168,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
-			received: string;
+			received: TypeKeys;
 		}>();
 
 		expectTypeOf<{
@@ -180,19 +180,31 @@ describe("decode issues", () => {
 	test("literal", () => {
 		const _decoder = literal("foo");
 
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: "foo";
-			received: Primitive;
-		}>();
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			| {
+					expected: "foo";
+					received: Primitive;
+			  }
+			| {
+					expected: "type.string";
+					received: TypeKeys;
+			  }
+		>();
 	});
 
 	test("literal null", () => {
 		const _decoder = literal(null);
 
-		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
-			expected: null;
-			received: Primitive;
-		}>();
+		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
+			| {
+					expected: "type.null";
+					received: TypeKeys;
+			  }
+			| {
+					expected: null;
+					received: Primitive;
+			  }
+		>();
 	});
 
 	describe("map", () => {
@@ -226,7 +238,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
-			received: string;
+			received: TypeKeys;
 		}>();
 	});
 
@@ -235,7 +247,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.number";
-			received: string;
+			received: TypeKeys;
 		}>();
 	});
 
@@ -305,7 +317,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.integer" | "type.number";
-			received: string;
+			received: TypeKeys;
 		}>();
 	});
 
@@ -360,7 +372,7 @@ describe("decode issues", () => {
 
 		expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 			expected: "type.string";
-			received: string;
+			received: TypeKeys;
 		}>();
 	});
 
@@ -429,7 +441,7 @@ describe("decode issues", () => {
 
 				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<
 					| { expected: "foo"; received: Primitive }
-					| { expected: "type.string"; received: string }
+					| { expected: "type.string"; received: TypeKeys }
 				>();
 
 				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
@@ -528,7 +540,7 @@ describe("decode issues", () => {
 
 				expectTypeOf<GetVars<typeof _decoder>>().toEqualTypeOf<{
 					expected: "type.integer" | "type.number";
-					received: string;
+					received: TypeKeys;
 				}>();
 
 				expectTypeOf<GetIssues<DecodeResult<typeof _decoder>>>().toEqualTypeOf<
@@ -544,7 +556,7 @@ describe("decode issues", () => {
 
 			expectTypeOf<{
 				expected: "type.integer" | "type.number";
-				received: string;
+				received: TypeKeys;
 			}>().toExtend<
 				IssueVars<
 					ExtractIssue<

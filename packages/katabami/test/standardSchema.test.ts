@@ -635,7 +635,7 @@ describe("StandardSchemaV1", () => {
 					expectValidateSync(decoder, "foo", {
 						issues: [
 							{
-								message: 'Expected null, but received "foo".',
+								message: "Expected null, but received string.",
 								path: undefined,
 							},
 						],
