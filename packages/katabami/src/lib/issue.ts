@@ -220,21 +220,23 @@ export function unflattenIssues<
 }
 
 function buildIssuesFromTree(node: IssueTreeNode): UnflattenedIssues {
-	const result: Record<string, UnflattenedIssues> = {};
-
+	// Union issues are arrays. flattenIssues keeps every member on the same
+	// path, so a leaf with several messages is rebuilt as an array.
 	if (node.children.size === 0 && node.messages.length > 1) {
 		const [rootMessage, ...rest] = node.messages as [string, ...string[]];
+		const issues: UnflattenedIssues[] = [];
 
-		for (const [index, message] of rest.entries()) {
+		for (const message of rest) {
 			const child = {} as UnflattenedIssues;
 			setFormattedMessage(child, message);
-			result[String(index)] = child;
+			issues.push(child);
 		}
 
-		const issues = result as UnflattenedIssues;
 		setFormattedMessage(issues, rootMessage);
-		return issues;
+		return issues as unknown as UnflattenedIssues;
 	}
+
+	const result: Record<string, UnflattenedIssues> = {};
 
 	for (const [key, child] of node.children) {
 		result[key] = buildIssuesFromTree(child);

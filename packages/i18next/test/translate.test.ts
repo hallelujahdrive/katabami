@@ -619,6 +619,8 @@ describe("translate", () => {
 
 			const restored = unflattenIssues(flattenIssues(result.issues, formatter));
 
+			expect(restored).toBeInstanceOf(Array);
+
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"ユニオンのメンバーのいずれにも一致しませんでした。",
 			);
