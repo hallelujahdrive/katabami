@@ -23,9 +23,14 @@ import { defaultFormatter } from "./format";
  */
 const weakMap = new WeakMap<object, Issue>();
 
-type IssueTreeNode = {
-	children: Map<string, IssueTreeNode>;
-	messages: string[];
+type IssueGroup = {
+	children: NormalizedIssue[];
+	message: string;
+};
+
+type NormalizedIssue = {
+	message: string;
+	path: readonly string[];
 };
 
 /**
@@ -191,62 +196,103 @@ export function unflattenIssues<
 ): [D] extends [never]
 	? UnflattenedIssuesFromFlattened<T>
 	: UnflattenedIssuesFromDecoder<D> {
-	const root: IssueTreeNode = { children: new Map(), messages: [] };
+	const normalized = flattened.map((issue) => ({
+		message: issue.message,
+		path: normalizeIssuePath(issue.path),
+	}));
 
-	for (const issue of flattened) {
-		let node = root;
-
-		if (issue.path != null) {
-			for (const segment of issue.path) {
-				const key = normalizePathSegment(segment);
-				let child = node.children.get(key);
-
-				if (child == null) {
-					child = { children: new Map(), messages: [] };
-					node.children.set(key, child);
-				}
-
-				node = child;
-			}
-		}
-
-		node.messages.push(issue.message);
-	}
-
-	return buildIssuesFromTree(root) as [D] extends [never]
+	return buildIssuesAt(normalized, 0) as [D] extends [never]
 		? UnflattenedIssuesFromFlattened<T>
 		: UnflattenedIssuesFromDecoder<D>;
 }
 
-function buildIssuesFromTree(node: IssueTreeNode): UnflattenedIssues {
-	// Union issues are arrays. flattenIssues keeps every member on the same
-	// path, so a leaf with several messages is rebuilt as an array.
-	if (node.children.size === 0 && node.messages.length > 1) {
-		const [rootMessage, ...rest] = node.messages as [string, ...string[]];
-		const issues: UnflattenedIssues[] = [];
+function assignIssueChildren(
+	target: object,
+	children: readonly NormalizedIssue[],
+	depth: number,
+): void {
+	const byKey = new Map<string, NormalizedIssue[]>();
 
-		for (const message of rest) {
-			const child = {} as UnflattenedIssues;
-			setFormattedMessage(child, message);
-			issues.push(child);
+	for (const child of children) {
+		const key = child.path[depth];
+		if (key == null) continue;
+
+		const bucket = byKey.get(key);
+		if (bucket == null) {
+			byKey.set(key, [child]);
+			continue;
 		}
 
-		setFormattedMessage(issues, rootMessage);
-		return issues as unknown as UnflattenedIssues;
+		bucket.push(child);
 	}
 
+	const record = target as Record<string, UnflattenedIssues>;
+	for (const [key, bucket] of byKey) {
+		record[key] = buildIssuesAt(bucket, depth + 1);
+	}
+}
+
+function buildIssueNode(
+	message: string | undefined,
+	children: readonly NormalizedIssue[],
+	depth: number,
+): UnflattenedIssues {
 	const result: Record<string, UnflattenedIssues> = {};
+	assignIssueChildren(result, children, depth);
 
-	for (const [key, child] of node.children) {
-		result[key] = buildIssuesFromTree(child);
+	if (message != null) setFormattedMessage(result, message);
+
+	return result as UnflattenedIssues;
+}
+
+/**
+ * Union issues are arrays. `flattenIssues` writes the array message and every
+ * member at the same path, in order, and writes each member's descendants
+ * before the next member. Several messages at one path become an array again.
+ * Deeper issues stay on the member that precedes them, so a union member can
+ * keep nested object or array issues.
+ */
+function buildIssuesAt(
+	issues: readonly NormalizedIssue[],
+	depth: number,
+): UnflattenedIssues {
+	const groups: IssueGroup[] = [];
+	const leading: NormalizedIssue[] = [];
+
+	for (const issue of issues) {
+		if (issue.path.length === depth) {
+			groups.push({ children: [], message: issue.message });
+			continue;
+		}
+
+		if (issue.path.length < depth) continue;
+
+		const current = groups[groups.length - 1];
+		if (current == null) {
+			leading.push(issue);
+			continue;
+		}
+
+		current.children.push(issue);
 	}
 
-	const issues = result as UnflattenedIssues;
-	if (node.messages[0] != null) {
-		setFormattedMessage(issues, node.messages[0]);
+	const head = groups[0];
+	if (head != null && groups.length > 1) {
+		const restored = groups
+			.slice(1)
+			.map((member) => buildIssueNode(member.message, member.children, depth));
+
+		setFormattedMessage(restored, head.message);
+		assignIssueChildren(restored, [...leading, ...head.children], depth);
+
+		return restored as unknown as UnflattenedIssues;
 	}
 
-	return issues;
+	return buildIssueNode(
+		head?.message,
+		head == null ? leading : [...leading, ...head.children],
+		depth,
+	);
 }
 
 function flattenIssuesHelper(
@@ -280,6 +326,14 @@ function flattenIssuesHelper(
 	}
 
 	return flattenedIssues;
+}
+
+function normalizeIssuePath(
+	path: StandardSchemaV1.Issue["path"],
+): readonly string[] {
+	if (path == null) return [];
+
+	return path.map((segment) => normalizePathSegment(segment));
 }
 
 function normalizePathSegment(

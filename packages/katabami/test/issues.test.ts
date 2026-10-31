@@ -20,6 +20,7 @@ import {
 	record,
 	string,
 	tuple,
+	type UnflattenedIssues,
 	unflattenIssues,
 	union,
 } from "../src";
@@ -821,6 +822,8 @@ describe("issues", () => {
 
 			const restored = unflattenIssues(flattenIssues(result.issues));
 
+			expect(restored).toBeInstanceOf(Array);
+
 			expect(getIssueMessage(restored)?.format()).toStrictEqual(
 				"None of the union members matched.",
 			);
@@ -829,6 +832,77 @@ describe("issues", () => {
 			);
 			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
 				"Expected number, but received boolean.",
+			);
+		});
+
+		test("round-trips union issues nested in an object", () => {
+			const decoder = object({
+				union: union(string(), int(), object({ foo: string() })),
+			});
+			const result = decoder.decodeValue({ union: { foo: 1 } });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			expect(result.issues.union).toBeInstanceOf(Array);
+
+			const restored = unflattenIssues(flattenIssues(result.issues));
+
+			expect(restored.union).toBeInstanceOf(Array);
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(restored.union)?.format()).toStrictEqual(
+				"None of the union members matched.",
+			);
+			expect(getIssueMessage(restored.union?.[0])?.format()).toStrictEqual(
+				"Expected string, but received object.",
+			);
+			expect(getIssueMessage(restored.union?.[1])?.format()).toStrictEqual(
+				"Expected number, but received object.",
+			);
+			expect(getIssueMessage(restored.union?.[2])?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			const objectMember = restored.union?.[2] as undefined | UnflattenedIssues;
+			expect(getIssueMessage(objectMember?.foo)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+		});
+
+		test("round-trips nested issues on each union member", () => {
+			const decoder = union(
+				object({ city: string(), name: string() }),
+				object({ age: int() }),
+			);
+			const result = decoder.decodeValue({ city: true, name: 1 });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+
+			const restored = unflattenIssues(flattenIssues(result.issues));
+
+			expect(restored).toBeInstanceOf(Array);
+			expect(getIssueMessage(restored)?.format()).toStrictEqual(
+				"None of the union members matched.",
+			);
+			expect(getIssueMessage(restored[0])?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+			expect(getIssueMessage(restored[1])?.format()).toStrictEqual(
+				"One or more object properties failed validation.",
+			);
+
+			const nameMember = restored[0] as undefined | UnflattenedIssues;
+			const ageMember = restored[1] as undefined | UnflattenedIssues;
+			expect(getIssueMessage(nameMember?.name)?.format()).toStrictEqual(
+				"Expected string, but received number.",
+			);
+			expect(getIssueMessage(nameMember?.city)?.format()).toStrictEqual(
+				"Expected string, but received boolean.",
+			);
+			expect(getIssueMessage(ageMember?.age)?.format()).toStrictEqual(
+				"Expected number, but received undefined.",
 			);
 		});
 
