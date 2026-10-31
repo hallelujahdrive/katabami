@@ -313,8 +313,7 @@ class Decoder<
 	T,
 	I extends Issues = Issues<TypeOf<T>>,
 	S extends boolean = false,
-> implements IDecoder<T, I, S>
-{
+> implements IDecoder<T, I, S> {
 	readonly isAsync: boolean;
 
 	/**

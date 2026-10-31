@@ -55,6 +55,8 @@ export declare namespace StandardSchemaV1 {
 		/** Validates unknown input values. */
 		readonly validate: (
 			value: unknown,
+			// Matches the Standard Schema spec, which spells optional parameters as `T | undefined`.
+			// oxlint-disable-next-line typescript/no-duplicate-type-constituents
 			options?: StandardSchemaV1.Options | undefined,
 		) => Promise<Result<Output>> | Result<Output>;
 		/** The vendor name of the schema library. */

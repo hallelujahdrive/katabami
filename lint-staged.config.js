@@ -1,10 +1,10 @@
-// @ts-check・
+// @ts-check
 /** @type {import('lint-staged').Configuration} */
 
 export default {
-	"!**/*.md": ["biome format"],
-	"./**/*.{js,ts}": [
-		"biome check --error-on-warnings --staged",
-		"eslint --max-warnings=0",
+	"**/*": ["oxfmt --check --no-error-on-unmatched-pattern"],
+	"**/*.{js,mjs,ts}": [
+		"oxlint --max-warnings=0 --report-unused-disable-directives",
 	],
+	"**/*.json": ["eslint --max-warnings=0"],
 };

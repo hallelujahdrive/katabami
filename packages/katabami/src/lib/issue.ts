@@ -49,8 +49,7 @@ class IssueMessage<
 	Vars extends Record<string, Primitive> | undefined =
 		| Record<string, Primitive>
 		| undefined,
-> implements Issue<T, Msg, Vars>
-{
+> implements Issue<T, Msg, Vars> {
 	constructor(
 		public readonly type: T,
 		public readonly message: Msg,
@@ -185,8 +184,8 @@ export function getIssueMessage<T extends object>(
  */
 export function unflattenIssues<
 	D extends IDecoder<unknown, Issues, boolean> = never,
-	T extends
-		ReadonlyArray<StandardSchemaV1.Issue> = ReadonlyArray<StandardSchemaV1.Issue>,
+	T extends ReadonlyArray<StandardSchemaV1.Issue> =
+		ReadonlyArray<StandardSchemaV1.Issue>,
 >(
 	flattened: T,
 ): [D] extends [never]

@@ -104,11 +104,11 @@ if (!result.ok) {
 
 This repository is a pnpm workspace:
 
-| Package | Description |
-| --- | --- |
-| [`katabami`](packages/katabami) | Core decoders, issues, and Standard Schema |
+| Package                                         | Description                                     |
+| ----------------------------------------------- | ----------------------------------------------- |
+| [`katabami`](packages/katabami)                 | Core decoders, issues, and Standard Schema      |
 | [`@katabami/json-schema`](packages/json-schema) | JSON Schema generation and Standard JSON Schema |
-| [`@katabami/i18next`](packages/i18next) | i18next message formatting (`en` / `ja`) |
+| [`@katabami/i18next`](packages/i18next)         | i18next message formatting (`en` / `ja`)        |
 
 ## Install
 
@@ -157,16 +157,16 @@ user.decodeString('{"age":20,"name":"Ada"}');
 
 ### Primitives
 
-| Decoder | Accepts |
-| --- | --- |
-| `string()` | `string` |
-| `boolean()` | `boolean` |
-| `int()` | integers (`Number.isInteger`) |
-| `number()` | any `number` |
-| `literal(value)` | a literal (`string`, `number`, `boolean`, or `null`) |
-| `value()` | anything (typed as `unknown` by default) |
-| `succeed(value)` | anything; always returns `value` |
-| `failed(message?)` | nothing; always fails with `message` |
+| Decoder            | Accepts                                              |
+| ------------------ | ---------------------------------------------------- |
+| `string()`         | `string`                                             |
+| `boolean()`        | `boolean`                                            |
+| `int()`            | integers (`Number.isInteger`)                        |
+| `number()`         | any `number`                                         |
+| `literal(value)`   | a literal (`string`, `number`, `boolean`, or `null`) |
+| `value()`          | anything (typed as `unknown` by default)             |
+| `succeed(value)`   | anything; always returns `value`                     |
+| `failed(message?)` | nothing; always fails with `message`                 |
 
 `failed()` uses `"issue.failedToDecode"`, which formats to `"Failed to decode."`.
 `failed("Expected an integer.")` uses that string as the issue message. A
@@ -253,9 +253,7 @@ const node: k.Decoder<Node> = k.lazy(() =>
 `decodeValue` / `decodeString` return a `Result`:
 
 ```ts
-type Result<T, I> =
-	| { ok: true; value: T }
-	| { ok: false; issues: I };
+type Result<T, I> = { ok: true; value: T } | { ok: false; issues: I };
 ```
 
 Issues are a nested object (or array for unions) that follows the input shape.
@@ -285,9 +283,7 @@ The second argument can be a message string or a formatter; omitted, the
 error message is `"Failed to decode"`.
 
 ```ts
-const value = k.unwrapDecodeResult(
-	decoder.decodeValue({ foo: { bar: "ok" } }),
-);
+const value = k.unwrapDecodeResult(decoder.decodeValue({ foo: { bar: "ok" } }));
 ```
 
 `flattenIssues` turns that tree into Standard Schema `{ message, path }[]`.
@@ -377,14 +373,14 @@ const decoder = k.string().catch(() => ({
 
 ## Decoder methods
 
-| Method | Purpose |
-| --- | --- |
-| `decodeValue(value)` | Decode an unknown value |
-| `decodeString(json)` | `JSON.parse`, then decode |
-| `map(fn)` | Transform a successful value |
-| `andThen(fn)` | Continue with another decoder |
-| `catch(fn)` | Recover or remap issues |
-| `getSchema()` | Accepted-value schema for plugins |
+| Method               | Purpose                           |
+| -------------------- | --------------------------------- |
+| `decodeValue(value)` | Decode an unknown value           |
+| `decodeString(json)` | `JSON.parse`, then decode         |
+| `map(fn)`            | Transform a successful value      |
+| `andThen(fn)`        | Continue with another decoder     |
+| `catch(fn)`          | Recover or remap issues           |
+| `getSchema()`        | Accepted-value schema for plugins |
 
 ```ts
 import * as k from "katabami";
@@ -454,8 +450,8 @@ Schema. Targets: `draft-2020-12` (default), `draft-07`, `openapi-3.0`.
 [Standard JSON Schema](https://standardschema.dev/json-schema).
 
 ```ts
-import * as k from "katabami";
 import { toJsonSchema, toStandardJsonSchema } from "@katabami/json-schema";
+import * as k from "katabami";
 
 const decoder = k.object({
 	age: k.int(),
@@ -510,9 +506,9 @@ export const date = () =>
 `initKatabami` with i18next.
 
 ```ts
+import { createFormatter, initKatabami, resources } from "@katabami/i18next";
 import i18next from "i18next";
 import * as k from "katabami";
-import { createFormatter, initKatabami, resources } from "@katabami/i18next";
 
 await i18next.use(initKatabami).init({
 	interpolation: { escapeValue: false },

@@ -13,7 +13,7 @@
  * }
  * ```
  */
-// biome-ignore lint/suspicious/noEmptyInterface: module augmentation target, same pattern as i18next CustomTypeOptions
+// oxlint-disable-next-line typescript/no-empty-interface -- module augmentation target, same pattern as i18next CustomTypeOptions
 export interface CustomTypeOptions {}
 
 /**
@@ -22,11 +22,14 @@ export interface CustomTypeOptions {}
  * Falls back to built-in `issue.*` keys when nothing is registered, or when
  * the registered keys widen to `string` (i18next without typed resources).
  */
+// `RegisteredIssueMessageKeys` is `never` until `CustomTypeOptions` is augmented.
+// oxlint-disable typescript/no-redundant-type-constituents
 export type IssueMessageKeys = [RegisteredIssueMessageKeys] extends [never]
 	? BuiltInIssueMessageKeys
 	: string extends RegisteredIssueMessageKeys
 		? BuiltInIssueMessageKeys
 		: BuiltInIssueMessageKeys | RegisteredIssueMessageKeys;
+// oxlint-enable typescript/no-redundant-type-constituents
 
 /**
  * The message resources for Katabami.

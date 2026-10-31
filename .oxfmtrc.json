@@ -1,0 +1,31 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"associations": [
+		{
+			"files": ["**/tsconfig.json"],
+			"language": "jsonc"
+		}
+	],
+	"ignorePatterns": ["assets", "**/*.svg"],
+	"overrides": [
+		{
+			"files": ["**/*.{yml,yaml}"],
+			"options": {
+				"tabWidth": 2,
+				"useTabs": false
+			}
+		},
+		{
+			"files": ["**/tsconfig.json", "**/tsconfig.*.json"],
+			"options": {
+				"trailingComma": "none"
+			}
+		}
+	],
+	"printWidth": 80,
+	"sortImports": {
+		"newlinesBetween": false
+	},
+	"sortPackageJson": false,
+	"useTabs": true
+}

@@ -99,6 +99,8 @@ export interface IssuesObject {
 /**
  * Issue types
  */
+// `{} & string` keeps autocomplete, and `CustomIssueType` is `never` until augmented.
+// oxlint-disable-next-line typescript/no-redundant-type-constituents
 export type IssueType = ({} & string) | CommonIssueType | CustomIssueType;
 
 /**
@@ -281,7 +283,7 @@ type MergeIssuesValue<T, K extends PropertyKey> = T extends unknown
 type UnflattenedIssuesShape<T> = T extends readonly (infer E)[]
 	? { readonly [key: number]: undefined | UnflattenedIssuesOf<E> }
 	: {
-			readonly [K in keyof T as K extends symbol
-				? never
-				: K]?: UnflattenedIssuesOf<NonNullable<T[K]>>;
+			readonly [
+				K in keyof T as K extends symbol ? never : K
+			]?: UnflattenedIssuesOf<NonNullable<T[K]>>;
 		};
