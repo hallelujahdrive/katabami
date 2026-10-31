@@ -16,9 +16,9 @@ pnpm add katabami @katabami/i18next i18next
 ## Quick start
 
 ```ts
+import { createFormatter, initKatabami, resources } from "@katabami/i18next";
 import i18next from "i18next";
 import * as k from "katabami";
-import { createFormatter, initKatabami, resources } from "@katabami/i18next";
 
 await i18next.use(initKatabami).init({
 	interpolation: { escapeValue: false },

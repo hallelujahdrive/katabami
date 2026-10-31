@@ -27,7 +27,7 @@ export const createFormatter = (
 			: {};
 
 		return (t as Translate)(message, {
-			...(tOptions ?? {}),
+			...tOptions,
 			...translatedVars,
 		});
 	};

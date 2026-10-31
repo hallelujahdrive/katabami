@@ -1,6 +1,5 @@
 // @ts-check
-import tsEslintParser from "@typescript-eslint/parser";
-import perfectionist from "eslint-plugin-perfectionist";
+import json from "@eslint/json";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -8,26 +7,28 @@ export default [
 		ignores: ["**/dist/**"],
 	},
 	{
-		files: ["**/*.{js,ts}"],
-		languageOptions: {
-			parser: tsEslintParser,
-			parserOptions: {
-				project: "./tsconfig.eslint.json",
-				tsconfigRootDir: import.meta.dirname,
-			},
-		},
-		plugins: { perfectionist },
+		files: ["**/*.json"],
+		ignores: ["**/tsconfig.json"],
+		language: "json/json",
+		plugins: { json },
 		rules: {
-			"perfectionist/sort-array-includes": "error",
-			"perfectionist/sort-classes": "error",
-			"perfectionist/sort-enums": "error",
-			"perfectionist/sort-interfaces": "error",
-			"perfectionist/sort-jsx-props": "error",
-			"perfectionist/sort-modules": "error",
-			"perfectionist/sort-object-types": "error",
-			"perfectionist/sort-objects": "error",
-			"perfectionist/sort-switch-case": "error",
-			"perfectionist/sort-union-types": "error",
+			"json/sort-keys": [
+				"error",
+				"asc",
+				{ caseSensitive: true, natural: true },
+			],
+		},
+	},
+	{
+		files: ["**/tsconfig.json"],
+		language: "json/jsonc",
+		plugins: { json },
+		rules: {
+			"json/sort-keys": [
+				"error",
+				"asc",
+				{ caseSensitive: true, natural: true },
+			],
 		},
 	},
 ];

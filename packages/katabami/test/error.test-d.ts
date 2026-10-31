@@ -55,12 +55,12 @@ type ExtractIssue<I> = I extends infer U
 							Decoder<Awaitable<PropertyKey>>,
 							Decoder<unknown>,
 							infer Issue
-						>
+					  >
 					? Issue
 					: U extends ObjectDecodeIssues<
 								Record<string, Decoder<unknown>>,
 								infer Issue
-							>
+						  >
 						? Issue
 						: U extends Issues<IssueType, infer Issue>
 							? Issue
@@ -76,9 +76,9 @@ type GetIssues<T extends Result<unknown, Issues>> = [T] extends [
 	: never;
 
 type GetIssuesFromIssueTuple<T> = {
-	readonly [K in keyof T as K extends `${number}`
-		? K
-		: never]: T[K] extends Issues ? GetIssuesObject<T[K]> : never;
+	readonly [
+		K in keyof T as K extends `${number}` ? K : never
+	]: T[K] extends Issues ? GetIssuesObject<T[K]> : never;
 };
 
 type GetIssuesObject<I> = I extends infer U

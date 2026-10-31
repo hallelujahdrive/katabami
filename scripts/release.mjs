@@ -30,6 +30,106 @@ Examples:
   pnpm release -- 0.1.0 --push
 `;
 
+function assertCleanWorktree() {
+	const status = capture("git", ["status", "--porcelain"]);
+	if (status !== "") {
+		throw new Error("working tree is not clean; commit or stash changes first");
+	}
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ */
+function capture(command, args) {
+	const result = spawnSync(command, args, {
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+	if (result.status !== 0) {
+		process.stderr.write(result.stderr);
+		process.exit(result.status ?? 1);
+	}
+	return result.stdout.trim();
+}
+
+function currentVersion() {
+	const versions = publishedVersions();
+	const version = versions[0]?.version;
+	if (version == null) {
+		throw new Error("no workspace packages found");
+	}
+	const mismatched = versions.filter((pkg) => pkg.version !== version);
+	if (mismatched.length > 0) {
+		const details = mismatched
+			.map((pkg) => `${pkg.name}@${pkg.version}`)
+			.join(", ");
+		throw new Error(
+			`workspace versions differ: expected ${version}, got ${details}`,
+		);
+	}
+	return version;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is { name: string, version: string }}
+ */
+function isPackageManifest(value) {
+	return (
+		typeof value === "object" &&
+		value != null &&
+		"name" in value &&
+		"version" in value &&
+		typeof value.name === "string" &&
+		typeof value.version === "string"
+	);
+}
+
+function main() {
+	const options = parseArgs(process.argv.slice(2));
+
+	if (!options.dryRun) {
+		assertCleanWorktree();
+	}
+
+	const versionArgs = ["version", options.bump, "-r"];
+	if (options.preid != null) {
+		versionArgs.push("--preid", options.preid);
+	}
+
+	run("pnpm", versionArgs, { dryRun: options.dryRun });
+
+	if (options.dryRun) {
+		process.stdout.write("$ git add -u\n");
+		process.stdout.write('$ git commit -m "chore: release v<new-version>"\n');
+		process.stdout.write("$ git tag v<new-version>\n");
+		if (options.push) {
+			process.stdout.write("$ git push\n");
+			process.stdout.write("$ git push origin v<new-version>\n");
+		}
+		return;
+	}
+
+	const version = currentVersion();
+	const tag = `v${version}`;
+	const message = `chore: release ${tag}`;
+
+	run("git", ["add", "-u"]);
+	run("git", ["commit", "-m", message]);
+	run("git", ["tag", tag]);
+
+	if (options.push) {
+		run("git", ["push"]);
+		run("git", ["push", "origin", tag]);
+		return;
+	}
+
+	process.stdout.write(
+		`Created ${tag}. Push with:\n  git push && git push origin ${tag}\n`,
+	);
+}
+
 /**
  * @param {string[]} argv
  * @returns {{ bump: string, dryRun: boolean, preid: string | undefined, push: boolean }}
@@ -101,6 +201,19 @@ function parseArgs(argv) {
 	};
 }
 
+function publishedVersions() {
+	return readdirSync("packages", { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => {
+			const path = join("packages", entry.name, "package.json");
+			const manifest = JSON.parse(readFileSync(path, "utf8"));
+			if (!isPackageManifest(manifest)) {
+				throw new Error(`invalid package.json: ${path}`);
+			}
+			return { name: manifest.name, version: manifest.version };
+		});
+}
+
 /**
  * @param {string} command
  * @param {string[]} args
@@ -116,119 +229,6 @@ function run(command, args, options = {}) {
 	if (result.status !== 0) {
 		process.exit(result.status ?? 1);
 	}
-}
-
-/**
- * @param {string} command
- * @param {string[]} args
- */
-function capture(command, args) {
-	const result = spawnSync(command, args, {
-		encoding: "utf8",
-		stdio: ["ignore", "pipe", "pipe"],
-	});
-	if (result.status !== 0) {
-		process.stderr.write(result.stderr);
-		process.exit(result.status ?? 1);
-	}
-	return result.stdout.trim();
-}
-
-function assertCleanWorktree() {
-	const status = capture("git", ["status", "--porcelain"]);
-	if (status !== "") {
-		throw new Error("working tree is not clean; commit or stash changes first");
-	}
-}
-
-/**
- * @param {unknown} value
- * @returns {value is { name: string, version: string }}
- */
-function isPackageManifest(value) {
-	return (
-		typeof value === "object" &&
-		value != null &&
-		"name" in value &&
-		"version" in value &&
-		typeof value.name === "string" &&
-		typeof value.version === "string"
-	);
-}
-
-function publishedVersions() {
-	return readdirSync("packages", { withFileTypes: true })
-		.filter((entry) => entry.isDirectory())
-		.map((entry) => {
-			const path = join("packages", entry.name, "package.json");
-			const manifest = JSON.parse(readFileSync(path, "utf8"));
-			if (!isPackageManifest(manifest)) {
-				throw new Error(`invalid package.json: ${path}`);
-			}
-			return { name: manifest.name, version: manifest.version };
-		});
-}
-
-function currentVersion() {
-	const versions = publishedVersions();
-	const version = versions[0]?.version;
-	if (version == null) {
-		throw new Error("no workspace packages found");
-	}
-	const mismatched = versions.filter((pkg) => pkg.version !== version);
-	if (mismatched.length > 0) {
-		const details = mismatched
-			.map((pkg) => `${pkg.name}@${pkg.version}`)
-			.join(", ");
-		throw new Error(
-			`workspace versions differ: expected ${version}, got ${details}`,
-		);
-	}
-	return version;
-}
-
-function main() {
-	const options = parseArgs(process.argv.slice(2));
-
-	if (!options.dryRun) {
-		assertCleanWorktree();
-	}
-
-	const versionArgs = ["version", options.bump, "-r"];
-	if (options.preid != null) {
-		versionArgs.push("--preid", options.preid);
-	}
-
-	run("pnpm", versionArgs, { dryRun: options.dryRun });
-
-	if (options.dryRun) {
-		process.stdout.write("$ git add -u\n");
-		process.stdout.write('$ git commit -m "chore: release v<new-version>"\n');
-		process.stdout.write("$ git tag v<new-version>\n");
-		if (options.push) {
-			process.stdout.write("$ git push\n");
-			process.stdout.write("$ git push origin v<new-version>\n");
-		}
-		return;
-	}
-
-	const version = currentVersion();
-	const tag = `v${version}`;
-	const message = `chore: release ${tag}`;
-
-	run("git", ["add", "-u"]);
-	run("git", ["commit", "-m", message]);
-	run("git", ["tag", tag]);
-
-	if (options.push) {
-		run("git", ["push"]);
-		run("git", ["push", "origin", tag]);
-		return;
-	}
-
-	process.stdout.write(
-		`Created ${tag}. Push with:\n  git push && git push origin ${tag}\n`,
-	);
 }
 
 try {

@@ -44,7 +44,7 @@ export type AtDecoder<
 	: K extends readonly [
 				infer Head extends string,
 				...infer Tail extends readonly string[],
-			]
+		  ]
 		? AtFieldDecoder<AtDecoder<U, Tail>, Head>
 		: U;
 

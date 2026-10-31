@@ -17,8 +17,8 @@ pnpm add katabami @katabami/json-schema
 ## Quick start
 
 ```ts
-import * as k from "katabami";
 import { toJsonSchema, toStandardJsonSchema } from "@katabami/json-schema";
+import * as k from "katabami";
 
 const decoder = k.object({
 	age: k.int(),
