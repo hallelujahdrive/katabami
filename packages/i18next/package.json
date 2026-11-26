@@ -39,7 +39,7 @@
 	"main": "./dist/index.js",
 	"name": "@katabami/i18next",
 	"peerDependencies": {
-		"i18next": ">=25.0.0 <27.0.0"
+		"i18next": ">=25.0.0 <28.0.0"
 	},
 	"publishConfig": {
 		"access": "public",
