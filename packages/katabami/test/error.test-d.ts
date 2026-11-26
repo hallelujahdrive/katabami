@@ -561,12 +561,11 @@ describe("decode issues", () => {
 				IssueVars<
 					ExtractIssue<
 						typeof _decoder extends Decoder<unknown, infer I>
-							?
-									| I
-									| Issues<
-											"parseJson",
-											Issue<"parseJson", "issue.failedToDecode", never>
-									  >
+							? | I
+								| Issues<
+										"parseJson",
+										Issue<"parseJson", "issue.failedToDecode", never>
+								  >
 							: never
 					>
 				>
@@ -577,12 +576,11 @@ describe("decode issues", () => {
 			>().toExtend<
 				ExtractIssue<
 					typeof _decoder extends Decoder<unknown, infer I>
-						?
-								| I
-								| Issues<
-										"parseJson",
-										Issue<"parseJson", "issue.failedToDecode", never>
-								  >
+						? | I
+							| Issues<
+									"parseJson",
+									Issue<"parseJson", "issue.failedToDecode", never>
+							  >
 						: never
 				>
 			>();

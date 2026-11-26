@@ -12,6 +12,9 @@ export const createFormatter = (
 	t: TFunction,
 	tOptions?: TOptions,
 ): Formatter => {
+	// i18next 27 overloads do not overlap a plain (key, options) call.
+	const translate = t as unknown as Translate;
+
 	return (issue) => {
 		const { message, vars } = issue;
 
@@ -19,14 +22,14 @@ export const createFormatter = (
 			? Object.fromEntries(
 					Object.entries(vars).map(([key, value]) => {
 						if (typeof value === "string") {
-							return [key, (t as Translate)(value, tOptions)];
+							return [key, translate(value, tOptions)];
 						}
 						return [key, value];
 					}),
 				)
 			: {};
 
-		return (t as Translate)(message, {
+		return translate(message, {
 			...tOptions,
 			...translatedVars,
 		});
